@@ -341,7 +341,7 @@ function ScheduleContent() {
                             {/* Daily Expense Section */}
                             <div className="mt-8 pt-6 border-t border-stone-100">
                                 <h3 className="text-sm font-bold text-stone-500 mb-3 flex items-center justify-between">
-                                    <span>💸 오늘의 지출 <span className="text-[10px] opacity-30 font-normal">v1.1</span></span>
+                                    <span>💸 오늘의 지출</span>
                                     {!isExpenseFormOpen && (
                                         <button
                                             onClick={() => setIsExpenseFormOpen(true)}
@@ -377,7 +377,7 @@ function ScheduleContent() {
                                                 value={expenseMemo}
                                                 onChange={(e) => setExpenseMemo(e.target.value)}
                                                 placeholder="내용 (예: 커피, 식사)"
-                                                className="flex-[1.5] p-4 bg-white border-2 border-stone-200 rounded-2xl font-bold focus:outline-none focus:border-stone-400 transition-all"
+                                                className="flex-1 p-4 bg-white border-2 border-stone-200 rounded-2xl font-bold focus:outline-none focus:border-stone-400 transition-all"
                                                 autoFocus
                                             />
                                             <div className="relative flex-1">
