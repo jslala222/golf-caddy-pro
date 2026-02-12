@@ -371,24 +371,25 @@ function ScheduleContent() {
                                                 </button>
                                             ))}
                                         </div>
-                                        <div className="flex gap-2 mb-3">
+                                        <div className="flex flex-col sm:flex-row gap-3 mb-3">
                                             <div className="relative flex-1">
                                                 <input
                                                     type="text"
+                                                    inputMode="numeric"
                                                     value={expenseAmount ? Number(expenseAmount).toLocaleString() : ''}
                                                     onChange={(e) => setExpenseAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                                                    placeholder="금액"
-                                                    className="w-full p-3 pr-8 bg-white border border-stone-200 rounded-xl text-right font-bold focus:outline-none focus:border-red-500"
+                                                    placeholder="금액 입력"
+                                                    className="w-full p-4 pr-12 bg-white border-2 border-stone-200 rounded-2xl text-right font-black text-xl focus:outline-none focus:border-red-500 transition-all"
                                                     autoFocus
                                                 />
-                                                <span className="absolute right-3 top-3 text-stone-400 text-xs">원</span>
+                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 font-bold">원</span>
                                             </div>
                                             <input
                                                 type="text"
                                                 value={expenseMemo}
                                                 onChange={(e) => setExpenseMemo(e.target.value)}
-                                                placeholder="내용 (예: 커피)"
-                                                className="flex-[1.5] p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:border-stone-400"
+                                                placeholder="내용 (예: 커피, 식사)"
+                                                className="flex-[1.5] p-4 bg-white border-2 border-stone-200 rounded-2xl font-bold focus:outline-none focus:border-stone-400 transition-all"
                                             />
                                         </div>
                                         <div className="flex gap-2">
