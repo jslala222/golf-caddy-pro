@@ -341,7 +341,7 @@ function ScheduleContent() {
                             {/* Daily Expense Section */}
                             <div className="mt-8 pt-6 border-t border-stone-100">
                                 <h3 className="text-sm font-bold text-stone-500 mb-3 flex items-center justify-between">
-                                    <span>💸 오늘의 지출</span>
+                                    <span>💸 오늘의 지출 <span className="text-[10px] opacity-30 font-normal">v1.1</span></span>
                                     {!isExpenseFormOpen && (
                                         <button
                                             onClick={() => setIsExpenseFormOpen(true)}
