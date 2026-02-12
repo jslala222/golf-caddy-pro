@@ -15,7 +15,7 @@ echo 2. 코드 전송 시작...
 echo (깃허브 로그인 창이 뜨면 로그인해 주세요!)
 echo.
 git branch -M master
-git push -u origin master
+git push -u -f origin master
 
 if %errorlevel% neq 0 (
     echo.
