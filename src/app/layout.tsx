@@ -12,7 +12,7 @@ const notoSansKr = Noto_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: "Caddy Manager Pro v1.1",
+  title: "Caddy Manager Pro !!UPDATE_OK!!",
   description: "골프 캐디를 위한 독립형 모바일 비서",
   manifest: "/manifest.json",
   icons: {
