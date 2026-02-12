@@ -372,6 +372,14 @@ function ScheduleContent() {
                                             ))}
                                         </div>
                                         <div className="flex flex-col sm:flex-row gap-3 mb-3">
+                                            <input
+                                                type="text"
+                                                value={expenseMemo}
+                                                onChange={(e) => setExpenseMemo(e.target.value)}
+                                                placeholder="내용 (예: 커피, 식사)"
+                                                className="flex-[1.5] p-4 bg-white border-2 border-stone-200 rounded-2xl font-bold focus:outline-none focus:border-stone-400 transition-all"
+                                                autoFocus
+                                            />
                                             <div className="relative flex-1">
                                                 <input
                                                     type="text"
@@ -380,17 +388,9 @@ function ScheduleContent() {
                                                     onChange={(e) => setExpenseAmount(e.target.value.replace(/[^0-9]/g, ''))}
                                                     placeholder="금액 입력"
                                                     className="w-full p-4 pr-12 bg-white border-2 border-stone-200 rounded-2xl text-right font-black text-xl focus:outline-none focus:border-red-500 transition-all"
-                                                    autoFocus
                                                 />
                                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 font-bold">원</span>
                                             </div>
-                                            <input
-                                                type="text"
-                                                value={expenseMemo}
-                                                onChange={(e) => setExpenseMemo(e.target.value)}
-                                                placeholder="내용 (예: 커피, 식사)"
-                                                className="flex-[1.5] p-4 bg-white border-2 border-stone-200 rounded-2xl font-bold focus:outline-none focus:border-stone-400 transition-all"
-                                            />
                                         </div>
                                         <div className="flex gap-2">
                                             <button
