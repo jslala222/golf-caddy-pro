@@ -16,7 +16,8 @@ export const metadata: Metadata = {
   description: "골프 캐디를 위한 독립형 모바일 비서",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.png",
+    icon: "/icon-512.png",
+    apple: "/icon-512.png",
   },
 };
 
