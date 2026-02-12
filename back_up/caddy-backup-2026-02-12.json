@@ -1,0 +1,106 @@
+{
+  "schedules": [
+    {
+      "date": "2026-02-14",
+      "time": "14:08",
+      "title": "김기현  이모저 김도리 강차고",
+      "type": "work",
+      "id": "32d2a279-1260-44aa-a122-5d6a7aacf5e1",
+      "shift": "2",
+      "caddyFee": 150000
+    },
+    {
+      "date": "2026-02-14",
+      "time": "22:10",
+      "title": "저녁약속  /  친정식구",
+      "type": "personal",
+      "id": "06a1a8cb-4499-4381-b014-7cd244f9bbc2"
+    },
+    {
+      "date": "2026-02-02",
+      "time": "07:15",
+      "title": "화이팅",
+      "type": "work",
+      "id": "954f3d24-58de-4072-a77e-ac7bc8f5cacc",
+      "shift": "1"
+    },
+    {
+      "date": "2026-02-02",
+      "time": "15:11",
+      "title": "아자아자 힘내자",
+      "type": "work",
+      "shift": "2",
+      "id": "37da1a72-6dd8-4619-94b8-4b668305a17d"
+    },
+    {
+      "date": "2025-12-02",
+      "time": "17:16",
+      "title": "3인",
+      "type": "work",
+      "shift": "3",
+      "id": "d9938e07-9bbc-4016-afac-68b3038e6d2f"
+    },
+    {
+      "date": "2025-12-02",
+      "time": "20:38",
+      "title": "시부모 제사",
+      "type": "personal",
+      "id": "f9da7080-3063-4a0b-a38e-7593883af3f0"
+    },
+    {
+      "date": "2026-02-13",
+      "time": "06:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "caddyFee": 150000,
+      "id": "0a6a7aee-1437-43a5-8587-98965d8eedee",
+      "overFee": 50000
+    },
+    {
+      "date": "2026-02-13",
+      "time": "13:50",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "caddyFee": 150000,
+      "id": "88ecb5f3-2295-46af-8c23-c6d90ffc2540"
+    },
+    {
+      "date": "2026-01-14",
+      "time": "13:15",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "caddyFee": 150000,
+      "id": "9f0c2c20-2787-461f-a894-be9ce9f2f7a9"
+    },
+    {
+      "date": "2026-02-17",
+      "time": "08:15",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "caddyFee": 150000,
+      "id": "1a03afa7-5d19-4d48-a1ed-1ef764211da1"
+    },
+    {
+      "date": "2026-02-17",
+      "time": "16:15",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "caddyFee": 150000,
+      "id": "27678dc8-879c-437d-b65b-783a37ca7c7a"
+    }
+  ],
+  "customers": [],
+  "transactions": [],
+  "feeSettings": {
+    "shift1": 150000,
+    "shift2": 150000,
+    "shift3": 170000
+  },
+  "version": 1,
+  "exportedAt": "2026-02-12T00:59:24.989Z"
+}
