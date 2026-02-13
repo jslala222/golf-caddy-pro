@@ -59,8 +59,8 @@ export default function Home() {
     return 150000;
   };
 
-  const scheduleIncomeRealized = monthlySchedules.filter(s => s.date <= today).reduce((acc, s) => acc + getCaddyFee(s) + (s.overFee || 0), 0);
-  const scheduleIncomeExpected = monthlySchedules.reduce((acc, s) => acc + getCaddyFee(s) + (s.overFee || 0), 0);
+  const scheduleIncomeRealized = workSchedules.filter(s => s.date <= today).reduce((acc, s) => acc + getCaddyFee(s) + (s.overFee || 0), 0);
+  const scheduleIncomeExpected = workSchedules.reduce((acc, s) => acc + getCaddyFee(s) + (s.overFee || 0), 0);
   const manualIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
   const totalIncomeRealized = scheduleIncomeRealized + manualIncome;
   const totalIncomeExpected = scheduleIncomeExpected + manualIncome;
