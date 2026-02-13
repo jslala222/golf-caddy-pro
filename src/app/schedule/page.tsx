@@ -276,14 +276,66 @@ function ScheduleContent() {
                     {/* LIST VIEW */}
                     {viewMode === 'list' && (
                         <div className="space-y-4">
+                            {/* Holiday Toggle Card */}
+                            <div className={clsx(
+                                "p-5 rounded-2xl border-2 transition-all flex justify-between items-center mb-6",
+                                activeDateSchedules.some(s => s.type === 'holiday')
+                                    ? "bg-blue-50 border-blue-500 shadow-md"
+                                    : "bg-stone-50 border-stone-100"
+                            )}>
+                                <div className="flex items-center gap-3">
+                                    <div className={clsx(
+                                        "w-12 h-12 rounded-full flex items-center justify-center text-2xl",
+                                        activeDateSchedules.some(s => s.type === 'holiday') ? "bg-blue-500 text-white" : "bg-stone-200 text-stone-400"
+                                    )}>
+                                        🌴
+                                    </div>
+                                    <div>
+                                        <p className={clsx("font-black", activeDateSchedules.some(s => s.type === 'holiday') ? "text-blue-700" : "text-stone-500")}>
+                                            오늘 휴무하기
+                                        </p>
+                                        <p className="text-xs text-stone-400">체크하면 달력에 파란 테두리가 생겨요</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const holidayEntry = activeDateSchedules.find(s => s.type === 'holiday');
+                                        if (holidayEntry) {
+                                            deleteSchedule(holidayEntry.id);
+                                        } else {
+                                            // Delete all WORK entries first as requested "근무는 못하지만"
+                                            const workEntries = activeDateSchedules.filter(s => s.type === 'work');
+                                            workEntries.forEach(w => deleteSchedule(w.id));
+
+                                            // Add holiday entry
+                                            addSchedule({
+                                                date,
+                                                time: "00:00",
+                                                title: "휴무",
+                                                type: "holiday"
+                                            });
+                                        }
+                                    }}
+                                    className={clsx(
+                                        "w-14 h-8 rounded-full relative transition-colors duration-300",
+                                        activeDateSchedules.some(s => s.type === 'holiday') ? "bg-blue-500" : "bg-stone-300"
+                                    )}
+                                >
+                                    <div className={clsx(
+                                        "absolute top-1 w-6 h-6 bg-white rounded-full transition-transform duration-300 shadow-sm",
+                                        activeDateSchedules.some(s => s.type === 'holiday') ? "translate-x-7" : "translate-x-1"
+                                    )}></div>
+                                </button>
+                            </div>
                             {/* Schedule List */}
-                            {activeDateSchedules.length === 0 ? (
+                            {activeDateSchedules.filter(s => s.type !== 'holiday').length === 0 ? (
                                 <div className="py-6 text-center text-stone-400 border-b border-dashed border-stone-100 pb-6">
-                                    <p className="mb-2">🌴 일정이 없습니다.</p>
-                                    <p className="text-sm">근무나 약속을 등록해보세요!</p>
+                                    <p className="mb-2">📅 약속이 없습니다.</p>
+                                    <p className="text-sm">개인 일정이나 메모를 등록해보세요!</p>
                                 </div>
                             ) : (
-                                activeDateSchedules.map(schedule => (
+                                activeDateSchedules.filter(s => s.type !== 'holiday').map(schedule => (
                                     <div key={schedule.id}
                                         onClick={() => handleEditClick(schedule)}
                                         className="bg-white border border-stone-200 p-5 rounded-2xl flex justify-between items-center cursor-pointer hover:border-emerald-500 hover:shadow-md transition relative overflow-hidden"
@@ -325,8 +377,8 @@ function ScheduleContent() {
                                 ))
                             )}
 
-                            {/* Add New Schedule Button */}
-                            {activeDateSchedules.filter(s => s.type === 'work').length < 3 && (
+                            {/* Add New Schedule Button - Hide Work if Holiday ON */}
+                            {(!activeDateSchedules.some(s => s.type === 'holiday') && activeDateSchedules.filter(s => s.type === 'work').length < 3) && (
                                 <button
                                     onClick={handleAddNewClick}
                                     className="w-full py-4 border-2 border-dashed border-emerald-300 text-emerald-600 rounded-2xl font-bold flex items-center justify-center hover:bg-emerald-50 transition"
@@ -334,10 +386,19 @@ function ScheduleContent() {
                                     <Plus size={24} className="mr-2" /> 일정 추가
                                 </button>
                             )}
-                            {activeDateSchedules.filter(s => s.type === 'work').length >= 3 && (
-                                <p className="text-center text-sm font-medium text-red-500 mt-4 bg-red-50 p-3 rounded-xl">
-                                    ℹ️ 하루 근무(3회)가 모두 찼습니다.
-                                </p>
+
+                            {/* Allow Personal entry even if Holiday is ON */}
+                            {(activeDateSchedules.some(s => s.type === 'holiday')) && (
+                                <button
+                                    onClick={() => {
+                                        resetForm();
+                                        setType('personal');
+                                        setViewMode('form');
+                                    }}
+                                    className="w-full py-4 border-2 border-dashed border-orange-300 text-orange-600 rounded-2xl font-bold flex items-center justify-center hover:bg-orange-50 transition"
+                                >
+                                    <Plus size={24} className="mr-2" /> 개인 약속/메모 추가
+                                </button>
                             )}
 
                             {/* Daily Expense Section */}
@@ -473,32 +534,26 @@ function ScheduleContent() {
                     {viewMode === 'form' && (
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Type Toggle */}
-                            <div className="grid grid-cols-3 gap-2 bg-stone-100 p-1 rounded-2xl">
+                            <div className="grid grid-cols-2 gap-2 bg-stone-100 p-1 rounded-2xl">
                                 <button
                                     type="button"
                                     onClick={() => setType('work')}
-                                    className={`py-3 rounded-xl text-sm font-bold transition ${type === 'work' ? 'bg-white text-emerald-600 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                                    disabled={activeDateSchedules.some(s => s.type === 'holiday')}
+                                    className={`py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 ${type === 'work' ? 'bg-white text-emerald-600 shadow-sm' : 'text-stone-400'} ${activeDateSchedules.some(s => s.type === 'holiday') ? 'opacity-50 grayscale' : ''}`}
                                 >
                                     ⛳️ 근무
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setType('personal')}
-                                    className={`py-3 rounded-xl text-sm font-bold transition ${type === 'personal' ? 'bg-white text-orange-500 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                                    className={`py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 ${type === 'personal' ? 'bg-white text-orange-500 shadow-sm' : 'text-stone-400'}`}
                                 >
                                     📅 개인
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setType('holiday');
-                                        setTitle('휴무');
-                                    }}
-                                    className={`py-3 rounded-xl text-sm font-bold transition ${type === 'holiday' ? 'bg-white text-orange-700 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
-                                >
-                                    🌴 휴무
-                                </button>
                             </div>
+                            {activeDateSchedules.some(s => s.type === 'holiday') && (
+                                <p className="text-[10px] text-blue-600 text-center font-bold">💡 휴무일에는 개인 일정만 추가할 수 있습니다.</p>
+                            )}
 
                             {/* Date Logic for UI */}
                             {(() => {

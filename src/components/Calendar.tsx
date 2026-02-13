@@ -129,11 +129,11 @@ export function Calendar({ schedules, selectedDate, viewDate, onMonthChange }: C
                             href={`/schedule?date=${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`}
                             key={day}
                             className={clsx(
-                                "h-16 rounded-lg flex flex-col items-center pt-1 relative hover:bg-emerald-50 transition border border-transparent",
+                                "h-16 rounded-lg flex flex-col items-center pt-1 relative hover:bg-emerald-50 transition border-2 border-transparent",
                                 isToday && "bg-emerald-600 border-emerald-600 shadow-md",
-                                !isToday && hasPersonal && "bg-orange-50 border-orange-100", // Personal appointment background
+                                !isToday && hasPersonal && "bg-orange-50 border-stone-100", // Personal appointment background
                                 !isToday && !hasPersonal && isHoliday && "bg-red-50/30", // Light background for holidays
-                                dateSchedules.some(s => s.type === 'holiday') && "border-[3px] border-blue-500" // Holiday thick blue border
+                                dateSchedules.some(s => s.type === 'holiday') && "!border-4 !border-blue-500 z-10" // Holiday thick blue border forced
                             )}
                         >
                             <span className={clsx(

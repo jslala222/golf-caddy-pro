@@ -24,7 +24,7 @@ export default function Home() {
         <div className="w-full max-w-[480px] bg-white p-6 flex flex-col items-center justify-center space-y-4">
           <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-emerald-600 font-bold text-lg">골프 캐디 매니저</p>
-          <p className="text-stone-400 text-sm">Ver 1.5.110 • 휴무 기능 고도화...</p>
+          <p className="text-stone-400 text-sm">Ver 1.5.130 • 휴무 기능 전면 개편 완료!</p>
         </div>
       </div>
     );
