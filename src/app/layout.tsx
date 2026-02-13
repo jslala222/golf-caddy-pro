@@ -6,8 +6,7 @@ import { ClientLayout } from "@/components/layout/ClientLayout";
 
 const notoSansKr = Noto_Sans_KR({
   subsets: ["latin"],
-  weight: ["100", "300", "400", "500", "700", "900"],
-  variable: "--font-noto-sans-kr",
+  weight: ["400", "500", "700", "900"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${notoSansKr.variable} font-sans bg-stone-100 text-stone-900`}>
+      <body className={notoSansKr.className + " bg-stone-100 text-stone-900"}>
         <div className="flex justify-center min-h-screen">
           <div className="w-full max-w-[480px] bg-white relative flex flex-col min-h-screen shadow-2xl">
             <main className="flex-1 pb-20">

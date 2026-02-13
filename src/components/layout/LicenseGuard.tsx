@@ -131,7 +131,7 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
 
                 <div className="text-center pt-4">
                     <p className="text-[10px] text-stone-600 uppercase tracking-widest font-bold">
-                        Privacy First • No Server • Only Local
+                        Privacy First • Ver 1.5 • Only Local
                     </p>
                 </div>
             </div>
