@@ -82,7 +82,7 @@ export function InstallPWA() {
                                 <p>앱 설치 버튼이 안 보이시나요? 아래를 확인해 보세요.</p>
                                 <ul className="list-disc list-inside space-y-1 text-xs">
                                     <li><strong>시크릿 모드:</strong> 보안상 설치가 불가능합니다. 일반 탭에서 열어주세요.</li>
-                                    <li><strong>삼성 인터넷:</strong> 하단 메뉴 [≡] → [전화면에 추가]를 눌러주세요.</li>
+                                    <li><strong>삼성 인터넷:</strong> 하단 메뉴 [≡] → <strong>[현재 웹페이지 추가]</strong> → <strong>[홈 화면]</strong>을 순서대로 눌러주세요.</li>
                                     <li><strong>크롬 브라우저:</strong> 우측 상단 [⋮] → [홈 화면에 추가]를 눌러주세요.</li>
                                     <li><strong>카카오톡:</strong> 우측 상단 [⋮] → [다른 브라우저로 열기] 후 위 과정을 반복해 주세요.</li>
                                 </ul>
