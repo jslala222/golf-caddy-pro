@@ -17,6 +17,16 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
         if (ua.indexOf('kakaotalk') !== -1) {
             setIsKakaotalk(true);
         }
+
+        // PWA 서비스 워커 등록
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(
+                    (registration) => console.log('SW registered:', registration.scope),
+                    (err) => console.log('SW registration failed:', err)
+                );
+            });
+        }
     }, []);
 
     return (
