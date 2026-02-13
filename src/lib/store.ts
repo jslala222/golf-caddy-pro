@@ -6,7 +6,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 // Types
 // ----------------------
 
-export type ScheduleType = 'work' | 'personal';
+export type ScheduleType = 'work' | 'personal' | 'holiday';
 export type TransactionType = 'income' | 'expense';
 export type ExpenseCategory = 'food' | 'transport' | 'gear' | 'other';
 export type ClientGrade = 'vip' | 'gn' | 'normal';

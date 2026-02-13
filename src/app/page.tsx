@@ -20,41 +20,11 @@ export default function Home() {
   // 하이드레이션 전에는 아무 계산도 하지 않고 투명한 로딩만 보여줌
   if (!isHydrated) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        backgroundColor: '#f5f5f4'
-      }}>
-        <style dangerouslySetInnerHTML={{
-          __html: `
-          @keyframes custom-spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          .custom-spinner {
-            width: 40px; height: 40px;
-            border: 4px solid #10b981;
-            border-top: 4px solid transparent;
-            border-radius: 50%;
-            animation: custom-spin 1s linear infinite;
-          }
-        `}} />
-        <div style={{
-          width: '100%',
-          maxWidth: '480px',
-          backgroundColor: 'white',
-          padding: '24px',
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <div className="custom-spinner" />
-          <p style={{ marginTop: '20px', color: '#059669', fontSize: '18px', fontWeight: 'bold' }}>골프 캐디 매니저</p>
-          <p style={{ marginTop: '5px', color: '#888', fontSize: '12px' }}>안전하게 불러오는 중...</p>
-          <p style={{ marginTop: '20px', color: '#ccc', fontSize: '10px' }}>Ver 1.5.95 • Display Fixed</p>
+      <div className="flex justify-center min-h-screen bg-stone-100">
+        <div className="w-full max-w-[480px] bg-white p-6 flex flex-col items-center justify-center space-y-4">
+          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-emerald-600 font-bold text-lg">골프 캐디 매니저</p>
+          <p className="text-stone-400 text-sm">Ver 1.5.101 • 꽉 찬 화면 복구 중...</p>
         </div>
       </div>
     );

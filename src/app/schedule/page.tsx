@@ -300,8 +300,10 @@ function ScheduleContent() {
                                             <div className="flex items-center gap-2 mb-1">
                                                 {/* Shift Tag */}
                                                 <span className={`text-xs font-black px-2 py-1 rounded-md flex-shrink-0
-                                         ${schedule.type === 'work' ? 'bg-stone-100 text-stone-600' : 'bg-orange-50 text-orange-600'}`}>
-                                                    {schedule.type === 'work' ? `${schedule.shift || '?'}부 · ${schedule.holes || 18}홀` : '개인'}
+                                         ${schedule.type === 'work' ? 'bg-stone-100 text-stone-600' :
+                                                        schedule.type === 'holiday' ? 'bg-orange-100 text-orange-700' : 'bg-orange-50 text-orange-600'}`}>
+                                                    {schedule.type === 'work' ? `${schedule.shift || '?'}부 · ${schedule.holes || 18}홀` :
+                                                        schedule.type === 'holiday' ? '휴무' : '개인'}
                                                 </span>
                                                 {/* Time */}
                                                 <span className={`text-xl font-black font-mono tracking-tight flex-shrink-0
@@ -471,20 +473,30 @@ function ScheduleContent() {
                     {viewMode === 'form' && (
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Type Toggle */}
-                            <div className="grid grid-cols-2 gap-2 bg-stone-100 p-1 rounded-2xl">
+                            <div className="grid grid-cols-3 gap-2 bg-stone-100 p-1 rounded-2xl">
                                 <button
                                     type="button"
                                     onClick={() => setType('work')}
-                                    className={`py-3 rounded-xl text-base font-bold transition ${type === 'work' ? 'bg-white text-emerald-600 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                                    className={`py-3 rounded-xl text-sm font-bold transition ${type === 'work' ? 'bg-white text-emerald-600 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
                                 >
                                     ⛳️ 근무
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setType('personal')}
-                                    className={`py-3 rounded-xl text-base font-bold transition ${type === 'personal' ? 'bg-white text-orange-500 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                                    className={`py-3 rounded-xl text-sm font-bold transition ${type === 'personal' ? 'bg-white text-orange-500 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
                                 >
-                                    📅 개인 약속
+                                    📅 개인
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setType('holiday');
+                                        setTitle('휴무');
+                                    }}
+                                    className={`py-3 rounded-xl text-sm font-bold transition ${type === 'holiday' ? 'bg-white text-orange-700 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                                >
+                                    🌴 휴무
                                 </button>
                             </div>
 

@@ -33,13 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-      </head>
-      <body className={notoSansKr.className} style={{ margin: 0, padding: 0, backgroundColor: '#f5f5f4', color: '#1c1917' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', minHeight: '100vh', backgroundColor: '#f5f5f4' }}>
-          <div style={{ width: '100%', maxWidth: '480px', backgroundColor: 'white', position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '100vh', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflowX: 'hidden' }}>
-            <main style={{ flex: 1, paddingBottom: '80px' }}>
+      <body className={`${notoSansKr.className} bg-stone-100 text-stone-900 overflow-x-hidden`}>
+        <div className="flex justify-center min-h-screen bg-stone-100">
+          <div className="w-full max-w-[480px] bg-white relative flex flex-col min-h-screen shadow-2xl">
+            <main className="flex-1 pb-20">
               <ClientLayout>
                 {children}
               </ClientLayout>
