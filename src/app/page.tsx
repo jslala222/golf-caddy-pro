@@ -79,7 +79,7 @@ export default function Home() {
   const todaySchedule = schedules.filter(s => s.date === today);
 
   return (
-    <div className="p-6 space-y-8 pb-32">
+    <div className="p-6 space-y-8 pb-32" style={{ backgroundColor: 'white', minHeight: '100vh' }}>
       {/* Header */}
       <header className="flex justify-between items-center">
         <div>

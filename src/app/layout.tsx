@@ -26,10 +26,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={notoSansKr.className + " bg-stone-100 text-stone-900"}>
-        <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f4', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div className="w-full max-w-[480px] bg-white relative flex flex-col min-h-screen shadow-2xl overflow-x-hidden" style={{ minHeight: '100vh' }}>
-            <main className="flex-1 pb-20">
+      <body style={{ margin: 0, padding: 0, backgroundColor: '#f5f5f4', color: '#1c1917', fontFamily: 'sans-serif' }}>
+        {/* 비상용 스타일 블록: CSS 파일이 안 불려와도 레이아웃을 지킵니다. */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          .emergency-container { display: flex; flex-direction: column; align-items: center; min-height: 100vh; background-color: #f5f5f4; }
+          .emergency-phone { width: 100%; max-width: 480px; background-color: white; position: relative; display: flex; flex-direction: column; min-height: 100vh; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+          .emergency-main { flex: 1; padding-bottom: 80px; }
+        `}} />
+
+        <div className="emergency-container">
+          <div className="emergency-phone">
+            <main className="emergency-main">
               <ClientLayout>
                 {children}
               </ClientLayout>
