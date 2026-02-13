@@ -26,9 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={notoSansKr.className + " bg-stone-100 antialiased"}>
-        <div className="min-h-screen bg-stone-100 flex flex-col items-center">
-          <div className="w-full max-w-[480px] bg-white relative flex flex-col min-h-screen shadow-2xl overflow-x-hidden">
+      <body className={notoSansKr.className + " bg-stone-100 text-stone-900"}>
+        <div className="flex justify-center min-h-screen">
+          <div className="w-full max-w-[480px] bg-white relative flex flex-col min-h-screen shadow-2xl">
             <main className="flex-1 pb-20">
               <ClientLayout>
                 {children}

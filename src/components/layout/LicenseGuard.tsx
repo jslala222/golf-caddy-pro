@@ -1,5 +1,4 @@
 
-// Forced Rollback to v1.5 Stability
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -55,13 +54,10 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
 
     if (isActivated === null) {
         return (
-            <div className="fixed inset-0 bg-white z-[10000] flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-stone-800 font-bold text-lg">정보를 보호하고 있습니다...</p>
-                <p className="text-xs text-stone-400 mt-2 tracking-widest uppercase font-medium">Safe Loading • Ver 1.5.11</p>
-                <div className="mt-8 text-[10px] text-stone-300">
-                    반응이 없으면 새로고침을 해주세요.
-                </div>
+            <div style={{ position: 'fixed', inset: 0, backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
+                <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                <p style={{ marginTop: '1rem', color: '#444', fontWeight: 'bold' }}>안전하게 진입 중입니다...</p>
+                <p style={{ fontSize: '10px', color: '#888', marginTop: '0.5rem' }}>Ver 1.5.21 • Stability Mode</p>
             </div>
         );
     }
@@ -109,10 +105,16 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                         <HelpCircle size={14} className="opacity-50" />
                     </div>
                     <div className="bg-stone-900 p-4 rounded-2xl text-center border border-white/5 shadow-inner">
-                        <code className="text-2xl font-mono text-emerald-400 tracking-[0.15em] font-black" style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}>
+                        <code style={{
+                            fontFamily: '"Cascadia Code", "Source Code Pro", "Courier New", monospace',
+                            letterSpacing: '0.15em',
+                            fontSize: '1.5rem',
+                            color: '#4ade80',
+                            fontWeight: '900'
+                        }} className="select-all">
                             {deviceId}
                         </code>
-                        <p className="text-[10px] text-stone-600 mt-2 font-medium">※ 위 번호를 복사해서 전달해주세요</p>
+                        <p className="text-[10px] text-stone-600 mt-2 font-medium">※ 0(숫자)과 O(영어) 구분을 위해 전용 폰트를 적용했습니다.</p>
                     </div>
                 </div>
 
@@ -143,7 +145,7 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
 
                 <div className="text-center pt-4">
                     <p className="text-[10px] text-stone-600 uppercase tracking-widest font-bold">
-                        Privacy First • Ver 1.5.11 • Only Local
+                        Privacy First • Ver 1.5.21 • Only Local
                     </p>
                 </div>
             </div>

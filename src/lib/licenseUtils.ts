@@ -18,7 +18,7 @@ export const getDeviceId = (): string => {
 
     let deviceId = localStorage.getItem('caddy_device_id');
     if (!deviceId) {
-        // 헷갈리는 문자(0, O, I, 1, L)를 제외한 문자열 정의
+        // 헷갈리는 문자(0, O, I, 1, L)를 제외한 명확한 문자열 정의
         const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
         const gen = (len: number) => {
             let res = "";
