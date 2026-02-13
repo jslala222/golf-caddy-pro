@@ -1,4 +1,5 @@
 
+// Forced Rollback to v1.5 Stability
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
