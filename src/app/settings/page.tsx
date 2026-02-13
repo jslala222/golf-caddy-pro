@@ -6,6 +6,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
+import { InstallPWA } from '@/components/InstallPWA';
 
 export default function SettingsPage() {
     const { exportData, importData, resetData, feeSettings, updateFeeSettings } = useAppStore();
@@ -84,6 +85,11 @@ export default function SettingsPage() {
             <h1 className="text-2xl font-bold text-stone-900 flex items-center">
                 <Settings className="mr-2 text-stone-600" /> 설정
             </h1>
+
+            {/* PWA Install Section */}
+            <InstallPWA />
+
+            <hr className="border-stone-200" />
 
             {/* Fee Settings Section */}
             <section className="space-y-4">
