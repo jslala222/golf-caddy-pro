@@ -1,4 +1,4 @@
-
+// [Time Machine Status: Active] - Restoring to 2026-02-13 Stable Version
 import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
