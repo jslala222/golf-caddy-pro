@@ -132,7 +132,8 @@ export function Calendar({ schedules, selectedDate, viewDate, onMonthChange }: C
                                 "h-16 rounded-lg flex flex-col items-center pt-1 relative hover:bg-emerald-50 transition border border-transparent",
                                 isToday && "bg-emerald-600 border-emerald-600 shadow-md",
                                 !isToday && hasPersonal && "bg-orange-50 border-orange-100", // Personal appointment background
-                                !isToday && !hasPersonal && isHoliday && "bg-red-50/30" // Light background for holidays
+                                !isToday && !hasPersonal && isHoliday && "bg-red-50/30", // Light background for holidays
+                                dateSchedules.some(s => s.type === 'holiday') && "border-[3px] border-blue-500" // Holiday thick blue border
                             )}
                         >
                             <span className={clsx(

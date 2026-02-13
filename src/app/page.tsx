@@ -24,7 +24,7 @@ export default function Home() {
         <div className="w-full max-w-[480px] bg-white p-6 flex flex-col items-center justify-center space-y-4">
           <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-emerald-600 font-bold text-lg">골프 캐디 매니저</p>
-          <p className="text-stone-400 text-sm">Ver 1.5.101 • 꽉 찬 화면 복구 중...</p>
+          <p className="text-stone-400 text-sm">Ver 1.5.110 • 휴무 기능 고도화...</p>
         </div>
       </div>
     );
@@ -43,8 +43,12 @@ export default function Home() {
 
   const monthlySchedules = schedules.filter(s => {
     const d = new Date(s.date);
-    return d.getFullYear() === year && d.getMonth() === month && s.type === 'work';
+    return d.getFullYear() === year && d.getMonth() === month;
   });
+
+  const workSchedules = monthlySchedules.filter(s => s.type === 'work');
+  const holidaySchedules = monthlySchedules.filter(s => s.type === 'holiday');
+  const uniqueHolidayDays = new Set(holidaySchedules.map(h => h.date)).size;
 
   const getCaddyFee = (s: any) => {
     if (s.caddyFee) return s.caddyFee;
@@ -70,7 +74,7 @@ export default function Home() {
     expected: { h18: 0, h9: 0, other: 0, total: 0 }
   };
 
-  monthlySchedules.forEach(s => {
+  workSchedules.forEach(s => {
     const isRealized = s.date <= today;
     const target = isRealized ? roundStats.realized : roundStats.expected;
     const holes = parseInt(String(s.holes || '18').replace(/[^0-9]/g, '')) || 18;
@@ -154,8 +158,13 @@ export default function Home() {
               </div>
             )}
           </div>
-          <div className="text-[10px] bg-white/10 px-2 py-1 rounded text-white font-bold">
-            현재 {roundStats.realized.total}회 / 전체 {roundStats.realized.total + roundStats.expected.total}회
+          <div className="flex gap-2">
+            <div className="text-[10px] bg-white/10 px-2 py-1 rounded text-white font-bold">
+              휴무: {uniqueHolidayDays}일
+            </div>
+            <div className="text-[10px] bg-white/10 px-2 py-1 rounded text-white font-bold">
+              현재 {roundStats.realized.total}회 / 전체 {roundStats.realized.total + roundStats.expected.total}회
+            </div>
           </div>
         </div>
       </section>

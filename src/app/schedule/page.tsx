@@ -532,36 +532,38 @@ function ScheduleContent() {
                                 );
                             })()}
 
-                            {/* Custom Time Selector */}
-                            <div>
-                                <label className="block text-sm font-bold text-stone-500 mb-1.5 ml-1">
-                                    {type === 'work' ? '티오프 시간' : '약속 시간'}
-                                </label>
-                                <div className="flex gap-2 items-center">
-                                    <select
-                                        value={hour}
-                                        onChange={(e) => setHour(e.target.value)}
-                                        className="flex-1 py-4 text-center text-2xl font-black bg-stone-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                                    >
-                                        {hours.map(h => <option key={h} value={h}>{h}</option>)}
-                                    </select>
-                                    <span className="text-xl font-bold text-stone-300">:</span>
-                                    <select
-                                        value={minute}
-                                        onChange={(e) => setMinute(e.target.value)}
-                                        className="flex-1 py-4 text-center text-2xl font-black bg-stone-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                                    >
-                                        {minutes.map(m => <option key={m} value={m}>{m}</option>)}
-                                    </select>
+                            {/* Custom Time Selector - Hide for Holiday */}
+                            {type !== 'holiday' && (
+                                <div>
+                                    <label className="block text-sm font-bold text-stone-500 mb-1.5 ml-1">
+                                        {type === 'work' ? '티오프 시간' : '약속 시간'}
+                                    </label>
+                                    <div className="flex gap-2 items-center">
+                                        <select
+                                            value={hour}
+                                            onChange={(e) => setHour(e.target.value)}
+                                            className="flex-1 py-4 text-center text-2xl font-black bg-stone-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                        >
+                                            {hours.map(h => <option key={h} value={h}>{h}</option>)}
+                                        </select>
+                                        <span className="text-xl font-bold text-stone-300">:</span>
+                                        <select
+                                            value={minute}
+                                            onChange={(e) => setMinute(e.target.value)}
+                                            className="flex-1 py-4 text-center text-2xl font-black bg-stone-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                        >
+                                            {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-bold text-stone-500 mb-1.5 ml-1">내용 / 메모</label>
                                 <textarea
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
-                                    placeholder={type === 'work' ? "코스, 특이사항 등 (선택)" : "일정 내용 입력"}
+                                    placeholder={type === 'work' ? "코스, 특이사항 등 (선택)" : type === 'holiday' ? "휴무 사유 (선택)" : "일정 내용 입력"}
                                     rows={1}
                                     className="w-full p-4 bg-stone-50 border-none rounded-2xl text-lg font-medium focus:ring-2 focus:ring-emerald-500 placeholder:text-stone-300 transition resize-none"
                                 />
