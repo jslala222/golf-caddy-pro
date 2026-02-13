@@ -26,6 +26,20 @@ export default function Home() {
         minHeight: '100vh',
         backgroundColor: '#f5f5f4'
       }}>
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          @keyframes custom-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          .custom-spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #10b981;
+            border-top: 4px solid transparent;
+            border-radius: 50%;
+            animation: custom-spin 1s linear infinite;
+          }
+        `}} />
         <div style={{
           width: '100%',
           maxWidth: '480px',
@@ -37,25 +51,13 @@ export default function Home() {
           alignItems: 'center',
           justifyContent: 'center'
         }}>
-          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <div className="custom-spinner" />
           <p style={{ marginTop: '20px', color: '#059669', fontSize: '18px', fontWeight: 'bold' }}>골프 캐디 매니저</p>
           <p style={{ marginTop: '5px', color: '#888', fontSize: '12px' }}>안전하게 불러오는 중...</p>
-          <p style={{ marginTop: '20px', color: '#ccc', fontSize: '10px' }}>Ver 1.5.95 • Loading Support</p>
+          <p style={{ marginTop: '20px', color: '#ccc', fontSize: '10px' }}>Ver 1.5.95 • Display Fixed</p>
         </div>
       </div>
     );
-  }
-  circular - spin {
-    border: 4px solid #10b981;
-    border - top: 4px solid transparent;
-    border - radius: 50 %;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    0 % { transform: rotate(0deg); }
-    100 % { transform: rotate(360deg); }
   }
 
   // 화면이 뜬 후에만 안전하게 데이터 가공 시작
