@@ -20,12 +20,42 @@ export default function Home() {
   // 하이드레이션 전에는 아무 계산도 하지 않고 투명한 로딩만 보여줌
   if (!isHydrated) {
     return (
-      <div className="p-6 space-y-8 animate-pulse bg-white min-h-screen">
-        <div className="h-8 bg-stone-100 rounded-md w-1/2"></div>
-        <div className="h-48 bg-stone-100 rounded-2xl w-full"></div>
-        <div className="h-32 bg-stone-100 rounded-2xl w-full"></div>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        backgroundColor: '#f5f5f4'
+      }}>
+        <div style={{
+          width: '100%',
+          maxWidth: '480px',
+          backgroundColor: 'white',
+          padding: '24px',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <p style={{ marginTop: '20px', color: '#059669', fontSize: '18px', fontWeight: 'bold' }}>골프 캐디 매니저</p>
+          <p style={{ marginTop: '5px', color: '#888', fontSize: '12px' }}>안전하게 불러오는 중...</p>
+          <p style={{ marginTop: '20px', color: '#ccc', fontSize: '10px' }}>Ver 1.5.95 • Loading Support</p>
+        </div>
       </div>
     );
+  }
+  circular - spin {
+    border: 4px solid #10b981;
+    border - top: 4px solid transparent;
+    border - radius: 50 %;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0 % { transform: rotate(0deg); }
+    100 % { transform: rotate(360deg); }
   }
 
   // 화면이 뜬 후에만 안전하게 데이터 가공 시작
