@@ -1,4 +1,6 @@
 {
+    "id": "/",
+    "scope": "/",
     "name": "Caddy Manager Pro",
     "short_name": "CaddyPro",
     "description": "골프 캐디를 위한 독립형 모바일 비서",

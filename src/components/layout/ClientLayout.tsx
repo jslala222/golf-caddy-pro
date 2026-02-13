@@ -14,20 +14,21 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const ua = navigator.userAgent.toLowerCase();
-        if (ua.indexOf('kakaotalk') !== -1) {
-            setIsKakaotalk(true);
-        }
-
-        // PWA 서비스 워커 등록
+        // PWA 서비스 워커 등록 (로딩 즉시 실행되도록 보강)
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(
-                    (registration) => console.log('SW registered:', registration.scope),
-                    (err) => console.log('SW registration failed:', err)
-                );
-            });
+            const register = () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.log('SW Registration Failed', err));
+            };
+
+            if (document.readyState === 'complete') {
+                register();
+            } else {
+                window.addEventListener('load', register);
+            }
         }
-    }, []);
+    }, [pathname]);
 
     return (
         <PortGuard>
