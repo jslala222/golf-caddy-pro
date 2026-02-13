@@ -18,9 +18,18 @@ export const getDeviceId = (): string => {
 
     let deviceId = localStorage.getItem('caddy_device_id');
     if (!deviceId) {
-        // 8자리의 짧고 읽기 쉬운 기기 고유 번호 생성
-        deviceId = Math.random().toString(36).substring(2, 6).toUpperCase() + '-' +
-            Math.random().toString(36).substring(2, 6).toUpperCase();
+        // 헷갈리는 문자(0, O, I, 1, L)를 제외한 문자열 정의
+        const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+        const gen = (len: number) => {
+            let res = "";
+            for (let i = 0; i < len; i++) {
+                res += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return res;
+        };
+
+        // 4글자-4글자 형태의 읽기 쉬운 기기 고유 번호 생성
+        deviceId = `${gen(4)}-${gen(4)}`;
         localStorage.setItem('caddy_device_id', deviceId);
     }
     return deviceId;

@@ -84,8 +84,23 @@ export default function Home() {
 
   const todaySchedule = schedules.filter(s => s.date === today);
 
+  const [isHydrated, setIsHydrated] = useState(false);
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  if (!isHydrated) {
+    return (
+      <div className="p-6 space-y-8 animate-pulse bg-white min-h-screen">
+        <div className="h-8 bg-stone-100 rounded-md w-1/2"></div>
+        <div className="h-48 bg-stone-100 rounded-2xl w-full"></div>
+        <div className="h-32 bg-stone-100 rounded-2xl w-full"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-8 pb-32">
+    <div className="p-6 space-y-8 pb-32 bg-white min-h-screen">
       {/* Header */}
       <header className="flex justify-between items-center">
         <div>

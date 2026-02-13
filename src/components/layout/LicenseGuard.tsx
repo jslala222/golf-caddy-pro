@@ -53,7 +53,18 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
         }
     };
 
-    if (isActivated === null) return null;
+    if (isActivated === null) {
+        return (
+            <div className="fixed inset-0 bg-white z-[10000] flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-stone-800 font-bold text-lg">정보를 보호하고 있습니다...</p>
+                <p className="text-xs text-stone-400 mt-2 tracking-widest uppercase font-medium">Safe Loading • Ver 1.5.11</p>
+                <div className="mt-8 text-[10px] text-stone-300">
+                    반응이 없으면 새로고침을 해주세요.
+                </div>
+            </div>
+        );
+    }
 
     if (isActivated) {
         return <>{children}</>;
@@ -97,10 +108,11 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                         <span className="flex items-center gap-1.5"><Smartphone size={14} /> 내 기기 고유 번호</span>
                         <HelpCircle size={14} className="opacity-50" />
                     </div>
-                    <div className="bg-black/30 p-3 rounded-2xl text-center border border-white/5 select-all">
-                        <code className="text-xl font-mono text-emerald-400 tracking-wider">
+                    <div className="bg-stone-900 p-4 rounded-2xl text-center border border-white/5 shadow-inner">
+                        <code className="text-2xl font-mono text-emerald-400 tracking-[0.15em] font-black" style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}>
                             {deviceId}
                         </code>
+                        <p className="text-[10px] text-stone-600 mt-2 font-medium">※ 위 번호를 복사해서 전달해주세요</p>
                     </div>
                 </div>
 
@@ -131,7 +143,7 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
 
                 <div className="text-center pt-4">
                     <p className="text-[10px] text-stone-600 uppercase tracking-widest font-bold">
-                        Privacy First • Ver 1.5.9 • Only Local
+                        Privacy First • Ver 1.5.11 • Only Local
                     </p>
                 </div>
             </div>
