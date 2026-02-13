@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
@@ -9,78 +9,72 @@ import { Calendar as CalendarIcon, Users, Wallet, ChevronRight, TrendingUp, Tren
 import { Calendar } from '@/components/Calendar';
 
 export default function Home() {
-  const { transactions, schedules, clients } = useAppStore(); // Updated to clients
-
-  // Dashboard Calendar State
+  const store = useAppStore();
+  const [isHydrated, setIsHydrated] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // 하이드레이션 전에는 아무 계산도 하지 않고 투명한 로딩만 보여줌
+  if (!isHydrated) {
+    return (
+      <div className="p-6 space-y-8 animate-pulse bg-white min-h-screen">
+        <div className="h-8 bg-stone-100 rounded-md w-1/2"></div>
+        <div className="h-48 bg-stone-100 rounded-2xl w-full"></div>
+        <div className="h-32 bg-stone-100 rounded-2xl w-full"></div>
+      </div>
+    );
+  }
+
+  // 화면이 뜬 후에만 안전하게 데이터 가공 시작
+  const { transactions = [], schedules = [], clients = [], feeSettings } = store;
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-
-  // Filter Data by Current Dashboard Month
-  const monthlyTransactions = useMemo(() => {
-    return transactions.filter(t => {
-      const d = new Date(t.date);
-      return d.getFullYear() === year && d.getMonth() === month;
-    });
-  }, [transactions, year, month]);
-
-  const monthlySchedules = useMemo(() => {
-    return schedules.filter(s => {
-      const d = new Date(s.date);
-      return d.getFullYear() === year && d.getMonth() === month && s.type === 'work';
-    });
-  }, [schedules, year, month]);
-
-  // Calculate Income (Realized vs Expected)
-  const { feeSettings } = useAppStore(); // Added feeSettings
   const today = new Date().toISOString().split('T')[0];
-  const realizedSchedules = monthlySchedules.filter(s => s.date <= today);
+
+  const monthlyTransactions = transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+
+  const monthlySchedules = schedules.filter(s => {
+    const d = new Date(s.date);
+    return d.getFullYear() === year && d.getMonth() === month && s.type === 'work';
+  });
 
   const getCaddyFee = (s: any) => {
     if (s.caddyFee) return s.caddyFee;
-    if (!feeSettings) return 150000; // Safe guard
+    if (!feeSettings) return 150000;
     if (s.shift === '1') return feeSettings.shift1;
     if (s.shift === '2') return feeSettings.shift2;
     if (s.shift === '3') return feeSettings.shift3;
-    return 150000; // Default fallback
+    return 150000;
   };
 
-  const scheduleIncomeRealized = realizedSchedules.reduce((acc, s) => acc + getCaddyFee(s) + (s.overFee || 0), 0);
+  const scheduleIncomeRealized = monthlySchedules.filter(s => s.date <= today).reduce((acc, s) => acc + getCaddyFee(s) + (s.overFee || 0), 0);
   const scheduleIncomeExpected = monthlySchedules.reduce((acc, s) => acc + getCaddyFee(s) + (s.overFee || 0), 0);
-
   const manualIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-
   const totalIncomeRealized = scheduleIncomeRealized + manualIncome;
-  const totalIncomeExpected = scheduleIncomeExpected + manualIncome; // Including future
-
-  const totalExpense = monthlyTransactions
-    .filter(t => t.type === 'expense')
-    .reduce((acc, t) => acc + t.amount, 0);
+  const totalIncomeExpected = scheduleIncomeExpected + manualIncome;
+  const totalExpense = monthlyTransactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
 
   const netIncomeRealized = totalIncomeRealized - totalExpense;
   const netIncomeExpected = totalIncomeExpected - totalExpense;
 
-  // Rounding Stats (Realized vs Total)
-  const roundStats = useMemo(() => {
-    const stats = {
-      realized: { h18: 0, h9: 0, other: 0, total: 0 },
-      expected: { h18: 0, h9: 0, other: 0, total: 0 }
-    };
+  const roundStats = {
+    realized: { h18: 0, h9: 0, other: 0, total: 0 },
+    expected: { h18: 0, h9: 0, other: 0, total: 0 }
+  };
 
-    monthlySchedules.forEach(s => {
-      const isRealized = s.date <= today;
-      const target = isRealized ? stats.realized : stats.expected;
-
-      const holesStr = String(s.holes || '18').replace(/[^0-9]/g, '');
-      const holes = parseInt(holesStr) || 18;
-
-      if (holes === 18) target.h18++;
-      else if (holes === 9) target.h9++;
-      else target.other++;
-      target.total++;
-    });
-    return stats;
-  }, [monthlySchedules, today]);
+  monthlySchedules.forEach(s => {
+    const isRealized = s.date <= today;
+    const target = isRealized ? roundStats.realized : roundStats.expected;
+    const holes = parseInt(String(s.holes || '18').replace(/[^0-9]/g, '')) || 18;
+    if (holes === 18) target.h18++; else if (holes === 9) target.h9++; else target.other++;
+    target.total++;
+  });
 
   const todaySchedule = schedules.filter(s => s.date === today);
 
