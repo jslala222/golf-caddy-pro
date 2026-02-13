@@ -16,40 +16,39 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        // 클라이언트 전용으로 실행되도록 확실히 보장 (Hydration 에러 방지)
-        const checkLicense = () => {
+        // 클라이언트 사이드에서만 안전하게 실행
+        const init = () => {
             try {
-                const storedKey = localStorage.getItem('caddy_license_key');
                 const id = getDeviceId();
                 setDeviceId(id);
 
+                const storedKey = localStorage.getItem('caddy_license_key');
                 if (storedKey && verifyLicense(storedKey)) {
                     setIsActivated(true);
                 } else {
                     setIsActivated(false);
                 }
             } catch (e) {
-                console.error('라이선스 확인 에러:', e);
+                console.error('라이선스 확인 실패:', e);
                 setIsActivated(false);
             }
         };
-
-        checkLicense();
+        init();
     }, []);
 
     const handleActivate = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        try {
-            if (verifyLicense(inputKey)) {
+        if (verifyLicense(inputKey)) {
+            try {
                 localStorage.setItem('caddy_license_key', inputKey);
                 setIsActivated(true);
-            } else {
-                setError('유효하지 않은 라이선스 키입니다. 다시 확인해 주세요.');
+            } catch (e) {
+                setError('라이선스 저장에 실패했습니다. (브라우저 설정을 확인해주세요)');
             }
-        } catch (e) {
-            setError('저장에 실패했습니다.');
+        } else {
+            setError('유효하지 않은 라이선스 키입니다.');
         }
     };
 
