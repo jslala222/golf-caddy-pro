@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/plugin marketplace add:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git add:*)"
+    ]
+  }
+}
