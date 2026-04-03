@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Caddy Manager Pro — 실행보고서</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111;
+    --bg3: #1a1a1a;
+    --border: #2a2a2a;
+    --text: #e5e5e5;
+    --muted: #6b7280;
+    --emerald: #10b981;
+    --emerald-light: #34d399;
+    --blue: #3b82f6;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --violet: #8b5cf6;
+    --cyan: #06b6d4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 860px; margin: 0 auto; }
+
+  /* 헤더 */
+  .header {
+    background: linear-gradient(135deg, #052e16 0%, #064e3b 50%, #0f172a 100%);
+    border: 1px solid #065f46;
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+  }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.3);
+    color: var(--emerald-light); font-size: .7rem; font-weight: 700;
+    padding: .3rem .8rem; border-radius: 999px; margin-bottom: 1rem;
+    text-transform: uppercase; letter-spacing: .1em;
+  }
+  .header h1 { font-size: 1.8rem; font-weight: 900; color: #fff; }
+  .header p { color: #6ee7b7; font-size: .85rem; margin-top: .5rem; }
+  .meta-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: .75rem; margin-top: 1.5rem;
+  }
+  .meta-item {
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px; padding: .75rem 1rem;
+  }
+  .meta-item .label { font-size: .65rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+  .meta-item .value { font-size: .8rem; color: var(--emerald-light); font-weight: 700; margin-top: 2px; }
+
+  /* 섹션 */
+  .section {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.75rem; margin-bottom: 1.5rem;
+  }
+  .section-title {
+    display: flex; align-items: center; gap: .6rem;
+    font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 1.25rem;
+    padding-bottom: .75rem; border-bottom: 1px solid var(--border);
+  }
+  .badge-done {
+    background: rgba(16,185,129,.15); color: var(--emerald);
+    font-size: .6rem; font-weight: 800; padding: .2rem .6rem;
+    border-radius: 999px; border: 1px solid rgba(16,185,129,.3);
+  }
+  .section-num {
+    background: var(--emerald); color: #fff;
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .7rem; font-weight: 900; flex-shrink: 0;
+  }
+
+  /* 테이블 */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .82rem; }
+  th {
+    background: var(--bg3); color: var(--muted);
+    text-align: left; padding: .6rem .9rem;
+    font-size: .65rem; text-transform: uppercase; letter-spacing: .08em;
+    font-weight: 700; border-bottom: 1px solid var(--border);
+  }
+  td { padding: .6rem .9rem; border-bottom: 1px solid #1f1f1f; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* 코드 */
+  pre, code {
+    background: #0d1117; border: 1px solid #30363d;
+    border-radius: 8px; font-family: 'Consolas', 'Monaco', monospace;
+    font-size: .78rem; color: #c9d1d9;
+  }
+  pre { padding: 1rem 1.25rem; overflow-x: auto; margin: .75rem 0; }
+  code { padding: .15rem .4rem; border-radius: 4px; }
+
+  /* 탭 카드 */
+  .tab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .75rem; margin: .75rem 0; }
+  .tab-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem;
+  }
+  .tab-card .tab-name { font-size: .78rem; font-weight: 800; color: #fff; margin-bottom: .3rem; }
+  .tab-card .tab-desc { font-size: .7rem; color: var(--muted); line-height: 1.5; }
+
+  /* 체크리스트 */
+  .checklist { list-style: none; space: .5rem; }
+  .checklist li {
+    display: flex; align-items: flex-start; gap: .6rem;
+    font-size: .82rem; color: var(--text); padding: .35rem 0;
+    border-bottom: 1px solid #161616;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .check-icon { color: var(--emerald); flex-shrink: 0; margin-top: 2px; }
+
+  /* 파일 트리 */
+  .file-tree { font-family: 'Consolas', monospace; font-size: .78rem; color: #8b949e; }
+  .file-tree .dir { color: #79c0ff; }
+  .file-tree .file-new { color: #3fb950; }
+  .file-tree .file-mod { color: #d29922; }
+
+  /* 태그 */
+  .tag {
+    display: inline-block; font-size: .65rem; font-weight: 700;
+    padding: .15rem .5rem; border-radius: 6px; margin: 2px;
+  }
+  .tag-green { background: rgba(16,185,129,.15); color: var(--emerald); border: 1px solid rgba(16,185,129,.3); }
+  .tag-blue { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.3); }
+  .tag-amber { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.3); }
+  .tag-red { background: rgba(239,68,68,.15); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+  .tag-violet { background: rgba(139,92,246,.15); color: #a78bfa; border: 1px solid rgba(139,92,246,.3); }
+
+  /* 인증 카드 */
+  .auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin: .75rem 0; }
+  .auth-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem;
+  }
+  .auth-card .auth-label { font-size: .65rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+  .auth-card .auth-value { font-size: 1.1rem; font-weight: 900; color: var(--emerald-light); font-family: monospace; letter-spacing: .1em; }
+
+  /* 다음 할 일 */
+  .todo-list { list-style: none; }
+  .todo-list li {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .6rem .75rem; border-bottom: 1px solid #161616;
+    font-size: .82rem;
+  }
+  .todo-list li:last-child { border-bottom: none; }
+  .todo-box {
+    width: 16px; height: 16px; border: 2px solid var(--border);
+    border-radius: 4px; flex-shrink: 0;
+  }
+
+  /* 흐름 화살표 */
+  .flow {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .3rem;
+    font-size: .75rem; margin: .75rem 0;
+  }
+  .flow-step {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: .35rem .75rem; color: #fff; font-weight: 600;
+  }
+  .flow-arrow { color: var(--muted); font-size: 1rem; }
+
+  /* 반응형 */
+  @media (max-width: 600px) {
+    .auth-grid { grid-template-columns: 1fr; }
+    .meta-grid { grid-template-columns: 1fr 1fr; }
+    .header h1 { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 헤더 -->
+  <div class="header">
+    <div class="header-badge">⛳ 에이원PRO</div>
+    <h1>Caddy Manager Pro</h1>
+    <p>실행보고서 — 개발 진행 현황 정리</p>
+    <div class="meta-grid">
+      <div class="meta-item"><div class="label">작성일</div><div class="value">2026년 4월 3일</div></div>
+      <div class="meta-item"><div class="label">프레임워크</div><div class="value">Next.js 14 + TypeScript</div></div>
+      <div class="meta-item"><div class="label">로컬 서버</div><div class="value">http://localhost:4455</div></div>
+      <div class="meta-item"><div class="label">데이터베이스</div><div class="value">Supabase</div></div>
+      <div class="meta-item"><div class="label">스토리지</div><div class="value">Cloudflare R2</div></div>
+      <div class="meta-item"><div class="label">결제</div><div class="value">PortOne V2</div></div>
+    </div>
+  </div>
+
+  <!-- 1회차: PortOne 결제 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">1</div>
+      PortOne V2 결제 연동
+      <span class="badge-done">✓ 완료</span>
+    </div>
+    <table>
+      <tr><th>항목</th><th>내용</th></tr>
+      <tr><td>storeId</td><td><code>store-17246cf6-fccb-48c5-b664-3e15304c7ea1</code></td></tr>
+      <tr><td>channelKey</td><td><code>channel-key-5e47b520-75c7-4963-9e13-adf55d54ede7</code></td></tr>
+      <tr><td>API Secret</td><td><code>.env.local</code> 등록 완료</td></tr>
+      <tr><td>SDK</td><td><code>layout.tsx</code>에 PortOne V2 CDN 스크립트 추가</td></tr>
+    </table>
+    <p style="font-size:.78rem; color:var(--muted); margin:.5rem 0;">요금제</p>
+    <table>
+      <tr><th>플랜</th><th>금액</th><th>기간</th></tr>
+      <tr><td><span class="tag tag-blue">1개월</span></td><td>9,900원</td><td>30일</td></tr>
+      <tr><td><span class="tag tag-green">6개월</span></td><td>55,000원</td><td>180일</td></tr>
+      <tr><td><span class="tag tag-violet">1년</span></td><td>99,000원</td><td>365일</td></tr>
+    </table>
+    <p style="font-size:.78rem; color:var(--muted); margin:.75rem 0 .4rem;">생성/수정 파일</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> <code>src/lib/paymentService.ts</code> — PortOne V2 결제 요청 헬퍼</li>
+      <li><span class="check-icon">✓</span> <code>src/app/subscribe/page.tsx</code> — 고객 결제 페이지</li>
+      <li><span class="check-icon">✓</span> <code>src/app/api/payment/complete/route.ts</code> — 서버사이드 검증 + 코드 발급</li>
+      <li><span class="check-icon">✓</span> <code>src/app/layout.tsx</code> — SDK Script 추가</li>
+    </ul>
+  </div>
+
+  <!-- 2회차: R2 백업 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">2</div>
+      Cloudflare R2 클라우드 백업 구현
+      <span class="badge-done">✓ 완료</span>
+    </div>
+    <table>
+      <tr><th>역할</th><th>동작</th></tr>
+      <tr><td><span class="tag tag-blue">자동 백업</span></td><td>앱 실행 시 하루 1회 자동 R2 전송</td></tr>
+      <tr><td><span class="tag tag-green">수동 백업</span></td><td>"백업 (파일 저장 + 클라우드)" 버튼 → 파일 + R2 동시</td></tr>
+      <tr><td><span class="tag tag-amber">복원</span></td><td><strong>관리자 전용</strong> — 사용자 화면에서 복원 버튼 제거</td></tr>
+    </table>
+    <p style="font-size:.78rem; color:var(--muted); margin:.75rem 0 .4rem;">백업 저장 경로</p>
+    <pre>caddy-manager-pro/backups/{이용권코드}/latest.json
+caddy-manager-pro/backups/{이용권코드}/YYYY-MM-DD.json</pre>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> <code>src/lib/r2Client.ts</code> — uploadBackup / downloadBackup</li>
+      <li><span class="check-icon">✓</span> <code>src/app/api/backup/upload/route.ts</code></li>
+      <li><span class="check-icon">✓</span> <code>src/app/api/backup/download/route.ts</code></li>
+      <li><span class="check-icon">✓</span> <code>src/app/settings/page.tsx</code> — 복원 버튼 제거, 수동 백업 통합</li>
+      <li><span class="check-icon">✓</span> <code>src/components/layout/ClientLayout.tsx</code> — <code>runAutoBackupIfNeeded()</code> 추가</li>
+    </ul>
+  </div>
+
+  <!-- 3회차: 관리자 페이지 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">3</div>
+      관리자 페이지 개편 (6탭)
+      <span class="badge-done">✓ 완료</span>
+    </div>
+    <div class="tab-grid">
+      <div class="tab-card">
+        <div class="tab-name">🔑 코드발급</div>
+        <div class="tab-desc">채널·요금제·일수 선택 후 이용권 코드 즉시 발급</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-name">🔍 이용내역</div>
+        <div class="tab-desc">전체 고객 코드/만료일/상태 조회 (이름·전화번호 검색)</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-name">🔗 딜러관리</div>
+        <div class="tab-desc">딜러 등록/비활성/발급URL/대시보드URL 복사</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-name">🧾 정산관리</div>
+        <div class="tab-desc">딜러별 미정산·정산완료 내역, 일괄 정산 처리</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-name">👥 캐디관리</div>
+        <div class="tab-desc">월간 휴무표 / 예비자 명단 / 기본 순번 관리</div>
+      </div>
+      <div class="tab-card" style="border-color: rgba(16,185,129,.3);">
+        <div class="tab-name" style="color:var(--emerald);">💾 데이터복구</div>
+        <div class="tab-desc">이용권 코드 → R2 백업 조회 → JSON 파일 다운</div>
+      </div>
+    </div>
+    <p style="font-size:.78rem; color:var(--muted); margin:.75rem 0 .4rem;">데이터복구 흐름</p>
+    <div class="flow">
+      <div class="flow-step">이용권 코드 입력</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">백업 조회</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">날짜/크기 표시</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">JSON 다운로드</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">고객 카톡 전달</div>
+    </div>
+    <div class="auth-grid" style="margin-top:.75rem;">
+      <div class="auth-card">
+        <div class="auth-label">관리자 비밀번호</div>
+        <div class="auth-value">0827</div>
+      </div>
+      <div class="auth-card">
+        <div class="auth-label">5회 오류 시</div>
+        <div class="auth-value" style="font-size:.85rem; color: var(--amber);">30분 잠금</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4회차: 딜러 대시보드 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">4</div>
+      딜러 전용 대시보드 구현
+      <span class="badge-done">✓ 완료</span>
+    </div>
+    <table>
+      <tr><th>라우트</th><th>설명</th></tr>
+      <tr><td><code>/dealer/[token]</code></td><td>기존 현장 발급 전용 페이지</td></tr>
+      <tr><td><code>/dealer/[token]/dashboard</code></td><td>딜러 전용 대시보드 <span class="tag tag-green">신규</span></td></tr>
+    </table>
+    <div class="tab-grid" style="margin-top:.75rem;">
+      <div class="tab-card">
+        <div class="tab-name">🔑 코드발급</div>
+        <div class="tab-desc">고객 정보 입력 후 이용권 발급</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-name">📈 내 수익</div>
+        <div class="tab-desc">이번달/누적/미정산/정산완료 + 상세내역</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-name">👤 내 고객</div>
+        <div class="tab-desc">본인 발급 고객 목록 (상태/만료일/연락처)</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-name">🧾 정산요청</div>
+        <div class="tab-desc">미정산 금액 확인 후 관리자에게 요청</div>
+      </div>
+    </div>
+    <p style="font-size:.78rem; color:var(--muted); margin:.75rem 0 .4rem;">PIN 보안</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> 딜러 등록 시 4~8자리 숫자 PIN 설정 (선택)</li>
+      <li><span class="check-icon">✓</span> PIN 없으면 바로 대시보드 진입</li>
+      <li><span class="check-icon">✓</span> PIN 3회 오류 → 30분 잠금</li>
+    </ul>
+    <pre style="margin-top:.75rem;">-- Supabase 컬럼 추가
+ALTER TABLE aone_pro_caddypro_dealers ADD COLUMN IF NOT EXISTS pin TEXT;</pre>
+  </div>
+
+  <!-- 5회차: 폼 개선 + 랜딩 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">5</div>
+      딜러 등록 폼 개선 + 랜딩 페이지
+      <span class="badge-done">✓ 완료</span>
+    </div>
+    <p style="font-size:.85rem; font-weight:700; color:#fff; margin-bottom:.5rem;">딜러 등록 폼</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> 전화번호 자동 하이픈 포맷 (<code>010-0000-0000</code>)</li>
+      <li><span class="check-icon">✓</span> 이메일 입력란 추가</li>
+      <li><span class="check-icon">✓</span> <strong>@</strong> 또는 <strong>.</strong> 누락 시 커스텀 팝업 모달 알림</li>
+    </ul>
+    <pre style="margin:.75rem 0;">-- Supabase 컬럼 추가
+ALTER TABLE aone_pro_caddypro_dealers ADD COLUMN IF NOT EXISTS email TEXT;</pre>
+
+    <p style="font-size:.85rem; font-weight:700; color:#fff; margin:.75rem 0 .5rem;">랜딩 페이지 <code>/landing</code> <span class="tag tag-green">신규</span></p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> 다크 테마 모바일 최적화 세일즈 페이지</li>
+      <li><span class="check-icon">✓</span> 요금제 3가지 선택 UI → <code>/subscribe?plan=xxx</code> 연결</li>
+      <li><span class="check-icon">✓</span> "이용권 코드가 있으신가요?" → 바텀시트 코드 입력</li>
+      <li><span class="check-icon">✓</span> 코드 입력 후 메인 이동 시 LicenseGuard 자동 적용</li>
+      <li><span class="check-icon">✓</span> LicenseGuard 우회 (로그인 없이 접근 가능)</li>
+    </ul>
+  </div>
+
+  <!-- 파일 목록 -->
+  <div class="section">
+    <div class="section-title">
+      📁 주요 파일 목록
+    </div>
+    <pre class="file-tree">src/
+├── app/
+│   ├── <span class="dir">admin/</span>page.tsx              — 관리자 도구 (6탭) <span class="file-mod">[수정]</span>
+│   ├── <span class="dir">dealer/[token]/</span>
+│   │   ├── page.tsx                — 현장 발급 페이지
+│   │   └── <span class="dir">dashboard/</span>page.tsx      — 딜러 대시보드 <span class="file-new">[신규]</span>
+│   ├── <span class="dir">landing/</span>page.tsx            — 랜딩/세일즈 페이지 <span class="file-new">[신규]</span>
+│   ├── <span class="dir">subscribe/</span>page.tsx          — 결제 페이지 <span class="file-new">[신규]</span>
+│   ├── <span class="dir">settings/</span>page.tsx           — 설정 + 수동 백업 <span class="file-mod">[수정]</span>
+│   └── <span class="dir">api/</span>
+│       ├── <span class="dir">backup/upload/</span>route.ts   <span class="file-new">[신규]</span>
+│       ├── <span class="dir">backup/download/</span>route.ts <span class="file-new">[신규]</span>
+│       └── <span class="dir">payment/complete/</span>route.ts <span class="file-new">[신규]</span>
+├── <span class="dir">lib/</span>
+│   ├── paymentService.ts           <span class="file-new">[신규]</span>
+│   ├── r2Client.ts                 <span class="file-new">[신규]</span>
+│   ├── licenseUtils.ts
+│   └── supabaseClient.ts
+└── <span class="dir">components/layout/</span>
+    ├── ClientLayout.tsx            — 자동백업 + 라우트 제어 <span class="file-mod">[수정]</span>
+    └── LicenseGuard.tsx            — 라이선스 인증 + pending_code <span class="file-mod">[수정]</span></pre>
+  </div>
+
+  <!-- 환경변수 -->
+  <div class="section">
+    <div class="section-title">🔧 환경변수 (.env.local)</div>
+    <pre>NEXT_PUBLIC_SUPABASE_URL=https://lajjbrrysvkaxzrchanp.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+NEXT_PUBLIC_PORTONE_STORE_ID=store-17246cf6-fccb-48c5-b664-3e15304c7ea1
+NEXT_PUBLIC_PORTONE_CHANNEL_KEY=channel-key-5e47b520-75c7-4963-9e13-adf55d54ede7
+PORTONE_SECRET=DYAyDO6HPMRP0Bhvpp3oTBVJs3XSKdAoHKDDlA5BXyk...
+R2_ACCOUNT_ID=8e9d3fd67070c31a6bc9bc4cf4127735
+R2_ACCESS_KEY_ID=d8e656763146eda517113339694cc10c
+R2_SECRET_ACCESS_KEY=df1798c437ed8976782756a03d153c60...
+R2_BUCKET_NAME=aonepro-db
+R2_ENDPOINT=https://8e9d3fd67070c31a6bc9bc4cf4127735.r2.cloudflarestorage.com
+NEXT_PUBLIC_R2_PUBLIC_URL=https://pub-7c8896c368b146c29f6e124dcfb2b7f5.r2.dev</pre>
+  </div>
+
+  <!-- 인증 정보 -->
+  <div class="section">
+    <div class="section-title">🔐 인증 정보</div>
+    <div class="auth-grid">
+      <div class="auth-card">
+        <div class="auth-label">관리자 비밀번호</div>
+        <div class="auth-value">0827</div>
+      </div>
+      <div class="auth-card">
+        <div class="auth-label">마스터코드</div>
+        <div class="auth-value">0827</div>
+      </div>
+      <div class="auth-card">
+        <div class="auth-label">이용권 코드 형식</div>
+        <div class="auth-value" style="font-size:.9rem; letter-spacing:.2em;">SM-XXX-XXX</div>
+      </div>
+      <div class="auth-card">
+        <div class="auth-label">DB 테이블 접두사</div>
+        <div class="auth-value" style="font-size:.75rem;">aone_pro_caddypro_</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 다음 작업 -->
+  <div class="section">
+    <div class="section-title">📋 다음 작업 후보</div>
+    <ul class="todo-list">
+      <li><div class="todo-box"></div> Vercel 배포</li>
+      <li><div class="todo-box"></div> 랜딩 페이지 도메인 연결</li>
+      <li><div class="todo-box"></div> 딜러 정산 요청 알림 (카카오 알림톡 or 이메일)</li>
+      <li><div class="todo-box"></div> 이용권 만료 전 자동 알림</li>
+      <li><div class="todo-box"></div> 구독 갱신 페이지 (만료 고객 재결제)</li>
+    </ul>
+  </div>
+
+  <div style="text-align:center; color:var(--muted); font-size:.7rem; padding:2rem 0;">
+    © 2026 에이원PRO · Caddy Manager Pro
+  </div>
+
+</div>
+</body>
+</html>

@@ -6,9 +6,39 @@ import { LicenseGuard } from '@/components/layout/LicenseGuard';
 import { PortGuard } from '@/components/PortGuard';
 import { ExternalLink, X } from 'lucide-react';
 
+/** 하루 1회 R2 자동 백업 (백그라운드, 조용히 실행) */
+async function runAutoBackupIfNeeded() {
+    try {
+        const licenseCode = localStorage.getItem('caddy_license_key');
+        if (!licenseCode) return;
+
+        const today = new Date().toISOString().slice(0, 10);
+        const lastBackup = localStorage.getItem('caddy_last_auto_backup');
+        if (lastBackup === today) return; // 오늘 이미 백업함
+
+        const raw = localStorage.getItem('caddy-manager-storage');
+        if (!raw) return;
+
+        const res = await fetch('/api/backup/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ licenseCode, data: JSON.parse(raw) }),
+        });
+        const result = await res.json();
+        if (result.success) {
+            localStorage.setItem('caddy_last_auto_backup', today);
+        }
+    } catch {
+        // 자동 백업 실패는 조용히 무시
+    }
+}
+
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const isAdminPage = pathname?.startsWith('/admin');
+    const isDealerPage = pathname?.startsWith('/dealer');
+    const isSubscribePage = pathname?.startsWith('/subscribe');
+    const isLandingPage = pathname?.startsWith('/landing');
     const [isKakaotalk, setIsKakaotalk] = useState(false);
     const [showBanner, setShowBanner] = useState(true);
 
@@ -28,6 +58,9 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                 window.addEventListener('load', register);
             }
         }
+
+        // 하루 1회 R2 자동 백업 (앱 열릴 때 백그라운드 실행)
+        runAutoBackupIfNeeded();
     }, [pathname]);
 
     return (
@@ -55,7 +88,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                     </div>
                 </div>
             )}
-            {isAdminPage ? (
+            {isAdminPage || isDealerPage || isSubscribePage || isLandingPage ? (
                 children
             ) : (
                 <LicenseGuard>

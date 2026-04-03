@@ -3,12 +3,14 @@
   "version": "0.1.5.130",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next build && next start -p 4455",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1023.0",
+    "@supabase/supabase-js": "^2.101.1",
     "autoprefixer": "^10.4.24",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",

@@ -4,13 +4,17 @@
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save } from 'lucide-react';
+import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
 
 export default function SettingsPage() {
     const { exportData, importData, resetData, feeSettings, updateFeeSettings } = useAppStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // 클라우드 백업 상태
+    const [cloudStatus, setCloudStatus] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
+    const [cloudMsg, setCloudMsg] = useState('');
 
     // Local state for fee settings
     const [localSettings, setLocalSettings] = useState<{
@@ -37,12 +41,68 @@ export default function SettingsPage() {
         alert('기본 캐디피 설정이 저장되었습니다!');
     };
 
+    // ── R2 클라우드 업로드 (내부 공통 함수) ────────────────
+    const uploadToR2 = async (raw: string): Promise<boolean> => {
+        const licenseCode = localStorage.getItem('caddy_license_key');
+        if (!licenseCode) return false;
+        try {
+            const res = await fetch('/api/backup/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ licenseCode, data: JSON.parse(raw) }),
+            });
+            const result = await res.json();
+            if (result.success) {
+                localStorage.setItem('caddy_last_auto_backup', new Date().toISOString().slice(0, 10));
+            }
+            return result.success ?? false;
+        } catch {
+            return false;
+        }
+    };
+
+    // ── 수동 백업: 파일 저장 + R2 동시 전송 ─────────────
+    const handleCloudUpload = async () => {
+        const licenseCode = localStorage.getItem('caddy_license_key');
+        if (!licenseCode) {
+            setCloudMsg('이용권 코드가 없습니다. 먼저 로그인해주세요.');
+            setCloudStatus('error');
+            return;
+        }
+        const raw = exportData();
+        setCloudStatus('uploading');
+        setCloudMsg('');
+
+        // 1) 파일 다운로드 (스마트폰 저장)
+        const blob = new Blob([raw], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const date = new Date().toISOString().split('T')[0];
+        link.href = url;
+        link.download = `caddy-backup-${date}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        // 2) R2 업로드 동시 실행
+        const ok = await uploadToR2(raw);
+        if (ok) {
+            setCloudStatus('done');
+            setCloudMsg('파일 저장 + 클라우드 백업 완료!');
+        } else {
+            setCloudStatus('error');
+            setCloudMsg('파일은 저장되었으나 클라우드 업로드에 실패했습니다.');
+        }
+        setTimeout(() => setCloudStatus('idle'), 4000);
+    };
+
     const handleExport = () => {
+        // 파일만 저장 (기존 파일 내보내기 버튼 유지)
         const jsonString = exportData();
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-
         const date = new Date().toISOString().split('T')[0];
         link.href = url;
         link.download = `caddy-backup-${date}.json`;
@@ -184,24 +244,61 @@ export default function SettingsPage() {
                     <p className="font-bold mb-1">📢 필독하세요!</p>
                     <p>
                         이 앱은 서버가 없습니다. <strong>폰을 잃어버리면 데이터도 사라집니다.</strong><br />
-                        중요한 데이터는 주기적으로 [백업 저장] 버튼을 눌러 파일로 보관하세요.
+                        [백업] 버튼을 누르면 <strong>파일 + 클라우드 동시 저장</strong>됩니다.<br />
+                        매일 앱 실행 시 클라우드에 <strong>자동 백업</strong>도 진행됩니다.
+                    </p>
+                </div>
+
+                {/* 클라우드 상태 메시지 */}
+                {cloudStatus !== 'idle' && (
+                    <div className={`text-sm p-3 rounded-xl font-semibold flex items-center gap-2 ${
+                        cloudStatus === 'error' ? 'bg-red-50 text-red-600 border border-red-200' :
+                        cloudStatus === 'done'  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                        'bg-blue-50 text-blue-600 border border-blue-200'
+                    }`}>
+                        {cloudStatus === 'uploading' && (
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        )}
+                        {cloudStatus === 'uploading' ? '클라우드에 백업 중…' : cloudMsg}
+                    </div>
+                )}
+
+                {/* 클라우드 자동 백업 안내 */}
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
+                    <p className="font-bold mb-1">☁️ 클라우드 백업이란?</p>
+                    <p className="leading-relaxed">
+                        데이터를 서버에 안전하게 저장합니다.<br />
+                        <strong>폰 분실·교체·초기화</strong> 시 고객센터에 연락하시면
+                        <strong> 복구 서비스</strong>를 받으실 수 있습니다.
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
+
+                    {/* 클라우드 백업 저장만 노출 (복원은 관리자만) */}
                     <button
-                        onClick={handleExport}
-                        className="flex items-center justify-center w-full py-4 bg-white border-2 border-emerald-500 text-emerald-600 rounded-xl font-bold hover:bg-emerald-50 transition shadow-sm"
+                        onClick={handleCloudUpload}
+                        disabled={cloudStatus === 'uploading'}
+                        className="flex items-center justify-center w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition shadow-sm disabled:opacity-50"
                     >
-                        <Download className="mr-2" /> 백업 파일 저장 (내보내기)
+                        <Cloud className="mr-2" size={20} /> 백업 (파일 저장 + 클라우드)
                     </button>
 
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center justify-center w-full py-4 bg-stone-100 text-stone-600 rounded-xl font-bold hover:bg-stone-200 transition"
-                    >
-                        <Upload className="mr-2" /> 백업 파일 불러오기 (복구)
-                    </button>
+                    <div className="border-t border-stone-200 pt-3 space-y-3">
+                        <button
+                            onClick={handleExport}
+                            className="flex items-center justify-center w-full py-4 bg-white border-2 border-emerald-500 text-emerald-600 rounded-xl font-bold hover:bg-emerald-50 transition shadow-sm"
+                        >
+                            <Download className="mr-2" /> 백업 파일 저장 (내보내기)
+                        </button>
+
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex items-center justify-center w-full py-4 bg-stone-100 text-stone-600 rounded-xl font-bold hover:bg-stone-200 transition"
+                        >
+                            <Upload className="mr-2" /> 백업 파일 불러오기 (복구)
+                        </button>
+                    </div>
                     <input
                         type="file"
                         accept=".json"

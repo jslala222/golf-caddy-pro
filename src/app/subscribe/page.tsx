@@ -1,0 +1,271 @@
+'use client';
+
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { CheckCircle2, Copy, Check, CreditCard, ChevronRight } from 'lucide-react';
+import { requestCaddyPayment, PORTONE_PRODUCTS } from '@/lib/paymentService';
+import type { PortOneProductKey } from '@/lib/paymentService';
+
+// ── 요금제 카드 레이블 ────────────────────────────────────────
+const PLAN_LABELS: Record<PortOneProductKey, { period: string; badge?: string; color: string }> = {
+  month:    { period: '1개월',  color: 'border-blue-400 bg-blue-50'    },
+  '6month': { period: '6개월',  badge: '인기',    color: 'border-emerald-400 bg-emerald-50' },
+  year:     { period: '1년',    badge: '최저가',  color: 'border-amber-400 bg-amber-50'    },
+};
+
+function formatKRW(amount: number) {
+  return amount.toLocaleString('ko-KR') + '원';
+}
+
+// ── 결제 완료 처리 내부 컴포넌트 (useSearchParams 분리) ───────
+function SubscribeInner() {
+  const searchParams = useSearchParams();
+
+  const [selectedPlan, setSelectedPlan] = useState<PortOneProductKey>('month');
+  const [name, setName]   = useState('');
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [issuedCode, setIssuedCode] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  // ── 모바일 리다이렉트 복구 ──────────────────────────────────
+  useEffect(() => {
+    const status    = searchParams.get('payment');
+    const paymentId = searchParams.get('paymentId');
+    if (status !== 'done' || !paymentId) return;
+
+    const raw = sessionStorage.getItem('caddy_payment_info');
+    if (!raw) return;
+
+    let info: { name: string; phone: string; planKey: PortOneProductKey; paymentId: string };
+    try { info = JSON.parse(raw); } catch { return; }
+
+    setLoading(true);
+    fetch('/api/payment/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentId, name: info.name, phone: info.phone, planKey: info.planKey }),
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res.code) {
+          sessionStorage.removeItem('caddy_payment_info');
+          setIssuedCode(res.code);
+        } else {
+          setError(res.error ?? '코드 발급에 실패했습니다.');
+        }
+      })
+      .catch(() => setError('네트워크 오류가 발생했습니다.'))
+      .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── 전화번호 자동 포맷 ──────────────────────────────────────
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+    let formatted = digits;
+    if (digits.length > 7) formatted = `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7)}`;
+    else if (digits.length > 3) formatted = `${digits.slice(0,3)}-${digits.slice(3)}`;
+    setPhone(formatted);
+  };
+
+  // ── 결제 시작 ──────────────────────────────────────────────
+  const handlePay = async () => {
+    if (!name.trim()) { setError('이름을 입력해주세요.'); return; }
+    if (phone.replace(/\D/g, '').length < 10) { setError('연락처를 입력해주세요. (예: 010-0000-0000)'); return; }
+    setError('');
+    setLoading(true);
+
+    const result = await requestCaddyPayment({ name: name.trim(), phone: phone.trim(), planKey: selectedPlan });
+
+    if (!result.success) {
+      setError(result.error ?? '결제 처리 중 오류가 발생했습니다.');
+      setLoading(false);
+      return;
+    }
+
+    // PC 결제: paymentId 받아서 완료 API 호출
+    if (result.paymentId) {
+      const res = await fetch('/api/payment/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId: result.paymentId, name: name.trim(), phone: phone.trim(), planKey: selectedPlan }),
+      });
+      const data = await res.json();
+      if (data.code) {
+        setIssuedCode(data.code);
+      } else {
+        setError(data.error ?? '코드 발급에 실패했습니다.');
+      }
+    }
+
+    setLoading(false);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(issuedCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  };
+
+  // ── 로딩 화면 ──────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-stone-500 text-sm">결제 처리 중…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 발급 완료 화면 ─────────────────────────────────────────
+  if (issuedCode) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-6">
+        <div className="w-full max-w-sm space-y-6 text-center">
+          <CheckCircle2 size={72} className="mx-auto text-emerald-500" />
+          <div>
+            <h1 className="text-2xl font-black text-stone-900">결제 완료!</h1>
+            <p className="text-stone-500 text-sm mt-1">이용권이 발급되었습니다.</p>
+          </div>
+
+          {/* 코드 카드 */}
+          <div className="bg-stone-50 border border-stone-200 rounded-3xl p-8 space-y-3 relative">
+            <p className="text-stone-400 text-xs font-semibold uppercase tracking-wider">이용권 코드</p>
+            <div className="text-4xl font-black tracking-[0.15em] font-mono text-stone-900">
+              {issuedCode}
+            </div>
+            <p className="text-stone-400 text-xs">앱에서 이 코드를 입력하면 즉시 활성화됩니다</p>
+          </div>
+
+          <button
+            onClick={handleCopy}
+            className={`w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
+              copied ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-500'
+            }`}
+          >
+            {copied ? <Check size={20} /> : <Copy size={20} />}
+            {copied ? '복사 완료!' : '코드 복사하기'}
+          </button>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-700 text-left leading-relaxed">
+            ✅ 이 코드를 안전한 곳에 저장해두세요.<br />
+            ✅ 기기 변경 시 코드만 입력하면 복구됩니다.<br />
+            ✅ 코드 분실 시 고객센터에 문의해주세요.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 메인 구매 폼 ────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-white pb-24">
+      {/* 헤더 */}
+      <div className="bg-stone-900 px-6 pt-12 pb-8 text-white">
+        <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Caddy Manager Pro</p>
+        <h1 className="text-2xl font-black">이용권 구매</h1>
+        <p className="text-stone-400 text-sm mt-1">결제 즉시 코드가 발급됩니다</p>
+      </div>
+
+      <div className="p-6 space-y-6">
+
+        {/* 요금제 선택 */}
+        <section className="space-y-3">
+          <h2 className="font-bold text-stone-700 text-sm">요금제 선택</h2>
+          {(Object.entries(PORTONE_PRODUCTS) as [PortOneProductKey, typeof PORTONE_PRODUCTS[PortOneProductKey]][]).map(([key, product]) => {
+            const label = PLAN_LABELS[key];
+            const isSelected = selectedPlan === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setSelectedPlan(key)}
+                className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
+                  isSelected
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-stone-200 bg-white hover:border-stone-300'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-stone-300'}`}>
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-stone-900">{label.period}</span>
+                      {label.badge && (
+                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                          {label.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-stone-400 text-xs">{product.days}일 이용</p>
+                  </div>
+                </div>
+                <span className="font-black text-stone-900 text-lg">{formatKRW(product.amount)}</span>
+              </button>
+            );
+          })}
+        </section>
+
+        {/* 구매자 정보 */}
+        <section className="space-y-3">
+          <h2 className="font-bold text-stone-700 text-sm">구매자 정보</h2>
+          <input
+            type="text"
+            placeholder="이름"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:border-blue-400 text-stone-900 placeholder-stone-400"
+          />
+          <input
+            type="tel"
+            placeholder="연락처 (예: 010-0000-0000)"
+            value={phone}
+            onChange={handlePhoneChange}
+            className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:border-blue-400 text-stone-900 placeholder-stone-400"
+          />
+        </section>
+
+        {/* 오류 메시지 */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-xl">
+            {error}
+          </div>
+        )}
+
+        {/* 결제 버튼 */}
+        <button
+          onClick={handlePay}
+          disabled={loading}
+          className="w-full py-4 bg-blue-600 text-white font-black text-lg rounded-2xl hover:bg-blue-500 transition flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          <CreditCard size={20} />
+          {formatKRW(PORTONE_PRODUCTS[selectedPlan].amount)} 결제하기
+          <ChevronRight size={18} />
+        </button>
+
+        <p className="text-center text-stone-400 text-xs leading-relaxed">
+          결제 즉시 이용권 코드가 발급됩니다.<br />
+          카드 · 간편결제 모두 지원됩니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Suspense 래퍼 (useSearchParams 요구사항) ──────────────────
+export default function SubscribePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <SubscribeInner />
+    </Suspense>
+  );
+}

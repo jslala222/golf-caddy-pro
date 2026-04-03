@@ -1,0 +1,21 @@
+Cloudflare R2 
+
+
+
+정보 항목	실제 값 (Value)	용도 및 비고
+Bucket Name	aonepro-db	사진이 저장될 창고 이름
+Account ID	8e9d3fd67070c31a6bc9bc4cf4127735	내 계정 고유 번호 (API 주소 생성용)
+Access Key ID	d8e656763146eda517113339694cc10c	S3 통신용 아이디 (코딩 필수)
+Secret Access Key	df1798c437ed8976782756a03d153c602210a4f522c297b45a2d11b68f417d8a	S3 통신용 비밀번호 (절대 노출 금지)
+S3 Endpoint	https://8e9d3fd67070c31a6bc9bc4cf4127735.r2.cloudflarestorage.com	프로그램이 접속할 실제 주소
+Token Value	cfat_LXmCn5VONPGlXQUkYRoZd0M5XXryiveDJJLCX5Tm94f855a1	클라우드플레어 자체 관리용 토큰
+		
+		
+		
+# Cloudflare R2 설정 (아까 복사한 값들을 입력하세요)		
+R2_ACCOUNT_ID=8e9d3fd67070c31a6bc9bc4cf4127735		
+R2_ACCESS_KEY_ID=d8e656763146eda517113339694cc10c		
+R2_SECRET_ACCESS_KEY=df1798c437ed8976782756a03d153c602210a4f522c297b45a2d11b68f417d8a		
+R2_BUCKET_NAME=aonepro-db		
+# 버킷 설정(Settings) -> Public Access에서 확인한 주소		
+R2_PUBLIC_URL=https://pub-7c8896c368b146c29f6e124dcfb2b7f5.r2.dev		

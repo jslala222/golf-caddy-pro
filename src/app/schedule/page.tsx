@@ -5,7 +5,9 @@ import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAppStore, type ScheduleType, type Schedule } from '@/lib/store';
 import { Calendar } from '@/components/Calendar';
-import { Calendar as CalendarIcon, Clock, Plus, Trash2, X, Edit, ArrowLeft, MoreHorizontal } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Trash2, X, Edit, ArrowLeft, MoreHorizontal, Search, User } from 'lucide-react';
+import { useCaddyStore } from '@/store/useCaddyStore';
+import { findCaddyTurn } from '@/lib/caddyLogic';
 import { clsx } from 'clsx';
 
 function ScheduleContent() {
@@ -38,6 +40,13 @@ function ScheduleContent() {
     const [expenseAmount, setExpenseAmount] = useState('');
     const [expenseMemo, setExpenseMemo] = useState('');
     const [expenseCategory, setExpenseCategory] = useState<'food' | 'transport' | 'gear' | 'other'>('food');
+
+    // Caddy Logic State
+    const { holidays, reserves, caddyMembers } = useCaddyStore();
+    const [searchName, setSearchName] = useState('');
+    const [startTime, setStartTime] = useState('06:00');
+    const [myResult, setMyResult] = useState<any>(null);
+    const [isSearching, setIsSearching] = useState(false);
 
     // Helpers
     const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')); // 00 ~ 23
@@ -246,6 +255,81 @@ function ScheduleContent() {
             <div className="mb-6">
                 <Calendar schedules={schedules} selectedDate={date} />
             </div>
+
+            {/* My Turn Checker - 미구현으로 임시 숨김 */}
+            {false && (
+            <div className="mb-6 bg-emerald-600 text-white rounded-3xl p-5 shadow-lg">
+                <div className="flex items-center gap-2 mb-4">
+                    <Search className="w-5 h-5 text-emerald-200" />
+                    <h3 className="font-bold">오늘의 내 순번 확인</h3>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                        <div className="flex-1">
+                            <label className="block text-[10px] text-emerald-200 mb-1 ml-1 font-bold">내 이름</label>
+                            <input
+                                type="text"
+                                value={searchName}
+                                onChange={(e) => setSearchName(e.target.value)}
+                                placeholder="이름 입력"
+                                className="w-full p-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder:text-white/50 font-bold outline-none focus:bg-white/30"
+                            />
+                        </div>
+                        <div className="w-24">
+                            <label className="block text-[10px] text-emerald-200 mb-1 ml-1 font-bold">첫 팀 시간</label>
+                            <input
+                                type="time"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.target.value)}
+                                className="w-full p-3 rounded-xl bg-white/20 border border-white/30 text-white font-bold outline-none focus:bg-white/30"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => {
+                            const dateStr = date;
+                            const res = findCaddyTurn(
+                                searchName,
+                                caddyMembers,
+                                holidays[dateStr] || [],
+                                reserves[dateStr] || [],
+                                startTime
+                            );
+                            setMyResult(res);
+                            setIsSearching(true);
+                        }}
+                        className="w-full py-4 bg-white text-emerald-600 rounded-2xl font-black shadow-md active:scale-95 transition"
+                    >
+                        실시간 순번/시간 계산하기
+                    </button>
+                </div>
+
+                {isSearching && (
+                    <div className="mt-4 p-4 bg-white/10 rounded-2xl animate-in fade-in slide-in-from-top-2">
+                        {myResult ? (
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <p className="text-xs text-emerald-200 mb-1">예상 순번 & 시간</p>
+                                    <p className="text-xl font-black">
+                                        {myResult.sequence}번 <span className="text-sm font-normal text-white/70 ml-1">({myResult.course}코스)</span>
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-emerald-200 mb-1">티오프</p>
+                                    <p className="text-3xl font-black font-mono">{myResult.time}</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-center text-sm font-bold py-2">
+                                😅 명단에 없거나 오늘은 휴무이신 것 같네요.
+                            </p>
+                        )}
+                    </div>
+                )}
+            </div>
+            )}
 
             {/* Inline Detail / Edit Section */}
             {/* Always show this section if a date is selected, or maybe just show placeholder if not? */}

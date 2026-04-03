@@ -12,9 +12,9 @@ export function PortGuard({ children }: { children: React.ReactNode }) {
             const port = window.location.port;
             setCurrentPort(port);
 
-            // Allow 3000 or empty (production usually has no port or 80/443, but for this local app we enforce 3000)
-            // We strictly enforce 3000 for local development as requested.
-            if (port && port !== '3000') {
+            // Allow 4455 or empty (production usually has no port or 80/443, but for this local app we enforce 4455)
+            // We strictly enforce 4455 for local development as requested.
+            if (port && port !== '4455') {
                 setIsSafe(false);
             }
         }
@@ -31,13 +31,13 @@ export function PortGuard({ children }: { children: React.ReactNode }) {
                     <p className="text-stone-600 font-medium mb-6">
                         현재 <strong>{currentPort}번 포트</strong>로 접속하셨습니다.<br />
                         데이터 안전을 위해<br />
-                        오직 <strong>3000번</strong>만 허용됩니다.
+                        오직 <strong>4455번</strong>만 허용됩니다.
                     </p>
                     <a
-                        href="http://localhost:3000"
+                        href="http://localhost:4455"
                         className="block w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-200"
                     >
-                        안전한 3000번으로 이동하기 👉
+                        안전한 4455번으로 이동하기 👉
                     </a>
                 </div>
             </div>

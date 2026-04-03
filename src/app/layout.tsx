@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_KR } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { ClientLayout } from "@/components/layout/ClientLayout";
@@ -34,6 +35,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`${notoSansKr.className} bg-stone-100 text-stone-900 overflow-x-hidden`}>
+        <Script src="https://cdn.portone.io/v2/browser-sdk.js" strategy="beforeInteractive" />
         <div className="flex justify-center min-h-screen bg-stone-100">
           <div className="w-full max-w-[480px] bg-white relative flex flex-col min-h-screen shadow-2xl">
             <main className="flex-1 pb-20">
