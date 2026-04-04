@@ -681,7 +681,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                 <Receipt size={16} /> 수금 방식
                             </div>
                             <div className="grid grid-cols-1 gap-2">
-                                <button onClick={() => setPayMethod('cash')}
+                                <button onClick={() => { setPayMethod('cash'); setPaymentLink(''); }}
                                     className={`p-3.5 rounded-2xl border text-left transition ${payMethod === 'cash' ? 'border-amber-500 bg-amber-900/20' : 'border-stone-700 bg-stone-800'}`}>
                                     <div className="flex items-center gap-2">
                                         <span className="text-lg">💵</span>
@@ -691,7 +691,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                         </div>
                                     </div>
                                 </button>
-                                <button onClick={() => setPayMethod('virtual_account')}
+                                <button onClick={() => { setPayMethod('virtual_account'); setPaymentLink(''); }}
                                     className={`p-3.5 rounded-2xl border text-left transition ${payMethod === 'virtual_account' ? 'border-blue-500 bg-blue-900/20' : 'border-stone-700 bg-stone-800'}`}>
                                     <div className="flex items-center gap-2">
                                         <span className="text-lg">🏦</span>
@@ -701,7 +701,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                         </div>
                                     </div>
                                 </button>
-                                <button onClick={() => setPayMethod('transfer')}
+                                <button onClick={() => { setPayMethod('transfer'); setPaymentLink(''); }}
                                     className={`p-3.5 rounded-2xl border text-left transition ${payMethod === 'transfer' ? 'border-purple-500 bg-purple-900/20' : 'border-stone-700 bg-stone-800'}`}>
                                     <div className="flex items-center gap-2">
                                         <span className="text-lg">📲</span>
