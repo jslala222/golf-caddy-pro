@@ -224,7 +224,14 @@ export default function LandingPage() {
             {/* 시작하기 버튼 */}
             <div className="px-5 mb-8">
                 <button
-                    onClick={() => openSheet('start')}
+                    onClick={() => {
+                        const cached = localStorage.getItem('caddy_license_key');
+                        if (cached) {
+                            router.replace('/home');
+                            return;
+                        }
+                        openSheet('start');
+                    }}
                     className="w-full py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg transition active:scale-95"
                 >
                     🚀 시작하기
