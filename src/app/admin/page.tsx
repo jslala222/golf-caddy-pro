@@ -889,18 +889,18 @@ export default function AdminPage() {
                         </div>
 
                         {/* 검색 모드 토글 */}
-                        <div className="flex gap-1.5 bg-stone-100 p-1 rounded-xl">
+                        <div className="flex gap-2">
                             <button
                                 onClick={() => { setRestoreSearchMode('code'); setRestoreSearchResults([]); }}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${restoreSearchMode === 'code' ? 'bg-white text-blue-600 shadow-sm' : 'text-stone-500'}`}
+                                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border-2 transition ${restoreSearchMode === 'code' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-stone-500 border-stone-200 hover:border-blue-300'}`}
                             >
-                                이용권 코드로 찾기
+                                🔑 이용권 코드로 찾기
                             </button>
                             <button
                                 onClick={() => { setRestoreSearchMode('phone'); setRestoreStatus('idle'); setRestoreData(null); }}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${restoreSearchMode === 'phone' ? 'bg-white text-blue-600 shadow-sm' : 'text-stone-500'}`}
+                                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border-2 transition ${restoreSearchMode === 'phone' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-stone-500 border-stone-200 hover:border-blue-300'}`}
                             >
-                                이름 / 전화번호로 찾기
+                                🔍 이름·전화로 찾기
                             </button>
                         </div>
 
