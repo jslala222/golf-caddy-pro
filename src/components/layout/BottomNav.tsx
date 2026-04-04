@@ -9,8 +9,9 @@ import { clsx } from 'clsx';
 export function BottomNav() {
     const pathname = usePathname();
 
-    // 딜러 페이지에서는 하단 네비게이션 숨김
-    if (pathname?.startsWith('/dealer')) return null;
+    // 로그인 전/별도 UI 페이지에서는 하단 네비게이션 숨김
+    const hideNav = ['/dealer', '/landing', '/admin', '/subscribe', '/dealer-login'];
+    if (hideNav.some(p => pathname?.startsWith(p))) return null;
 
     const navItems = [
         { href: '/', label: '홈', icon: Home, exact: true },

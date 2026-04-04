@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -54,7 +54,10 @@ export default function LandingPage() {
     // 코드 입력 후 활성화
     const handleCodeActivate = async () => {
         const code = codeInput.trim().toUpperCase();
-        if (code.length < 5) return;
+        if (code.length < 5) {
+            setErrorMsg('이용권 코드 형식이 올바르지 않습니다.\n코드를 정확히 입력해 주세요. (예: SM-XXX-XXX)');
+            return;
+        }
         setCodeActivating(true);
         setCodeError('');
         try {
@@ -64,9 +67,11 @@ export default function LandingPage() {
                 if (result.expiresAt) localStorage.setItem('caddy_expires_at', result.expiresAt);
                 router.replace('/');
             } else if (result.reason === 'expired') {
-                setCodeError('이용권이 만료되었습니다. 아래 "기존 회원 찾기"에서 갱신하세요.');
+                setErrorMsg('이용권이 만료된 코드입니다.\n"기존 회원 찾기"에서 갱신하세요.');
+                setCodeError('');
             } else {
-                setCodeError('유효하지 않은 코드입니다. 다시 확인해 주세요.');
+                setErrorMsg('존재하지 않는 이용권 코드입니다.\n코드를 다시 확인해 주세요.');
+                setCodeError('');
             }
         } catch {
             // 오프라인: 로컬 검증만으로 통과
@@ -79,14 +84,29 @@ export default function LandingPage() {
 
     // 기존 회원 검색
     const handleMemberSearch = async () => {
-        const hasInput = searchName.trim() || searchPhone.replace(/\D/g,'').length >= 9 || searchCode.trim().length >= 5;
-        if (!hasInput) return;
+        const digits = searchPhone.replace(/\D/g,'');
+        const hasPhone = digits.length >= 9;
+        const hasName = searchName.trim().length >= 1;
+
+        // 입력 검증 — 모달로 안내
+        if (!hasName && !hasPhone) {
+            setErrorMsg('이름 또는 전화번호를 입력해주세요.');
+            return;
+        }
+        if (hasName && !hasPhone) {
+            setErrorMsg('전화번호도 함께 입력해주세요.\n이름만으로는 본인 확인이 어렵습니다.');
+            return;
+        }
+        if (!hasName && digits.length > 0 && digits.length < 9) {
+            setErrorMsg('전화번호를 정확히 입력해주세요.\n(예: 010-1234-5678)');
+            return;
+        }
+
         setSearching(true);
         setSearchResults(null);
         const results = await searchLicenseByNamePhone({
-            name: searchName.trim() || undefined,
-            phone: searchPhone || undefined,
-            code: searchCode.trim() || undefined,
+            name: hasName ? searchName.trim() : undefined,
+            phone: hasPhone ? searchPhone : undefined,
         });
         setSearchResults(results);
         setSearching(false);
@@ -95,7 +115,7 @@ export default function LandingPage() {
     // 검색결과 선택 → 유효 코드로 활성화
     const handleActivateResult = async (r: MemberSearchResult) => {
         if (r.isExpired) {
-            alert(`이용권(${r.code})이 만료되었습니다.\n온라인 갱신 또는 딜러를 통해 갱신해 주세요.`);
+            setErrorMsg(`이용권(${r.code})이 만료되었습니다.\n온라인 갱신 또는 담당 딜러를 통해 갱신해 주세요.`);
             return;
         }
         setActivatingId(r.id);
@@ -106,7 +126,7 @@ export default function LandingPage() {
                 if (result.expiresAt) localStorage.setItem('caddy_expires_at', result.expiresAt);
                 router.replace('/');
             } else {
-                alert('이용권 확인에 실패했습니다. 관리자에게 문의하세요.');
+                setErrorMsg('이용권 확인에 실패했습니다.\n관리자에게 문의하세요.');
             }
         } catch {
             localStorage.setItem('caddy_license_key', r.code);
@@ -116,11 +136,37 @@ export default function LandingPage() {
         }
     };
 
-    const closeSheet = () => {
-        setSheet('none');
-        setCodeError('');
-        setSearchResults(null);
+    // 에러 모달
+    const [errorMsg, setErrorMsg] = useState('');
+
+    // sheet를 열 때 history entry 추가
+    const openSheet = (s: Exclude<Sheet, 'none'>) => {
+        window.history.pushState({ sheetState: s }, '');
+        setSheet(s);
     };
+
+    const closeSheet = () => {
+        window.history.back();
+    };
+
+    // 코드/회원 화면에서 뒤로가기 → start로
+    const goBack = () => {
+        window.history.back();
+    };
+
+    // 뒤로가기 처리 (capture:true → Next.js Router보다 먼저 실행)
+    useEffect(() => {
+        window.history.replaceState({ sheetState: 'none' }, '');
+        const handlePop = (e: PopStateEvent) => {
+            const target = (e.state?.sheetState ?? 'none') as Sheet;
+            setCodeError('');
+            setSearchResults(null);
+            setSheet(target);
+        };
+        window.addEventListener('popstate', handlePop, { capture: true });
+        return () => window.removeEventListener('popstate', handlePop, { capture: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="min-h-screen bg-stone-950 text-white pb-10">
@@ -132,7 +178,7 @@ export default function LandingPage() {
                     <h1 className="text-white font-black text-lg leading-tight">Caddy Manager Pro</h1>
                 </div>
                 <button
-                    onClick={() => setSheet('code')}
+                    onClick={() => openSheet('code')}
                     className="text-xs font-bold text-stone-400 border border-stone-700 px-3 py-1.5 rounded-full hover:border-stone-500 transition"
                 >
                     코드 입력
@@ -171,7 +217,7 @@ export default function LandingPage() {
             {/* 시작하기 버튼 */}
             <div className="px-5 mb-8">
                 <button
-                    onClick={() => setSheet('start')}
+                    onClick={() => openSheet('start')}
                     className="w-full py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg transition active:scale-95"
                 >
                     🚀 시작하기
@@ -236,11 +282,38 @@ export default function LandingPage() {
                 ))}
             </div>
 
+            {/* ── 에러 모달 ── */}
+            {errorMsg && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-6">
+                    <div className="bg-stone-800 rounded-3xl p-6 w-full max-w-sm space-y-4 text-center shadow-2xl">
+                        <div className="text-4xl">⚠️</div>
+                        <p className="text-white font-bold text-sm leading-relaxed whitespace-pre-line">{errorMsg}</p>
+                        <button
+                            onClick={() => { setErrorMsg(''); setCodeInput(''); }}
+                            className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black transition"
+                        >
+                            확인
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* ── 바텀시트 ── */}
             {sheet !== 'none' && (
-                <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={closeSheet}>
+                <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={sheet === 'start' ? closeSheet : undefined}>
                     <div className="w-full bg-stone-900 rounded-t-3xl p-6 space-y-5 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                        <div className="w-10 h-1 bg-stone-700 rounded-full mx-auto" />
+                        {/* 드래그 핸들 + 헤더 */}
+                        <div className="flex items-center">
+                            {sheet !== 'start' && (
+                                <button onClick={goBack} className="p-2 -ml-2 text-stone-400 hover:text-white transition">
+                                    <ChevronRight size={22} className="rotate-180" />
+                                </button>
+                            )}
+                            <div className="flex-1 flex justify-center">
+                                <div className="w-10 h-1 bg-stone-700 rounded-full" />
+                            </div>
+                            {sheet !== 'start' && <div className="w-8" />}
+                        </div>
 
                         {/* ── 시작하기 분기 선택 ── */}
                         {sheet === 'start' && (
@@ -251,7 +324,7 @@ export default function LandingPage() {
                                 </div>
                                 <div className="space-y-3">
                                     <button
-                                        onClick={() => setSheet('member')}
+                                        onClick={() => openSheet('member')}
                                         className="w-full py-4 px-5 rounded-2xl bg-violet-600 hover:bg-violet-500 transition text-white text-left flex items-center gap-4 active:scale-95"
                                     >
                                         <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
@@ -264,7 +337,7 @@ export default function LandingPage() {
                                         <ChevronRight size={18} className="ml-auto opacity-60" />
                                     </button>
                                     <button
-                                        onClick={() => setSheet('code')}
+                                        onClick={() => openSheet('code')}
                                         className="w-full py-4 px-5 rounded-2xl bg-stone-800 hover:bg-stone-700 transition text-white text-left flex items-center gap-4 active:scale-95"
                                     >
                                         <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
@@ -319,7 +392,7 @@ export default function LandingPage() {
                                 {codeError && <p className="text-red-400 text-xs text-center font-bold">{codeError}</p>}
                                 <button
                                     onClick={handleCodeActivate}
-                                    disabled={codeActivating || codeInput.length < 3}
+                                    disabled={codeActivating || codeInput.trim().length < 5}
                                     className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40"
                                 >
                                     {codeActivating
@@ -327,7 +400,7 @@ export default function LandingPage() {
                                         : <><Lock size={16} /> 코드로 시작하기</>}
                                 </button>
                                 <p className="text-stone-500 text-[10px] text-center">코드가 없으면 아래 "기존 회원 찾기"를 이용하세요.</p>
-                                <button onClick={() => setSheet('member')}
+                                <button onClick={() => openSheet('member')}
                                     className="w-full py-3 rounded-2xl font-bold text-stone-400 text-sm bg-stone-800 hover:bg-stone-700 transition">
                                     기존 회원 찾기 (코드 분실 / 만료)
                                 </button>
@@ -343,7 +416,7 @@ export default function LandingPage() {
                                     </div>
                                     <div>
                                         <p className="text-white font-bold text-sm">기존 회원 찾기</p>
-                                        <p className="text-stone-400 text-xs">이름 · 전화번호 · 이용권 코드로 검색</p>
+                                        <p className="text-stone-400 text-xs">이름+전화번호로 내 이용권 찾기</p>
                                     </div>
                                 </div>
 
@@ -375,19 +448,9 @@ export default function LandingPage() {
                                             className="w-full p-3.5 bg-stone-800 border border-stone-700 rounded-2xl text-white placeholder-stone-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">이용권 코드 (선택)</label>
-                                        <input
-                                            value={searchCode}
-                                            onChange={e => { setSearchCode(e.target.value.toUpperCase()); setSearchResults(null); }}
-                                            onKeyDown={e => e.key === 'Enter' && handleMemberSearch()}
-                                            placeholder="SM-XXX-XXX"
-                                            className="w-full p-3.5 bg-stone-800 border border-stone-700 rounded-2xl text-white font-mono placeholder-stone-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                                        />
-                                    </div>
                                     <button
                                         onClick={handleMemberSearch}
-                                        disabled={searching || (!searchName.trim() && searchPhone.replace(/\D/g,'').length < 9 && searchCode.trim().length < 5)}
+                                        disabled={searching}
                                         className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition bg-violet-600 hover:bg-violet-500 disabled:opacity-40"
                                     >
                                         {searching
@@ -436,7 +499,7 @@ export default function LandingPage() {
                                                         {r.isExpired ? (
                                                             <div className="space-y-2">
                                                                 <Link
-                                                                    href="/subscribe?plan=6month"
+                                                                    href={`/subscribe?plan=6month${r.issuedBy ? `&ref=${r.issuedBy}` : ''}`}
                                                                     className="w-full py-2.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 transition"
                                                                 >
                                                                     <RefreshCcw size={14} /> 온라인으로 갱신하기

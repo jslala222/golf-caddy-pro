@@ -25,6 +25,7 @@ function SubscribeInner() {
   const [name, setName]   = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
+  const [modalMsg, setModalMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [issuedCode, setIssuedCode] = useState('');
   const [copied, setCopied] = useState(false);
@@ -75,6 +76,15 @@ function SubscribeInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── 모바일 결제숨 중 뒤로가기 시 loading 해제 ─────────────────────
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') setLoading(false);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
   // ── 전화번호 자동 포맷 ──────────────────────────────────────
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
@@ -86,15 +96,17 @@ function SubscribeInner() {
 
   // ── 결제 시작 ──────────────────────────────────────────────
   const handlePay = async () => {
-    if (!name.trim()) { setError('이름을 입력해주세요.'); return; }
-    if (phone.replace(/\D/g, '').length < 10) { setError('연락처를 입력해주세요. (예: 010-0000-0000)'); return; }
+    if (!name.trim() || phone.replace(/\D/g, '').length < 11) {
+      setModalMsg('이름과 연락처는 필수입니다.\n정확히 입력하셔야 합니다.\n(예: 010-1234-5678)');
+      return;
+    }
     setError('');
     setLoading(true);
 
     const result = await requestCaddyPayment({ name: name.trim(), phone: phone.trim(), planKey: selectedPlan });
 
     if (!result.success) {
-      setError(result.error ?? '결제 처리 중 오류가 발생했습니다.');
+      setModalMsg(result.error ?? '결제 처리 중 오류가 발생했습니다.');
       setLoading(false);
       return;
     }
@@ -256,11 +268,7 @@ function SubscribeInner() {
         </section>
 
         {/* 오류 메시지 */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-xl">
-            {error}
-          </div>
-        )}
+        {/* 인라인 error 표시 제거 — 모달로 대체 */}
 
         {/* 결제 버튼 */}
         <button
@@ -278,6 +286,22 @@ function SubscribeInner() {
           카드 · 간편결제 모두 지원됩니다.
         </p>
       </div>
+
+      {/* ── 필수값 입력 모달 ── */}
+      {modalMsg && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 px-6">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm space-y-4 text-center shadow-2xl">
+            <div className="text-4xl">⚠️</div>
+            <p className="text-stone-800 font-bold text-sm leading-relaxed whitespace-pre-line">{modalMsg}</p>
+            <button
+              onClick={() => setModalMsg('')}
+              className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black transition"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

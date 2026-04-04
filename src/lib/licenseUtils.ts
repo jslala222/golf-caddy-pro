@@ -322,6 +322,7 @@ export type MemberSearchResult = {
     expiresAt: string | null;
     userName: string | null;
     userPhone: string | null;
+    issuedBy: string | null;
     isExpired: boolean;
     daysLeft?: number;
 };
@@ -337,12 +338,13 @@ export const searchLicenseByNamePhone = async ({
 
     const toResult = (d: {
         id: string; code: string; plan: string;
-        expires_at: string | null; user_name: string | null; user_phone: string | null;
+        expires_at: string | null; user_name: string | null; user_phone: string | null; issued_by: string | null;
     }): MemberSearchResult => {
         const exp = d.expires_at ? new Date(d.expires_at) : null;
         return {
             id: d.id, code: d.code, plan: d.plan,
             expiresAt: d.expires_at, userName: d.user_name, userPhone: d.user_phone,
+            issuedBy: d.issued_by,
             isExpired: exp ? now > exp : false,
             daysLeft: exp ? Math.ceil((exp.getTime() - now.getTime()) / 86_400_000) : undefined,
         };
@@ -352,7 +354,7 @@ export const searchLicenseByNamePhone = async ({
     if (code && code.trim().replace(/\D/g, '').length === 0 && code.trim().length >= 5) {
         const { data } = await supabase
             .from('aone_pro_caddypro_licenses')
-            .select('id, code, plan, expires_at, user_name, user_phone')
+            .select('id, code, plan, expires_at, user_name, user_phone, issued_by')
             .eq('code', code.trim().toUpperCase())
             .maybeSingle();
         return data ? [toResult(data)] : [];
@@ -378,13 +380,14 @@ export const searchLicenseByNamePhone = async ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query: any = supabase
         .from('aone_pro_caddypro_licenses')
-        .select('id, code, plan, expires_at, user_name, user_phone')
+        .select('id, code, plan, expires_at, user_name, user_phone, issued_by')
         .order('expires_at', { ascending: false })
         .limit(20);
 
     if (hasPhone) {
         const digits = phone!.replace(/\D/g, '');
-        query = query.or(`user_phone.eq.${digits},user_phone.ilike.%${digits}%`);
+        const formatted = phone!.trim(); // 010-8468-9186 형태도 포함
+        query = query.or(`user_phone.eq.${digits},user_phone.ilike.%${digits}%,user_phone.eq.${formatted},user_phone.ilike.%${formatted}%`);
     }
     if (hasName) {
         query = query.ilike('user_name', `%${name!.trim()}%`);
