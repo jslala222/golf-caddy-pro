@@ -11,10 +11,11 @@ export function BottomNav() {
 
     // 로그인 전/별도 UI 페이지에서는 하단 네비게이션 숨김
     const hideNav = ['/dealer', '/landing', '/admin', '/subscribe', '/dealer-login'];
+    if (pathname === '/') return null;
     if (hideNav.some(p => pathname?.startsWith(p))) return null;
 
     const navItems = [
-        { href: '/', label: '홈', icon: Home, exact: true },
+        { href: '/home', label: '홈', icon: Home, exact: true },
         { href: '/schedule', label: '근무', icon: Calendar },
         { href: '/clients', label: '고객', icon: Users },
         { href: '/money', label: '가계부', icon: Wallet },

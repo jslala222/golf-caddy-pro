@@ -926,33 +926,35 @@ export default function AdminPage() {
                         ) : (
                         /* 이름 / 전화번호 검색 */
                         <div className="space-y-2">
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={restoreSearchName}
-                                    onChange={e => setRestoreSearchName(e.target.value)}
-                                    placeholder="이름 (예: 홍길동)"
-                                    className="flex-1 border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                />
-                                <input
-                                    type="text"
-                                    value={restoreSearchPhone}
-                                    onChange={e => {
-                                        const raw = e.target.value.replace(/\D/g, '').slice(0, 11);
-                                        const fmt = raw.length <= 3 ? raw : raw.length <= 7
-                                            ? `${raw.slice(0,3)}-${raw.slice(3)}`
-                                            : `${raw.slice(0,3)}-${raw.slice(3,7)}-${raw.slice(7)}`;
-                                        setRestoreSearchPhone(fmt);
-                                    }}
-                                    onKeyDown={e => e.key === 'Enter' && handlePhoneSearch()}
-                                    inputMode="tel"
-                                    placeholder="전화번호 (예: 010-1234-5678)"
-                                    className="flex-1 border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                />
+                            <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input
+                                        type="text"
+                                        value={restoreSearchName}
+                                        onChange={e => setRestoreSearchName(e.target.value)}
+                                        placeholder="이름 (예: 홍길동)"
+                                        className="border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={restoreSearchPhone}
+                                        onChange={e => {
+                                            const raw = e.target.value.replace(/\D/g, '').slice(0, 11);
+                                            const fmt = raw.length <= 3 ? raw : raw.length <= 7
+                                                ? `${raw.slice(0,3)}-${raw.slice(3)}`
+                                                : `${raw.slice(0,3)}-${raw.slice(3,7)}-${raw.slice(7)}`;
+                                            setRestoreSearchPhone(fmt);
+                                        }}
+                                        onKeyDown={e => e.key === 'Enter' && handlePhoneSearch()}
+                                        inputMode="tel"
+                                        placeholder="전화번호 (예: 010-1234-5678)"
+                                        className="border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    />
+                                </div>
                                 <button
                                     onClick={handlePhoneSearch}
                                     disabled={restoreSearching || (!restoreSearchPhone.trim() && !restoreSearchName.trim())}
-                                    className="px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 disabled:opacity-40 transition whitespace-nowrap flex items-center gap-1.5"
+                                    className="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 disabled:opacity-40 transition flex items-center justify-center gap-1.5"
                                 >
                                     {restoreSearching
                                         ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

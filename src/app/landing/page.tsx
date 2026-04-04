@@ -65,7 +65,7 @@ export default function LandingPage() {
             if (result.valid) {
                 localStorage.setItem('caddy_license_key', code);
                 if (result.expiresAt) localStorage.setItem('caddy_expires_at', result.expiresAt);
-                router.replace('/');
+                router.replace('/home');
             } else if (result.reason === 'expired') {
                 setErrorMsg('이용권이 만료된 코드입니다.\n"기존 회원 찾기"에서 갱신하세요.');
                 setCodeError('');
@@ -76,7 +76,7 @@ export default function LandingPage() {
         } catch {
             // 오프라인: 로컬 검증만으로 통과
             localStorage.setItem('caddy_license_key', code);
-            router.replace('/');
+            router.replace('/home');
         } finally {
             setCodeActivating(false);
         }
@@ -124,13 +124,13 @@ export default function LandingPage() {
             if (result.valid) {
                 localStorage.setItem('caddy_license_key', r.code);
                 if (result.expiresAt) localStorage.setItem('caddy_expires_at', result.expiresAt);
-                router.replace('/');
+                router.replace('/home');
             } else {
                 setErrorMsg('이용권 확인에 실패했습니다.\n관리자에게 문의하세요.');
             }
         } catch {
             localStorage.setItem('caddy_license_key', r.code);
-            router.replace('/');
+            router.replace('/home');
         } finally {
             setActivatingId(null);
         }
@@ -156,6 +156,16 @@ export default function LandingPage() {
 
     // 뒤로가기 처리 (capture:true → Next.js Router보다 먼저 실행)
     useEffect(() => {
+        // 이미 이용권이 있으면 /home으로 자동 이동
+        const existingKey = localStorage.getItem('caddy_license_key');
+        if (existingKey && existingKey.length >= 5) {
+            const expiresAt = localStorage.getItem('caddy_expires_at');
+            if (!expiresAt || new Date(expiresAt) > new Date()) {
+                router.replace('/home');
+                return;
+            }
+        }
+
         window.history.replaceState({ sheetState: 'none' }, '');
         const handlePop = (e: PopStateEvent) => {
             const target = (e.state?.sheetState ?? 'none') as Sheet;
