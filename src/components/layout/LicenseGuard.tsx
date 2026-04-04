@@ -27,27 +27,28 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
             try {
                 const storedKey = localStorage.getItem('caddy_license_key');
                 if (storedKey && verifyLicense(storedKey)) {
-                    // 계정 전환 감지: 이전 로그인 키와 다르면 스토리지 교체
+                    // 계정 전환 감지: 이전 로그인 키와 다르고, 이전 키가 실제로 존재할 때만 교체
                     const activeKey = localStorage.getItem('caddy_active_key');
-                    if (activeKey !== storedKey) {
+                    if (activeKey && activeKey !== storedKey) {
                         // 기존 키의 데이터 백업
-                        if (activeKey) {
-                            const currentData = localStorage.getItem('caddy-manager-storage');
-                            if (currentData) {
-                                localStorage.setItem(`caddy-manager-storage_${activeKey}`, currentData);
-                            }
+                        const currentData = localStorage.getItem('caddy-manager-storage');
+                        if (currentData) {
+                            localStorage.setItem(`caddy-manager-storage_${activeKey}`, currentData);
                         }
-                        // 새 키의 데이터 복원 (없으면 빈 상태)
+                        // 새 키의 데이터 복원 (없으면 기존 데이터 유지 — 삭제 금지)
                         const newData = localStorage.getItem(`caddy-manager-storage_${storedKey}`);
                         if (newData) {
                             localStorage.setItem('caddy-manager-storage', newData);
-                        } else {
-                            localStorage.removeItem('caddy-manager-storage');
                         }
+                        // else: 새 계정 첫 사용 → 빈 화면으로 시작 (기존 데이터 삭제 안 함)
                         localStorage.setItem('caddy_active_key', storedKey);
                         localStorage.removeItem('caddy_user_name'); // 이름 캐시 초기화
                         window.location.reload(); // Zustand rehydrate
                         return;
+                    }
+                    // activeKey 없으면 최초 진입 — 데이터 건드리지 않고 키만 등록
+                    if (!activeKey) {
+                        localStorage.setItem('caddy_active_key', storedKey);
                     }
 
                     const expiresAt = localStorage.getItem('caddy_expires_at');
