@@ -46,8 +46,17 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                         window.location.reload(); // Zustand rehydrate
                         return;
                     }
-                    // activeKey 없으면 최초 진입 — 데이터 건드리지 않고 키만 등록
+                    // activeKey 없으면: 최초 진입 OR 로그아웃 후 재로그인
                     if (!activeKey) {
+                        // 이 계정의 백업 데이터가 있으면 복원
+                        const savedData = localStorage.getItem(`caddy-manager-storage_${storedKey}`);
+                        if (savedData) {
+                            localStorage.setItem('caddy-manager-storage', savedData);
+                            localStorage.setItem('caddy_active_key', storedKey);
+                            localStorage.removeItem('caddy_user_name');
+                            window.location.reload();
+                            return;
+                        }
                         localStorage.setItem('caddy_active_key', storedKey);
                     }
 

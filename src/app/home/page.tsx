@@ -121,6 +121,13 @@ export default function HomePage() {
           <button
             onClick={() => {
               if (!confirm('로그아웃 하시겠습니까?')) return;
+              // 현재 데이터를 계정별 키에 백업 후 메인 스토리지 초기화
+              const activeKey = localStorage.getItem('caddy_active_key');
+              const currentData = localStorage.getItem('caddy-manager-storage');
+              if (activeKey && currentData) {
+                localStorage.setItem(`caddy-manager-storage_${activeKey}`, currentData);
+              }
+              localStorage.removeItem('caddy-manager-storage');
               localStorage.removeItem('caddy_license_key');
               localStorage.removeItem('caddy_expires_at');
               localStorage.removeItem('caddy_tier');
