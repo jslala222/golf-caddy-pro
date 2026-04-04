@@ -59,7 +59,6 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                         window.location.reload();
                         return;
                     }
-                    }
 
                     const expiresAt = localStorage.getItem('caddy_expires_at');
                     if (expiresAt && new Date(expiresAt) < new Date()) {
