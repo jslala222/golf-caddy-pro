@@ -158,6 +158,10 @@ export const issueVoucher = async ({
 
     const code = generateCodeWithPrefix(prefix);
 
+    // 발급 즉시 expires_at 계산 (오늘 기준 days 후)
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + days * 86_400_000);
+
     const { error } = await supabase.from('aone_pro_caddypro_licenses').insert({
         code,
         channel,
@@ -165,6 +169,7 @@ export const issueVoucher = async ({
         days,
         tier,
         is_active: false,
+        expires_at: expiresAt.toISOString(),
         memo: memo || null,
         golf_course: golfCourse || null,
         pay_method: payMethod,
