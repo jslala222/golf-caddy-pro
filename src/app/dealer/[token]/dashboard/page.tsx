@@ -86,6 +86,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [copied, setCopied] = useState(false);
     const [paymentLink, setPaymentLink] = useState('');
     const [linkCopied, setLinkCopied] = useState(false);
+    const [issueError, setIssueError] = useState('');
 
     // 발급 모드 (신규 / 기간 연장)
     const [issueMode, setIssueMode] = useState<'new' | 'renew'>('new');
@@ -197,8 +198,11 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const maxDays = planBase + (bonusDays[plan] ?? 7);
 
     const handleIssue = async () => {
-        if (!customerName.trim()) { alert('고객 이름을 입력해주세요.'); return; }
-        if (!customerPhone.trim()) { alert('고객 연락처를 입력해주세요.'); return; }
+        if (!customerName.trim()) { setIssueError('고객 이름을 입력해주세요.'); return; }
+        const phoneDigits = customerPhone.replace(/\D/g, '');
+        if (!phoneDigits) { setIssueError('고객 전화번호를 입력해주세요.'); return; }
+        if (phoneDigits.length < 10 || phoneDigits.length > 11) { setIssueError('전화번호 형식이 올바르지 않습니다.\n010-XXXX-XXXX 형식으로 입력해주세요.'); return; }
+        if (!phoneDigits.startsWith('0')) { setIssueError('전화번호 형식이 올바르지 않습니다.\n010-XXXX-XXXX 형식으로 입력해주세요.'); return; }
         if (!dealer) return;
         setIsIssuing(true);
         const result = await issueVoucher({
@@ -552,6 +556,20 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
             </div>
 
             <div className="p-5 space-y-5">
+                {/* 입력 오류 모달 */}
+                {issueError && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setIssueError('')}>
+                        <div className="bg-stone-900 rounded-3xl p-6 shadow-2xl max-w-xs w-full text-center space-y-4" onClick={e => e.stopPropagation()}>
+                            <div className="w-12 h-12 bg-red-900/40 rounded-full flex items-center justify-center mx-auto">
+                                <ShieldAlert size={24} className="text-red-400" />
+                            </div>
+                            <p className="text-white text-sm font-bold whitespace-pre-line">{issueError}</p>
+                            <button onClick={() => setIssueError('')}
+                                className="w-full py-3 bg-blue-600 rounded-2xl font-bold text-white text-sm">확인</button>
+                        </div>
+                    </div>
+                )}
+
                 {/* ── 코드발급 탭 ── */}
                 {activeTab === 'issue' && (
                     <div className="space-y-5">
