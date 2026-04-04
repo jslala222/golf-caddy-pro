@@ -405,9 +405,9 @@ export default function HomePage() {
 
     {/* 빠른 수입 입력 모달 */}
     {quickOpen && (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setQuickOpen(false)}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setQuickOpen(false)}>
         <div
-          className="w-full max-w-[480px] bg-white rounded-t-3xl p-6 pb-6 shadow-2xl space-y-4 overflow-y-auto max-h-[calc(100dvh-64px)]"
+          className="w-full max-w-[420px] bg-white rounded-3xl p-6 shadow-2xl space-y-4 overflow-y-auto max-h-[calc(100dvh-80px)]"
           onClick={e => e.stopPropagation()}
         >
           {/* 헤더 */}
