@@ -84,8 +84,8 @@ export default function HomePage() {
     const todayStr = new Date().toISOString().split('T')[0];
     const toNum = (s: string) => parseInt(s.replace(/[^0-9]/g, ''), 10) || 0;
     if (toNum(qCaddyFee) > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qCaddyFee), category: 'caddy_fee', memo: '캐디피' + (qMemo ? ` (${qMemo})` : '') });
-    if (toNum(qTip)      > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qTip),      category: 'tip',       memo: '팁' });
-    if (toNum(qOverFee)  > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qOverFee),  category: 'over_fee',  memo: '오버피' });
+    if (toNum(qTip)      > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qTip),      category: 'tip',       memo: '팁·오버피' });
+    if (toNum(qOverFee)  > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qOverFee),  category: 'over_fee',  memo: '기타수입' });
     setQuickOpen(false);
   };
 
@@ -436,7 +436,7 @@ export default function HomePage() {
 
           {/* 팁 */}
           <div>
-            <label className="text-xs font-bold text-stone-500 block mb-1">팁 (원)</label>
+            <label className="text-xs font-bold text-stone-500 block mb-1">팁 · 오버피 (원)</label>
             <input
               type="text"
               inputMode="numeric"
@@ -449,7 +449,7 @@ export default function HomePage() {
 
           {/* 오버피 */}
           <div>
-            <label className="text-xs font-bold text-stone-500 block mb-1">오버피 (원)</label>
+            <label className="text-xs font-bold text-stone-500 block mb-1">기타수입 (원)</label>
             <input
               type="text"
               inputMode="numeric"
