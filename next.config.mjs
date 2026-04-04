@@ -14,6 +14,15 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
     trailingSlash: true,
+    async redirects() {
+        return [
+            {
+                source: '/',
+                destination: '/landing',
+                permanent: false,
+            },
+        ];
+    },
 };
 
 export default nextConfig;
