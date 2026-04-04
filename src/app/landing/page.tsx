@@ -104,12 +104,18 @@ export default function LandingPage() {
 
         setSearching(true);
         setSearchResults(null);
-        const results = await searchLicenseByNamePhone({
-            name: hasName ? searchName.trim() : undefined,
-            phone: hasPhone ? searchPhone : undefined,
-        });
-        setSearchResults(results);
-        setSearching(false);
+        try {
+            const results = await searchLicenseByNamePhone({
+                name: hasName ? searchName.trim() : undefined,
+                phone: hasPhone ? searchPhone : undefined,
+            });
+            setSearchResults(results);
+        } catch {
+            setSearchResults([]);
+            setErrorMsg('검색 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        } finally {
+            setSearching(false);
+        }
     };
 
     // 검색결과 선택 → 유효 코드로 활성화
