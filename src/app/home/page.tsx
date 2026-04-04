@@ -18,10 +18,10 @@ export default function HomePage() {
     if (!code) return;
     if (code.trim().toUpperCase() === '0827') {
       setUserName('관리자');
-      localStorage.setItem('caddy_user_name', '관리자');
+      localStorage.setItem(`caddy_user_name_0827`, '관리자');
       return;
     }
-    const cached = localStorage.getItem('caddy_user_name');
+    const cached = localStorage.getItem(`caddy_user_name_${code}`);
     if (cached) { setUserName(cached); return; }
     import('@/lib/supabaseClient').then(({ supabase }) => {
       supabase
@@ -32,7 +32,7 @@ export default function HomePage() {
         .then(({ data }) => {
           if (data?.user_name) {
             setUserName(data.user_name);
-            localStorage.setItem('caddy_user_name', data.user_name);
+            localStorage.setItem(`caddy_user_name_${code}`, data.user_name);
           }
         });
     });
@@ -132,6 +132,7 @@ export default function HomePage() {
               localStorage.removeItem('caddy_expires_at');
               localStorage.removeItem('caddy_tier');
               localStorage.removeItem('caddy_active_key');
+              if (activeKey) localStorage.removeItem(`caddy_user_name_${activeKey}`);
               localStorage.removeItem('caddy_user_name');
               window.location.replace('/landing');
             }}

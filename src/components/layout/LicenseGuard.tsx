@@ -42,22 +42,23 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                         }
                         // else: 새 계정 첫 사용 → 빈 화면으로 시작 (기존 데이터 삭제 안 함)
                         localStorage.setItem('caddy_active_key', storedKey);
-                        localStorage.removeItem('caddy_user_name'); // 이름 캐시 초기화
+                        localStorage.removeItem(`caddy_user_name_${storedKey}`); // 이름 캐시 초기화
                         window.location.reload(); // Zustand rehydrate
                         return;
                     }
                     // activeKey 없으면: 최초 진입 OR 로그아웃 후 재로그인
                     if (!activeKey) {
-                        // 이 계정의 백업 데이터가 있으면 복원
+                        // 메인 스토리지 완전 초기화 후 해당 계정 백업 복원
+                        localStorage.removeItem('caddy-manager-storage');
                         const savedData = localStorage.getItem(`caddy-manager-storage_${storedKey}`);
                         if (savedData) {
                             localStorage.setItem('caddy-manager-storage', savedData);
-                            localStorage.setItem('caddy_active_key', storedKey);
-                            localStorage.removeItem('caddy_user_name');
-                            window.location.reload();
-                            return;
                         }
                         localStorage.setItem('caddy_active_key', storedKey);
+                        localStorage.removeItem(`caddy_user_name`);
+                        window.location.reload();
+                        return;
+                    }
                     }
 
                     const expiresAt = localStorage.getItem('caddy_expires_at');
