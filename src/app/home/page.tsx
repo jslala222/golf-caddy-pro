@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
-import { Calendar as CalendarIcon, Wallet, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calendar as CalendarIcon, Wallet, ChevronRight, TrendingUp, TrendingDown, LogOut } from 'lucide-react';
 import { Calendar } from '@/components/Calendar';
 
 export default function HomePage() {
@@ -117,9 +117,26 @@ export default function HomePage() {
             {userName ? <><span className="font-semibold text-emerald-600">{userName}</span>님 환영합니다! ⛳️</> : '오늘도 굿샷 하세요! ⛳️'}
           </p>
         </div>
-        <Link href="/settings" className="p-2 bg-stone-100 rounded-full text-stone-600 hover:bg-stone-200">
-          <ChevronRight size={20} />
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              if (!confirm('로그아웃 하시겠습니까?')) return;
+              localStorage.removeItem('caddy_license_key');
+              localStorage.removeItem('caddy_expires_at');
+              localStorage.removeItem('caddy_tier');
+              localStorage.removeItem('caddy_active_key');
+              localStorage.removeItem('caddy_user_name');
+              window.location.replace('/landing');
+            }}
+            className="p-2 bg-stone-100 rounded-full text-stone-400 hover:bg-red-50 hover:text-red-400 transition"
+            title="로그아웃"
+          >
+            <LogOut size={18} />
+          </button>
+          <Link href="/settings" className="p-2 bg-stone-100 rounded-full text-stone-600 hover:bg-stone-200">
+            <ChevronRight size={20} />
+          </Link>
+        </div>
       </header>
 
       {/* Net Income Card */}
