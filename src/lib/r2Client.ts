@@ -63,6 +63,31 @@ export async function uploadBackup(licenseCode: string, data: unknown): Promise<
 }
 
 /**
+ * 영수증 이미지 업로드
+ * 저장 경로: caddy-manager-pro/receipts/{license_code}/{filename}
+ * 공개 URL 또는 키 반환
+ */
+export async function uploadReceipt(
+  licenseCode: string,
+  filename: string,
+  body: Buffer,
+  contentType: string
+): Promise<string> {
+  const client = getR2Client();
+  const bucket = getBucketName();
+  const key = `${APP_NAME}/receipts/${licenseCode}/${filename}`;
+  await client.send(new PutObjectCommand({
+    Bucket:      bucket,
+    Key:         key,
+    Body:        body,
+    ContentType: contentType,
+  }));
+  // R2 public URL (버킷 공개 설정 시 사용)
+  const publicBase = process.env.R2_PUBLIC_URL;
+  return publicBase ? `${publicBase}/${key}` : key;
+}
+
+/**
  * 최신 백업 다운로드
  * 없으면 null 반환
  */

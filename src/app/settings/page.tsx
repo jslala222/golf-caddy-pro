@@ -4,7 +4,8 @@
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check } from 'lucide-react';
+import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw } from 'lucide-react';
+import { migrateLocalDataToSupabase } from '@/lib/supabaseDB';
 import { formatNumber } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
 
@@ -25,6 +26,25 @@ export default function SettingsPage() {
     // 클라우드 백업 상태
     const [cloudStatus, setCloudStatus] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
     const [cloudMsg, setCloudMsg] = useState('');
+
+    // Supabase 마이그레이션 상태
+    const [migrateStatus, setMigrateStatus] = useState<'idle' | 'migrating' | 'done' | 'error'>('idle');
+    const [migrateMsg, setMigrateMsg] = useState('');
+
+    const handleMigrate = async () => {
+        const { schedules, transactions, clients, feeSettings } = useAppStore.getState();
+        setMigrateStatus('migrating');
+        setMigrateMsg('');
+        const result = await migrateLocalDataToSupabase({ schedules, transactions, clients, feeSettings });
+        if (result.ok) {
+            setMigrateStatus('done');
+            setMigrateMsg(result.message);
+        } else {
+            setMigrateStatus('error');
+            setMigrateMsg(result.message);
+        }
+        setTimeout(() => setMigrateStatus('idle'), 6000);
+    };
 
     // Local state for fee settings
     const [localSettings, setLocalSettings] = useState<{
@@ -439,6 +459,37 @@ export default function SettingsPage() {
                     </section>
                 </div>
             </details>
+
+            {/* Supabase 동기화 섹션 */}
+            <hr className="border-stone-200" />
+            <section className="space-y-4">
+                <h2 className="text-lg font-bold text-stone-800 flex items-center">
+                    <Database size={18} className="mr-2 text-blue-500" /> Supabase 클라우드 동기화
+                </h2>
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
+                    <p className="font-bold mb-1">☁️ 다기기 동기화</p>
+                    <p className="leading-relaxed text-xs">현재 폰의 데이터를 클라우드 DB에 동기화합니다. 폰을 바꿔도 같은 이용코드로 로그인하면 데이터가 유지됩니다.</p>
+                </div>
+                <button
+                    onClick={handleMigrate}
+                    disabled={migrateStatus === 'migrating'}
+                    className={`w-full py-4 font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 ${
+                        migrateStatus === 'migrating' ? 'bg-stone-300 text-stone-500 cursor-not-allowed' :
+                        migrateStatus === 'done' ? 'bg-emerald-600 text-white' :
+                        migrateStatus === 'error' ? 'bg-red-500 text-white' :
+                        'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                >
+                    <RefreshCw size={18} className={migrateStatus === 'migrating' ? 'animate-spin' : ''} />
+                    {migrateStatus === 'migrating' ? '동기화 중...' :
+                     migrateStatus === 'done' ? '✅ 동기화 완료!' :
+                     migrateStatus === 'error' ? '❌ 실패 — 다시 시도' :
+                     '지금 바로 동기화하기'}
+                </button>
+                {migrateMsg && (
+                    <p className={`text-xs text-center font-bold ${ migrateStatus === 'done' ? 'text-emerald-600' : 'text-red-500'}`}>{migrateMsg}</p>
+                )}
+            </section>
 
             <div className="text-center text-xs text-stone-400 mt-10 pb-10 space-y-2">
                 <div className="flex items-center justify-center gap-2">

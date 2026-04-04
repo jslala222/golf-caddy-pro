@@ -310,6 +310,43 @@ export default function HomePage() {
         </Link>
       </section>
 
+      {/* 연간 수입 현황 카드 */}
+      {(() => {
+        const yearStr = String(year);
+        const yearlyWork = schedules.filter(s => s.type === 'work' && s.date.startsWith(yearStr) && s.date <= today);
+        const yearlyScheduleIncome = yearlyWork.reduce((acc, s) => acc + getCaddyFee(s) + (s.overFee || 0), 0);
+        const yearlyManualIncome = transactions.filter(t => t.type === 'income' && t.date.startsWith(yearStr)).reduce((acc, t) => acc + t.amount, 0);
+        const yearlyExpense = transactions.filter(t => t.type === 'expense' && t.date.startsWith(yearStr)).reduce((acc, t) => acc + t.amount, 0);
+        const yearlyNet = yearlyScheduleIncome + yearlyManualIncome - yearlyExpense;
+        const totalRounds = yearlyWork.length;
+        const h18 = yearlyWork.filter(s => (s.holes ?? 18) === 18).length;
+        const h9 = yearlyWork.filter(s => s.holes === 9).length;
+        return (
+          <section className="bg-stone-800 rounded-2xl p-5 text-white">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-sm font-bold text-stone-300">{year}년 연간 현황</span>
+              <Link href="/money" className="text-[11px] text-stone-400 hover:text-emerald-400">전체보기 →</Link>
+            </div>
+            <div className="text-3xl font-black mb-1">{yearlyNet.toLocaleString()}<span className="text-sm font-normal text-stone-400 ml-1">원 (순수익)</span></div>
+            <div className="text-xs text-stone-400 mb-4">수입 {(yearlyScheduleIncome + yearlyManualIncome).toLocaleString()} — 지출 {yearlyExpense.toLocaleString()}</div>
+            <div className="grid grid-cols-3 divide-x divide-stone-700 bg-stone-700/50 rounded-xl py-3">
+              <div className="text-center">
+                <div className="text-[10px] text-stone-400 mb-1">총 라운드</div>
+                <div className="text-xl font-black text-emerald-400">{totalRounds}<span className="text-xs font-normal ml-0.5">회</span></div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-stone-400 mb-1">18홀</div>
+                <div className="text-xl font-black">{h18}<span className="text-xs font-normal ml-0.5">회</span></div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-stone-400 mb-1">9홀</div>
+                <div className="text-xl font-black">{h9}<span className="text-xs font-normal ml-0.5">회</span></div>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
+
       {/* Today's Schedule */}
       <section>
         <div className="flex justify-between items-end mb-4">

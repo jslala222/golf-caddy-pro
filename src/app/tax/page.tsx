@@ -7,7 +7,7 @@ import { formatCurrency } from '@/lib/utils';
 import { Wallet, Share2, Info, RefreshCcw } from 'lucide-react';
 
 export default function TaxPage() {
-    const { schedules } = useAppStore();
+    const { schedules, transactions, feeSettings } = useAppStore();
     const [revenue, setRevenue] = useState<string>('');
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [personalDeduction, setPersonalDeduction] = useState<number>(1500000); // 기본 150만원
@@ -17,14 +17,43 @@ export default function TaxPage() {
         setHasHydrated(true);
     }, []);
 
-    // 1. 해당 연도의 캐디피 총액 계산
-    const yearlyRevenue = useMemo(() => {
+    const yearStr = String(selectedYear);
+    const today = new Date().toISOString().split('T')[0];
+
+    const getCaddyFee = (s: any) => {
+        if (s.caddyFee) return s.caddyFee;
+        if (!feeSettings) return 150000;
+        if (s.shift === '1') return feeSettings.shift1;
+        if (s.shift === '2') return feeSettings.shift2;
+        if (s.shift === '3') return feeSettings.shift3;
+        return 150000;
+    };
+
+    // 1. 일정 기반 캐디피+오버피
+    const yearlyScheduleIncome = useMemo(() => {
         return schedules
-            .filter(s => s.type === 'work' && s.date.startsWith(String(selectedYear)))
-            .reduce((acc, s) => acc + (s.caddyFee || 0), 0);
+            .filter(s => s.type === 'work' && s.date.startsWith(yearStr) && s.date <= today)
+            .reduce((acc, s) => acc + getCaddyFee(s) + (s.overFee || 0), 0);
     }, [schedules, selectedYear]);
 
-    // 2. 세금 계산 결과
+    // 2. transactions 기반 수입 (팁 등 수동 입력)
+    const yearlyTxIncome = useMemo(() => {
+        return transactions
+            .filter(t => t.type === 'income' && t.date.startsWith(yearStr))
+            .reduce((acc, t) => acc + t.amount, 0);
+    }, [transactions, selectedYear]);
+
+    // 3. 업무 경비 (지출 기록)
+    const yearlyExpense = useMemo(() => {
+        return transactions
+            .filter(t => t.type === 'expense' && t.date.startsWith(yearStr))
+            .reduce((acc, t) => acc + t.amount, 0);
+    }, [transactions, selectedYear]);
+
+    // 합산 수입 (schedule + tx 중 큰 값)
+    const yearlyRevenue = Math.max(yearlyScheduleIncome, yearlyTxIncome);
+
+    // 4. 세금 계산 결과
     const taxResult = useMemo(() => {
         const revNum = Number(revenue.replace(/[^0-9]/g, '')) || 0;
         return calculateCaddyTax(revNum, personalDeduction);
@@ -95,6 +124,29 @@ export default function TaxPage() {
                             className="flex-1 bg-white ml-1 py-2 px-4 rounded-lg text-sm font-black text-emerald-600 shadow-sm flex items-center justify-center gap-2 active:scale-95 transition"
                         >
                             <RefreshCcw size={14} /> 연간 캐디피 불러오기
+                        </button>
+                    </div>
+
+                    {/* 수입/경비 요약 카드 */}
+                    <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-4 space-y-2">
+                        <p className="text-xs font-bold text-emerald-700 mb-2">{selectedYear}년 앱 기록 요약</p>
+                        <div className="flex justify-between text-xs">
+                            <span className="text-stone-500">일정 기반 캐디피+오버피</span>
+                            <span className="font-bold text-stone-800">{yearlyScheduleIncome.toLocaleString()}원</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                            <span className="text-stone-500">수동 입력 수입 (팁 등)</span>
+                            <span className="font-bold text-stone-800">{yearlyTxIncome.toLocaleString()}원</span>
+                        </div>
+                        <div className="flex justify-between text-xs border-t border-emerald-200 pt-2">
+                            <span className="text-stone-500">업무경비 (지출 기록)</span>
+                            <span className="font-bold text-red-600">-{yearlyExpense.toLocaleString()}원</span>
+                        </div>
+                        <button
+                            onClick={handleLoadRevenue}
+                            className="w-full mt-1 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1"
+                        >
+                            <RefreshCcw size={12} /> {yearlyRevenue.toLocaleString()}원으로 로드
                         </button>
                     </div>
                 </div>

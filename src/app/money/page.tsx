@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useAppStore, type TransactionType, type ExpenseCategory } from '@/lib/store';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import { Wallet, Plus, X, ArrowUp, ArrowDown, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Wallet, Plus, X, ArrowUp, ArrowDown, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Loader2 } from 'lucide-react';
 
 
 export default function MoneyPage() {
@@ -181,6 +181,54 @@ export default function MoneyPage() {
     const [category, setCategory] = useState<ExpenseCategory>('food');
     const [memo, setMemo] = useState('');
 
+    // 영수증 사진 업로드
+    const receiptRef = useRef<HTMLInputElement>(null);
+    const [receiptUploading, setReceiptUploading] = useState(false);
+    const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+
+    const handleReceiptChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const licenseCode = typeof window !== 'undefined' ? localStorage.getItem('caddy_license_key') : null;
+        if (!licenseCode) return;
+
+        // Canvas로 압축 (10MB → ~400KB)
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.src = objectUrl;
+        await new Promise(resolve => { img.onload = resolve; });
+        URL.revokeObjectURL(objectUrl);
+
+        const canvas = document.createElement('canvas');
+        const MAX = 1200;
+        const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.75));
+        const compressed = new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
+
+        setReceiptUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('file', compressed);
+            fd.append('licenseCode', licenseCode);
+            const res = await fetch('/api/receipt/upload', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (data.success) {
+                setReceiptUrl(data.url);
+                if (data.ocrAmount && !amount) setAmount(String(data.ocrAmount));
+                if (data.ocrMemo && !memo) setMemo(data.ocrMemo);
+            }
+        } catch (err) {
+            console.warn('영수증 업로드 실패', err);
+        } finally {
+            setReceiptUploading(false);
+        }
+        e.target.value = '';
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!amount) return;
@@ -196,6 +244,7 @@ export default function MoneyPage() {
         setIsModalOpen(false);
         setAmount('');
         setMemo('');
+        setReceiptUrl(null);
     };
 
     // Modal defaulting logic adjusted for period
@@ -450,6 +499,23 @@ export default function MoneyPage() {
                                     className="w-full p-4 bg-stone-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500"
                                 />
                             </div>
+
+                            {/* 영수증 사진 청구 뺄지 (expense일 때만) */}
+                            {type === 'expense' && (
+                                <div>
+                                    <label className="block text-sm font-bold text-stone-500 mb-1.5 ml-1">혁신 영수증 찍기 (선택)</label>
+                                    <input ref={receiptRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleReceiptChange} />
+                                    <button
+                                        type="button"
+                                        onClick={() => receiptRef.current?.click()}
+                                        disabled={receiptUploading}
+                                        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-stone-200 rounded-2xl py-3 text-sm text-stone-400 hover:border-emerald-300 hover:text-emerald-600 transition"
+                                    >
+                                        {receiptUploading ? <><Loader2 size={16} className="animate-spin" /> 인식 중...</> : receiptUrl ? '✅ 영수증 등록됨 (재쳄용)' : <><Camera size={16} /> 영수증 사진 / 실시간 OCR</>}
+                                    </button>
+                                    {receiptUrl && <p className="text-[10px] text-stone-400 mt-1 text-center">OCR 자동 인식 완료 — 위에서 금액/메모 확인하세요</p>}
+                                </div>
+                            )}
 
                             <button
                                 type="submit"
