@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>결제 버튼 클릭 후 화면 흐름 — 캐디 매니저 프로</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Apple SD Gothic Neo', 'Segoe UI', sans-serif;
+  background: #0a0e1a;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+/* ── 헤더 ── */
+.header {
+  background: linear-gradient(135deg, #111827, #1e2a3b);
+  border-bottom: 1px solid #1e293b;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.header-logo {
+  width: 42px; height: 42px;
+  background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.header h1 { font-size: 16px; font-weight: 800; color: #f1f5f9; }
+.header p  { font-size: 11px; color: #64748b; margin-top: 2px; }
+.header-tag {
+  margin-left: auto;
+  background: #1d4ed8;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.main { padding: 28px 28px 60px; max-width: 1200px; margin: 0 auto; }
+
+/* ── 단계 타이틀 바 ── */
+.steps-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 32px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.snav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 0 8px;
+}
+.snav-num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 2px solid #334155;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  transition: all 0.3s;
+  background: #0f172a;
+}
+.snav-label { font-size: 10px; color: #475569; white-space: nowrap; transition: color 0.3s; }
+.snav.active .snav-num { background: #1d4ed8; border-color: #3b82f6; color: white; box-shadow: 0 0 0 4px rgba(59,130,246,0.2); }
+.snav.active .snav-label { color: #93c5fd; }
+.snav.done .snav-num { background: #059669; border-color: #10b981; color: white; }
+.snav.done .snav-label { color: #6ee7b7; }
+.snav-arrow { font-size: 18px; color: #1e293b; padding-bottom: 18px; flex-shrink: 0; }
+
+/* ── 설명 띠 ── */
+.desc-bar {
+  background: linear-gradient(90deg, #0f1f3d, #0f172a);
+  border: 1px solid #1e40af;
+  border-radius: 14px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.desc-num {
+  width: 28px; height: 28px;
+  background: #1d4ed8;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+}
+.desc-text { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+.desc-sub  { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+/* ── 컨트롤 ── */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.ctrl {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 7px;
+}
+.ctrl-prev { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+.ctrl-next { background: linear-gradient(135deg, #1d4ed8, #7c3aed); color: white; box-shadow: 0 4px 16px rgba(59,130,246,0.3); }
+.ctrl-next:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
+.ctrl-reset { background: #1e293b; color: #64748b; border: 1px solid #1e293b; }
+
+/* ── 폰 뷰어 ── */
+.viewer {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+.phone-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.phone-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  display: flex; align-items: center; gap: 6px;
+}
+.phone-tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+.phone {
+  width: 250px;
+  height: 510px;
+  background: #0a0e1a;
+  border-radius: 36px;
+  border: 3px solid #1e293b;
+  box-shadow: 0 0 0 1px #0d1117, 0 20px 60px rgba(0,0,0,0.8);
+  position: relative;
+  overflow: hidden;
+}
+.phone::before {
+  content: '';
+  position: absolute;
+  top: 12px; left: 50%;
+  transform: translateX(-50%);
+  width: 68px; height: 5px;
+  background: #0a0e1a;
+  border-radius: 3px;
+  z-index: 100;
+  border: 1.5px solid #1e293b;
+}
+
+/* ── SCREEN 레이어 공통 ── */
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transition: opacity 0.4s, transform 0.4s;
+}
+.screen.hidden { opacity: 0; pointer-events: none; }
+.screen.slide-in { opacity: 1; }
+.screen.slide-out { opacity: 0; transform: translateX(40px); }
+
+/* ────────────────────────────────────
+   SCREEN 1 — subscribe 페이지
+──────────────────────────────────── */
+#s-subscribe {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+.sub-header {
+  background: #1e1e2e;
+  padding: 28px 16px 18px;
+}
+.sub-header-eyebrow { font-size: 9px; color: #6b7280; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.sub-header h2 { font-size: 18px; font-weight: 900; color: #f9fafb; }
+.sub-header p  { font-size: 10px; color: #6b7280; margin-top: 2px; }
+.sub-body { padding: 12px 14px; flex: 1; overflow: hidden; }
+
+/* 딜러 배너 */
+.dealer-banner {
+  background: #f0fdf4;
+  border: 1px solid #6ee7b7;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 9px;
+  color: #065f46;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+}
+.dealer-banner-bold { font-weight: 700; font-size: 10px; }
+
+/* 플랜 선택 */
+.plan-label { font-size: 9px; font-weight: 700; color: #374151; margin-bottom: 5px; }
+.plan-options { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.plan-opt {
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.plan-opt.sel { border-color: #3b82f6; background: #eff6ff; }
+.plan-radio {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.plan-opt.sel .plan-radio { border-color: #3b82f6; background: #3b82f6; }
+.plan-opt.sel .plan-radio::after { content: ''; display: block; width: 5px; height: 5px; border-radius: 50%; background: white; }
+.plan-name { font-size: 11px; font-weight: 700; color: #111827; }
+.plan-days { font-size: 9px; color: #9ca3af; }
+.plan-badge { font-size: 8px; font-weight: 700; background: #d1fae5; color: #065f46; padding: 1px 5px; border-radius: 6px; }
+.plan-price { margin-left: auto; font-size: 13px; font-weight: 800; color: #111827; }
+
+/* 입력 필드 */
+.input-group { margin-bottom: 7px; }
+.input-lbl { font-size: 9px; font-weight: 700; color: #374151; margin-bottom: 3px; }
+.input-val {
+  background: #f3f4f6;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 11px;
+  color: #111827;
+  font-weight: 600;
+  width: 100%;
+}
+.input-val.prefilled {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* 결제 버튼 */
+.pay-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 11px;
+  font-size: 13px;
+  font-weight: 800;
+  margin-top: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(29,78,216,0.35);
+}
+.pay-hint { font-size: 9px; color: #9ca3af; text-align: center; margin-top: 6px; }
+
+/* ────────────────────────────────────
+   SCREEN 2 — PortOne 결제창 (팝업)
+──────────────────────────────────── */
+#s-portone {
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+}
+.po-header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 24px 14px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.po-logo {
+  width: 22px; height: 22px;
+  object-fit: cover;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  color: white;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.po-title { font-size: 12px; font-weight: 700; color: #111827; }
+.po-secure { margin-left: auto; font-size: 9px; color: #10b981; font-weight: 600; display: flex; align-items: center; gap: 3px; }
+.po-body { padding: 10px 14px; flex: 1; overflow: hidden; }
+
+/* 주문 요약 */
+.po-order {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+.po-order-name { font-size: 11px; font-weight: 700; color: #111827; }
+.po-order-price { font-size: 17px; font-weight: 900; color: #1d4ed8; margin-top: 2px; }
+.po-order-buyer { font-size: 9px; color: #6b7280; margin-top: 3px; }
+
+/* 결제 수단 탭 */
+.po-tabs {
+  display: flex;
+  border-radius: 10px;
+  background: #e5e7eb;
+  padding: 3px;
+  margin-bottom: 10px;
+  gap: 2px;
+}
+.po-tab {
+  flex: 1;
+  padding: 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.po-tab.active { background: #fff; color: #1d4ed8; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+/* 카드사 선택 */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.card-item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 8.5px;
+  color: #374151;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1.5px solid transparent;
+  transition: all 0.2s;
+}
+.card-item:hover { border-color: #3b82f6; }
+.card-item.selected { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+.card-item .card-icon { font-size: 16px; margin-bottom: 2px; }
+
+/* 카드 번호 입력 */
+.card-form { display: none; }
+.card-form.show { display: block; }
+.cform-row { margin-bottom: 7px; }
+.cform-label { font-size: 9px; font-weight: 600; color: #374151; margin-bottom: 3px; }
+.cform-input {
+  width: 100%;
+  background: #f3f4f6;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: #111827;
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+.cform-row2 { display: flex; gap: 7px; }
+.cform-row2 .cform-row { flex: 1; }
+.po-pay-btn {
+  width: 100%;
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 11px;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 8px;
+  cursor: pointer;
+}
+.po-notice { font-size: 8.5px; color: #9ca3af; text-align: center; margin-top: 6px; line-height: 1.5; }
+
+/* ────────────────────────────────────
+   SCREEN 3 — 결제 처리 중
+──────────────────────────────────── */
+#s-loading {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+}
+.spinner {
+  width: 48px; height: 48px;
+  border: 4px solid #dbeafe;
+  border-top-color: #1d4ed8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-title { font-size: 15px; font-weight: 700; color: #111827; }
+.loading-sub   { font-size: 11px; color: #6b7280; text-align: center; line-height: 1.6; }
+.loading-steps { width: 100%; }
+.lstep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 10px;
+  color: #6b7280;
+  margin-bottom: 4px;
+  transition: all 0.3s;
+}
+.lstep.done { color: #059669; background: #f0fdf4; }
+.lstep.active { color: #1d4ed8; background: #eff6ff; font-weight: 700; }
+.lstep-icon { width: 18px; text-align: center; }
+
+/* ────────────────────────────────────
+   SCREEN 4 — 결제 완료
+──────────────────────────────────── */
+#s-done {
+  background: linear-gradient(160deg, #f0fdf4, #ecfdf5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 20px;
+}
+.done-check {
+  width: 70px; height: 70px;
+  background: #10b981;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  color: white;
+  box-shadow: 0 8px 24px rgba(16,185,129,0.4);
+  animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+.done-title { font-size: 22px; font-weight: 900; color: #065f46; }
+.done-subtitle { font-size: 11px; color: #6b7280; text-align: center; }
+.code-card {
+  background: white;
+  border: 2px dashed #10b981;
+  border-radius: 16px;
+  padding: 16px 24px;
+  text-align: center;
+  width: 100%;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+.code-label { font-size: 9px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.code-value { font-size: 22px; font-weight: 900; color: #1d4ed8; letter-spacing: 4px; font-family: monospace; }
+.code-copy-btn {
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 8px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 4px; margin: 8px auto 0;
+}
+.done-notice {
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 9.5px;
+  color: #92400e;
+  line-height: 1.6;
+  width: 100%;
+}
+
+/* ────────────────────────────────────
+   오른쪽 설명 패널
+──────────────────────────────────── */
+.explain-panel {
+  flex: 1;
+  min-width: 280px;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.exp-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 14px;
+  padding: 16px 18px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.4s;
+}
+.exp-card.show { opacity: 1; transform: translateY(0); }
+.exp-card-icon { font-size: 20px; margin-bottom: 6px; }
+.exp-card-title { font-size: 13px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
+.exp-card-desc { font-size: 11px; color: #64748b; line-height: 1.7; }
+.exp-card-code {
+  background: #0a0e1a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: monospace;
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 8px;
+  border: 1px solid #1e293b;
+  line-height: 1.7;
+}
+.exp-card-code .ck { color: #34d399; }
+.exp-card-code .cv { color: #fbbf24; }
+.exp-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+.tag-green { background: #064e3b; color: #34d399; }
+.tag-blue  { background: #1e3a8a; color: #93c5fd; }
+.tag-purple{ background: #2e1065; color: #c4b5fd; }
+.tag-yellow{ background: #451a03; color: #fbbf24; }
+
+/* ── 흐름 화살표 연결 ── */
+.connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  padding-top: 80px;
+  color: #334155;
+  font-size: 22px;
+}
+
+/* ── 하단 정보 박스 ── */
+.info-box {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+.info-box h3 { font-size: 13px; font-weight: 700; color: #f1f5f9; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+.info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.info-item { background: #1e293b; border-radius: 10px; padding: 12px 14px; }
+.info-item-title { font-size: 11px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
+.info-item-desc { font-size: 10px; color: #64748b; line-height: 1.6; }
+
+.section-divider {
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.section-divider::after { content: ''; flex: 1; height: 1px; background: #1e293b; }
+
+@media (max-width: 800px) {
+  .viewer { flex-direction: column; align-items: center; }
+  .connector { display: none; }
+  .explain-panel { max-width: 100%; min-width: 0; width: 100%; }
+  .info-grid { grid-template-columns: 1fr; }
+  .main { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">⛳</div>
+  <div>
+    <h1>결제하러 가기 → 이후 화면 흐름</h1>
+    <p>카카오 링크 클릭 → 구독 페이지 → PortOne 결제창 → 완료</p>
+  </div>
+  <div class="header-tag">💳 실제 결제 UI</div>
+</div>
+
+<div class="main">
+
+  <!-- 단계 내비 -->
+  <div class="steps-nav">
+    <div class="snav active" id="nav0" onclick="goStep(0)">
+      <div class="snav-num">1</div>
+      <div class="snav-label">Subscribe 페이지</div>
+    </div>
+    <div class="snav-arrow">→</div>
+    <div class="snav" id="nav1" onclick="goStep(1)">
+      <div class="snav-num">2</div>
+      <div class="snav-label">PortOne 결제창</div>
+    </div>
+    <div class="snav-arrow">→</div>
+    <div class="snav" id="nav2" onclick="goStep(2)">
+      <div class="snav-num">3</div>
+      <div class="snav-label">처리 중</div>
+    </div>
+    <div class="snav-arrow">→</div>
+    <div class="snav" id="nav3" onclick="goStep(3)">
+      <div class="snav-num">4</div>
+      <div class="snav-label">결제 완료</div>
+    </div>
+  </div>
+
+  <!-- 현재 단계 설명 -->
+  <div class="desc-bar" id="descBar">
+    <div class="desc-num" id="descNum">1</div>
+    <div>
+      <div class="desc-text" id="descText">고객이 결제 링크를 클릭하면 이 화면이 열립니다</div>
+      <div class="desc-sub" id="descSub">이름·연락처·플랜이 URL 파라미터에서 자동 입력됨 — 고객은 확인 후 결제 버튼만 누르면 됩니다</div>
+    </div>
+  </div>
+
+  <!-- 컨트롤 -->
+  <div class="controls">
+    <button class="ctrl ctrl-reset" onclick="goStep(0)">↺ 처음</button>
+    <button class="ctrl ctrl-prev" id="prevBtn" onclick="prevStep()" style="opacity:0.3" disabled>← 이전</button>
+    <button class="ctrl ctrl-next" id="nextBtn" onclick="nextStep()">다음 → 결제 버튼 클릭</button>
+  </div>
+
+  <!-- 뷰어 + 설명 패널 -->
+  <div class="viewer">
+
+    <!-- 폰 -->
+    <div class="phone-wrap">
+      <div class="phone-tag">
+        <span class="dot" style="background:#10b981"></span> 고객 폰
+      </div>
+      <div class="phone">
+
+        <!-- SCREEN 1: Subscribe -->
+        <div class="screen" id="s-subscribe">
+          <div class="sub-header">
+            <div class="sub-header-eyebrow">Caddy Manager Pro</div>
+            <h2>이용권 구매</h2>
+            <p>결제 즉시 코드가 발급됩니다</p>
+          </div>
+          <div class="sub-body">
+            <div class="dealer-banner">
+              <span>⛳</span>
+              <div>
+                <div class="dealer-banner-bold">딜러 추천 링크로 접속</div>
+                이름과 연락처가 미리 입력되었습니다. 확인 후 결제해주세요.
+              </div>
+            </div>
+            <div class="plan-label">요금제 선택</div>
+            <div class="plan-options">
+              <div class="plan-opt">
+                <div class="plan-radio"></div>
+                <div>
+                  <div class="plan-name">1개월</div>
+                  <div class="plan-days">30일 이용</div>
+                </div>
+                <div class="plan-price">₩9,900</div>
+              </div>
+              <div class="plan-opt sel">
+                <div class="plan-radio"></div>
+                <div>
+                  <div class="plan-name">3개월 <span class="plan-badge">인기</span></div>
+                  <div class="plan-days">90일 이용</div>
+                </div>
+                <div class="plan-price">₩39,900</div>
+              </div>
+              <div class="plan-opt">
+                <div class="plan-radio"></div>
+                <div>
+                  <div class="plan-name">1년 <span class="plan-badge" style="background:#fef3c7;color:#92400e">최저가</span></div>
+                  <div class="plan-days">365일 이용</div>
+                </div>
+                <div class="plan-price">₩99,000</div>
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-lbl">이름</div>
+              <div class="input-val prefilled">박지수</div>
+            </div>
+            <div class="input-group">
+              <div class="input-lbl">연락처</div>
+              <div class="input-val prefilled">010-3344-5566</div>
+            </div>
+            <button class="pay-btn" onclick="goStep(1)">
+              💳 ₩39,900 결제하기 →
+            </button>
+            <div class="pay-hint">카드 · 간편결제 모두 지원</div>
+          </div>
+        </div>
+
+        <!-- SCREEN 2: PortOne 결제창 -->
+        <div class="screen hidden" id="s-portone">
+          <div style="background:#fff; flex:1; display:flex; flex-direction:column; height:100%;">
+            <div class="po-header">
+              <div class="po-logo">P</div>
+              <div class="po-title">결제하기</div>
+              <div class="po-secure">🔒 SSL 보안</div>
+            </div>
+            <div class="po-body" style="flex:1; overflow:hidden;">
+              <div class="po-order">
+                <div class="po-order-name">⛳ Caddy Manager Pro 3개월</div>
+                <div class="po-order-price">₩39,900</div>
+                <div class="po-order-buyer">박지수 · 010-3344-5566</div>
+              </div>
+              <div class="po-tabs">
+                <div class="po-tab active">신용카드</div>
+                <div class="po-tab">간편결제</div>
+                <div class="po-tab">계좌이체</div>
+              </div>
+              <!-- 카드사 선택 -->
+              <div class="card-grid" id="cardGrid">
+                <div class="card-item" onclick="selectCard(this)"><div class="card-icon">🏦</div>신한</div>
+                <div class="card-item" onclick="selectCard(this)"><div class="card-icon">🟦</div>삼성</div>
+                <div class="card-item selected" id="kb-card" onclick="selectCard(this)"><div class="card-icon">⭐</div>국민</div>
+                <div class="card-item" onclick="selectCard(this)"><div class="card-icon">🟠</div>현대</div>
+                <div class="card-item" onclick="selectCard(this)"><div class="card-icon">🟢</div>우리</div>
+                <div class="card-item" onclick="selectCard(this)"><div class="card-icon">🔵</div>하나</div>
+                <div class="card-item" onclick="selectCard(this)"><div class="card-icon">🟡</div>카카오</div>
+                <div class="card-item" onclick="selectCard(this)"><div class="card-icon">💚</div>NH농협</div>
+              </div>
+              <!-- 카드 정보 입력 -->
+              <div class="card-form show" id="cardForm">
+                <div class="cform-row">
+                  <div class="cform-label">카드 번호</div>
+                  <div class="cform-input">1234 5678 •••• ••••</div>
+                </div>
+                <div class="cform-row2">
+                  <div class="cform-row">
+                    <div class="cform-label">유효기간</div>
+                    <div class="cform-input">12 / 28</div>
+                  </div>
+                  <div class="cform-row">
+                    <div class="cform-label">CVC</div>
+                    <div class="cform-input">•••</div>
+                  </div>
+                </div>
+                <button class="po-pay-btn" onclick="goStep(2)">₩39,900 결제하기</button>
+                <div class="po-notice">포트원(PortOne)이 결제를 안전하게 처리합니다<br>카드 정보는 암호화되어 전송됩니다</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCREEN 3: 처리 중 -->
+        <div class="screen hidden" id="s-loading">
+          <div class="spinner"></div>
+          <div class="loading-title">결제 처리 중…</div>
+          <div class="loading-sub">잠시만 기다려주세요</div>
+          <div class="loading-steps">
+            <div class="lstep done" id="ls1"><span class="lstep-icon">✓</span> 카드 정보 검증</div>
+            <div class="lstep active" id="ls2"><span class="lstep-icon">⏳</span> 카드사 승인 요청</div>
+            <div class="lstep" id="ls3"><span class="lstep-icon">○</span> 이용권 코드 생성</div>
+            <div class="lstep" id="ls4"><span class="lstep-icon">○</span> 결제 완료 처리</div>
+          </div>
+        </div>
+
+        <!-- SCREEN 4: 완료 -->
+        <div class="screen hidden" id="s-done">
+          <div class="done-check">✓</div>
+          <div class="done-title">결제 완료!</div>
+          <div class="done-subtitle">이용권이 발급되었습니다</div>
+          <div class="code-card">
+            <div class="code-label">이용권 코드</div>
+            <div class="code-value">SM-7F9-Q3W</div>
+            <button class="code-copy-btn">📋 코드 복사</button>
+          </div>
+          <div class="done-notice">
+            ✅ 앱에서 이 코드를 입력하면 즉시 활성화됩니다<br>
+            ✅ 기기 변경 시 코드만 입력하면 복구됩니다<br>
+            ✅ 코드 분실 시 고객센터에 문의해주세요
+          </div>
+        </div>
+
+      </div><!-- /.phone -->
+    </div><!-- /.phone-wrap -->
+
+    <!-- 연결 화살표 -->
+    <div class="connector">→</div>
+
+    <!-- 설명 패널 -->
+    <div class="explain-panel" id="explainPanel">
+      <!-- Step 0 카드들 -->
+      <div class="exp-card show" id="ec0-0">
+        <div class="exp-card-icon">🔗</div>
+        <div class="exp-card-title">URL 파라미터 자동입력</div>
+        <div class="exp-card-desc">
+          딜러가 생성한 링크에 포함된 파라미터를<br>
+          <code style="color:#fbbf24">useSearchParams()</code>로 읽어서 폼에 자동 입력합니다.
+        </div>
+        <div class="exp-card-code">
+          /subscribe?<br>
+          &nbsp;&nbsp;<span class="ck">name</span>=<span class="cv">박지수</span>&amp;<br>
+          &nbsp;&nbsp;<span class="ck">phone</span>=<span class="cv">010-3344-5566</span>&amp;<br>
+          &nbsp;&nbsp;<span class="ck">plan</span>=<span class="cv">3month</span>&amp;<br>
+          &nbsp;&nbsp;<span class="ck">ref</span>=<span class="cv">RWC64HZ4</span>
+        </div>
+      </div>
+      <div class="exp-card show" id="ec0-1">
+        <div class="exp-card-icon">⛳</div>
+        <div class="exp-card-title">딜러 추천 배너</div>
+        <div class="exp-card-desc">
+          <code style="color:#fbbf24">ref</code> 파라미터가 있으면 상단에 녹색 배너를 표시합니다. 고객에게 신뢰감을 주며 딜러 실적으로 자동 추적됩니다.
+        </div>
+        <div>
+          <span class="exp-tag tag-green">✅ 자동입력</span>
+          <span class="exp-tag tag-blue">딜러 추천 배너</span>
+          <span class="exp-tag tag-purple">ref 실적 추적</span>
+        </div>
+      </div>
+      <div class="exp-card show" id="ec0-2">
+        <div class="exp-card-icon">💳</div>
+        <div class="exp-card-title">결제 버튼 클릭 시</div>
+        <div class="exp-card-desc">
+          이름·전화번호 유효성 검사 후 <code style="color:#fbbf24">requestCaddyPayment()</code>를 호출합니다. PortOne V2 SDK가 로드되어 결제창이 열립니다.
+        </div>
+        <div class="exp-card-code">
+          <span class="ck">handlePay</span>() {<br>
+          &nbsp;&nbsp;<span class="ck">requestCaddyPayment</span>({<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;name, phone,<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;planKey: <span class="cv">'3month'</span><br>
+          &nbsp;&nbsp;})<br>
+          }
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.viewer -->
+
+  <!-- 하단 기술 정보 -->
+  <div class="section-divider">🛠 기술 상세</div>
+  <div class="info-box">
+    <h3>📊 결제 처리 전체 흐름 (기술)</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-item-title">① 클라이언트 (브라우저)</div>
+        <div class="info-item-desc">
+          PortOne V2 SDK 로드 →<br>
+          <code>requestPayment()</code> 호출 →<br>
+          결제창 팝업 (PC) 또는<br>
+          리다이렉트 (모바일)
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-item-title">② PortOne 서버</div>
+        <div class="info-item-desc">
+          카드사 승인 요청 →<br>
+          승인 완료 후 <code>paymentId</code> 반환 →<br>
+          클라이언트에서 <code>/api/payment/complete</code> 호출
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-item-title">③ 우리 서버 (Next.js API)</div>
+        <div class="info-item-desc">
+          paymentId로 금액 검증 →<br>
+          Supabase에 이용권 코드 저장 →<br>
+          <code>SM-XXX-XXX</code> 형식 코드 반환
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.main -->
+
+<script>
+let curStep = 0;
+
+const screens = ['s-subscribe','s-portone','s-loading','s-done'];
+const navIds   = ['nav0','nav1','nav2','nav3'];
+
+const stepInfo = [
+  {
+    num: '1',
+    text: '고객이 결제 링크를 클릭하면 이 화면이 열립니다',
+    sub:  '이름·연락처·플랜이 URL 파라미터에서 자동 입력됨 — 고객은 확인 후 결제 버튼만 누르면 됩니다'
+  },
+  {
+    num: '2',
+    text: '💳 결제하기 버튼 클릭 → PortOne 결제창이 열립니다',
+    sub:  'PortOne V2 SDK가 카드사 선택 / 카드번호 입력 화면을 표시합니다 (팝업 또는 전체화면)'
+  },
+  {
+    num: '3',
+    text: '카드사 승인이 진행됩니다 (약 2~5초)',
+    sub:  '카드사 → PortOne 서버 → 우리 Next.js API 순으로 처리됩니다'
+  },
+  {
+    num: '4',
+    text: '🎉 결제 완료! 이용권 코드(SM-7F9-Q3W)가 즉시 발급됩니다',
+    sub:  '코드를 복사해서 캐디 매니저 프로 앱에 입력하면 즉시 이용 가능합니다'
+  }
+];
+
+const panelCards = [
+  // step 0
+  `<div class="exp-card show">
+    <div class="exp-card-icon">🔗</div>
+    <div class="exp-card-title">URL 파라미터 자동입력</div>
+    <div class="exp-card-desc">딜러가 생성한 링크의 파라미터를 <code style="color:#fbbf24">useSearchParams()</code>로 읽어 폼에 자동 입력합니다.</div>
+    <div class="exp-card-code">
+      /subscribe?<br>
+      &nbsp;&nbsp;<span class="ck">name</span>=<span class="cv">박지수</span>&amp;<br>
+      &nbsp;&nbsp;<span class="ck">phone</span>=<span class="cv">010-3344-5566</span>&amp;<br>
+      &nbsp;&nbsp;<span class="ck">plan</span>=<span class="cv">3month</span>&amp;<br>
+      &nbsp;&nbsp;<span class="ck">ref</span>=<span class="cv">RWC64HZ4</span>
+    </div>
+  </div>
+  <div class="exp-card show" style="transition-delay:0.1s">
+    <div class="exp-card-icon">⛳</div>
+    <div class="exp-card-title">딜러 추천 배너</div>
+    <div class="exp-card-desc"><code style="color:#fbbf24">ref</code> 파라미터가 있으면 상단에 녹색 배너를 표시합니다. 딜러 실적으로 자동 추적됩니다.</div>
+    <div><span class="exp-tag tag-green">✅ 자동입력</span><span class="exp-tag tag-blue">딜러 배너</span><span class="exp-tag tag-purple">ref 실적</span></div>
+  </div>
+  <div class="exp-card show" style="transition-delay:0.2s">
+    <div class="exp-card-icon">💳</div>
+    <div class="exp-card-title">결제 버튼 누르면?</div>
+    <div class="exp-card-desc">유효성 검사 후 <code style="color:#fbbf24">requestCaddyPayment()</code> 호출 → PortOne 결제창이 열립니다.</div>
+  </div>`,
+
+  // step 1
+  `<div class="exp-card show">
+    <div class="exp-card-icon">🏦</div>
+    <div class="exp-card-title">PortOne V2 결제창</div>
+    <div class="exp-card-desc">
+      PC에서는 <strong style="color:#f1f5f9">팝업창</strong>으로 열립니다.<br>
+      모바일에서는 <strong style="color:#f1f5f9">전체화면 리다이렉트</strong>로 이동합니다.<br><br>
+      신용카드 / 간편결제(카카오페이, 네이버페이) / 계좌이체 모두 지원합니다.
+    </div>
+    <div><span class="exp-tag tag-blue">PC: 팝업</span><span class="exp-tag tag-purple">모바일: 리다이렉트</span></div>
+  </div>
+  <div class="exp-card show" style="transition-delay:0.1s">
+    <div class="exp-card-icon">🔒</div>
+    <div class="exp-card-title">카드 정보는 우리 서버에 저장 안됨</div>
+    <div class="exp-card-desc">카드번호·CVC는 PortOne → 카드사로 직접 암호화 전송됩니다. 우리 코드는 <code style="color:#fbbf24">paymentId</code>만 받습니다.</div>
+    <div class="exp-card-code">
+      <span class="ck">response</span>.paymentId<br>
+      → <span class="cv">"/api/payment/complete"</span>로 전달<br>
+      → 금액 검증 후 코드 발급
+    </div>
+  </div>
+  <div class="exp-card show" style="transition-delay:0.2s">
+    <div class="exp-card-icon">💡</div>
+    <div class="exp-card-title">간편결제 선택 시</div>
+    <div class="exp-card-desc">카카오페이·네이버페이·토스페이 선택 시 해당 앱으로 이동 후 지문/PIN 인증만으로 결제됩니다.</div>
+    <div><span class="exp-tag tag-yellow">카카오페이</span><span class="exp-tag tag-green">네이버페이</span><span class="exp-tag tag-blue">토스</span></div>
+  </div>`,
+
+  // step 2
+  `<div class="exp-card show">
+    <div class="exp-card-icon">⚡</div>
+    <div class="exp-card-title">처리 순서 (2~5초)</div>
+    <div class="exp-card-desc">
+      <strong style="color:#f1f5f9">1단계</strong> 카드 정보 검증<br>
+      <strong style="color:#f1f5f9">2단계</strong> 카드사 승인 요청<br>
+      <strong style="color:#f1f5f9">3단계</strong> PortOne → 우리 서버로 승인 통보<br>
+      <strong style="color:#f1f5f9">4단계</strong> Supabase에 이용권 코드 저장
+    </div>
+  </div>
+  <div class="exp-card show" style="transition-delay:0.1s">
+    <div class="exp-card-icon">🛡️</div>
+    <div class="exp-card-title">금액 위변조 방지</div>
+    <div class="exp-card-desc">서버에서 PortOne API로 실제 결제 금액을 재조회해 검증합니다. 클라이언트에서 금액을 조작해도 서버에서 차단됩니다.</div>
+    <div class="exp-card-code">
+      <span class="cm">// /api/payment/complete</span><br>
+      <span class="ck">const</span> paid = await PortOne.getPayment(id)<br>
+      <span class="ck">if</span> (paid.amount !== expected.amount)<br>
+      &nbsp;&nbsp;<span class="cv">throw</span> "금액 불일치"
+    </div>
+  </div>`,
+
+  // step 3
+  `<div class="exp-card show">
+    <div class="exp-card-icon">🎉</div>
+    <div class="exp-card-title">발급된 코드 형식</div>
+    <div class="exp-card-desc">
+      <strong style="color:#22d3ee; font-size:20px; letter-spacing:3px">SM-7F9-Q3W</strong><br><br>
+      <code style="color:#fbbf24">SM-XXX-XXX</code> 형식으로 생성됩니다.<br>
+      Supabase <code style="color:#fbbf24">aone_pro_caddypro_licenses</code> 테이블에 저장됩니다.
+    </div>
+    <div><span class="exp-tag tag-green">즉시 발급</span><span class="exp-tag tag-blue">앱에서 활성화</span></div>
+  </div>
+  <div class="exp-card show" style="transition-delay:0.1s">
+    <div class="exp-card-icon">📱</div>
+    <div class="exp-card-title">코드 활성화 방법</div>
+    <div class="exp-card-desc">
+      캐디 매니저 프로 앱 실행 →<br>
+      이용권 코드 입력 →<br>
+      즉시 풀 기능 이용 가능<br><br>
+      기기 변경 시에도 같은 코드로 복구됩니다.
+    </div>
+  </div>
+  <div class="exp-card show" style="transition-delay:0.2s">
+    <div class="exp-card-icon">💰</div>
+    <div class="exp-card-title">딜러 실적 자동 기록</div>
+    <div class="exp-card-desc"><code style="color:#fbbf24">ref=RWC64HZ4</code> 파라미터가 있으면 결제 완료 시 딜러 수수료가 자동으로 계산됩니다. (다음 구현 예정)</div>
+    <div><span class="exp-tag tag-purple">ref 추적</span><span class="exp-tag tag-yellow">수수료 자동화</span></div>
+  </div>`
+];
+
+function goStep(n) {
+  // 화면 전환
+  screens.forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.toggle('hidden', i !== n);
+  });
+  // 네비 업데이트
+  navIds.forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    else if (i === n) el.classList.add('active');
+  });
+  // 설명 업데이트
+  const info = stepInfo[n];
+  document.getElementById('descNum').textContent = info.num;
+  document.getElementById('descText').textContent = info.text;
+  document.getElementById('descSub').textContent = info.sub;
+  // 패널 업데이트
+  document.getElementById('explainPanel').innerHTML = panelCards[n];
+  // 버튼
+  document.getElementById('prevBtn').disabled = n === 0;
+  document.getElementById('prevBtn').style.opacity = n === 0 ? '0.3' : '1';
+  const nb = document.getElementById('nextBtn');
+  if (n === 3) { nb.textContent = '🏁 완료'; nb.disabled = true; }
+  else {
+    nb.disabled = false;
+    const labels = ['다음 → 결제 버튼 클릭', '다음 → 결제 완료 클릭', '다음 → 코드 발급 완료', ''];
+    nb.textContent = labels[n];
+  }
+  // 로딩 애니메이션
+  if (n === 2) startLoadingAnim();
+  curStep = n;
+}
+
+function nextStep() { if (curStep < 3) goStep(curStep + 1); }
+function prevStep() { if (curStep > 0) goStep(curStep - 1); }
+
+function selectCard(el) {
+  document.querySelectorAll('.card-item').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function startLoadingAnim() {
+  const steps = [['ls1','ls2','ls3','ls4']];
+  // ls1=done, ls2=active → ls3=active → ls4=active + auto advance
+  setTimeout(() => {
+    document.getElementById('ls2').className = 'lstep done';
+    document.getElementById('ls3').className = 'lstep active';
+  }, 1000);
+  setTimeout(() => {
+    document.getElementById('ls3').className = 'lstep done';
+    document.getElementById('ls4').className = 'lstep active';
+  }, 2200);
+  setTimeout(() => {
+    document.getElementById('ls4').className = 'lstep done';
+    goStep(3);
+  }, 3400);
+}
+</script>
+</body>
+</html>

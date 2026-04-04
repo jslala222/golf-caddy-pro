@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caddy Manager Pro - Business Plan & Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f5f5f4; color: #1c1917; }
+        
+        /* Chart Container Styling - MANDATORY */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        /* Mobile Simulator Styling */
+        .mobile-frame {
+            border: 8px solid #292524;
+            border-radius: 2rem;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            height: 700px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Custom Scrollbar for App Simulator */
+        .app-scroll::-webkit-scrollbar { width: 4px; }
+        .app-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .app-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+        .tab-btn.active { color: #059669; border-top: 2px solid #059669; }
+        .tab-btn { color: #9ca3af; border-top: 2px solid transparent; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 antialiased selection:bg-emerald-100 selection:text-emerald-900">
+
+    <!-- 
+    Chosen Palette: Warm Neutrals & Golf Emerald
+    - Background: Stone-50 (Warm White)
+    - Primary: Emerald-600 (Golf Green)
+    - Secondary: Blue-600 (Business/Trust)
+    - Accent: Red-500 (Alert/Expense)
+    - Text: Stone-800 (Dark Gray)
+    -->
+
+    <!-- 
+    Application Structure Plan:
+    1. Header: Project Identity & Value Proposition.
+    2. Interactive Prototype Section: A functional simulation of the Caddy Manager Pro app embedded in a mobile frame. This allows the user to experience the "Product" directly as described in the business plan.
+       - Tabs: Dashboard, Schedule, Customers, Accounting.
+    3. Business Model Simulator: Interactive calculators showing the revenue potential from License Fees vs. AS Services.
+    4. Feature Deep Dive: Detailed breakdown of the 4 core pillars (Schedule, DB, Accounting, Backup).
+    5. Roadmap: A timeline of the development steps.
+    -->
+
+    <!-- 
+    Visualization & Content Choices:
+    1. Prototype (HTML/JS): Directly implements the core features (Add Schedule, Search Customer, Calculate Income) to prove feasibility and UX.
+    2. Revenue Chart (Chart.js): A Bar chart to visualize the "License vs AS" revenue mix, reinforcing the business model's sustainability.
+    3. Accounting Chart (Chart.js): Inside the prototype, a Doughnut chart visualizes the user's expenses, demonstrating the value of the "Net Income" feature.
+    4. Roadmap (HTML/CSS): A step-by-step list to visualize the project timeline.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Navigation / Header -->
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-golf-ball-tee text-emerald-600 text-2xl mr-3"></i>
+                    <span class="font-bold text-xl tracking-tight text-stone-900">Caddy Manager Pro</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#prototype" class="text-stone-600 hover:text-emerald-600 font-medium transition">앱 체험하기</a>
+                    <a href="#features" class="text-stone-600 hover:text-emerald-600 font-medium transition">핵심 기능</a>
+                    <a href="#business" class="text-stone-600 hover:text-emerald-600 font-medium transition">수익 모델</a>
+                    <a href="#roadmap" class="text-stone-600 hover:text-emerald-600 font-medium transition">로드맵</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="bg-stone-100 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-stone-900 mb-6">
+                캐디를 위한, 캐디에 의한, <span class="text-emerald-600">독립형 비서</span>
+            </h1>
+            <p class="text-xl text-stone-600 max-w-3xl mx-auto mb-10">
+                서버비 0원, 데이터 유출 걱정 Zero. <br>
+                수입 관리부터 진상 고객 대응까지, 내 폰 안에 안전하게 저장되는 <strong>Caddy Manager Pro</strong>
+            </p>
+            <div class="flex justify-center gap-4">
+                <a href="#prototype" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:bg-emerald-700 transition transform hover:-translate-y-1">
+                    프로토타입 체험하기
+                </a>
+                <a href="#business" class="bg-white text-emerald-700 border border-emerald-200 px-8 py-3 rounded-lg font-bold shadow-sm hover:bg-emerald-50 transition">
+                    사업성 분석 보기
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-24">
+
+        <!-- SECTION 1: INTERACTIVE PROTOTYPE -->
+        <!-- This section allows the user to experience the app as defined in the plan. -->
+        <section id="prototype" class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            <div>
+                <h2 class="text-3xl font-bold text-stone-900 mb-4">
+                    <i class="fa-solid fa-mobile-screen-button text-emerald-600 mr-2"></i> 실제 작동 프로토타입
+                </h2>
+                <p class="text-stone-600 mb-6 text-lg">
+                    기획안에 포함된 <strong>4대 핵심 기능</strong>이 모두 구현된 모바일 시뮬레이터입니다.
+                    직접 눌러보며 UX를 확인해보세요.
+                </p>
+                <div class="space-y-6">
+                    <div class="flex items-start">
+                        <div class="bg-emerald-100 p-3 rounded-lg mr-4">
+                            <i class="fa-solid fa-calendar-check text-emerald-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">통합 스케줄러</h3>
+                            <p class="text-stone-500">근무와 개인 약속을 색상으로 구분하여 한눈에 파악합니다.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-blue-100 p-3 rounded-lg mr-4">
+                            <i class="fa-solid fa-users-viewfinder text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">고객 DB (진상/천사)</h3>
+                            <p class="text-stone-500">배정 즉시 검색하여 진상 여부를 파악하고 대비합니다.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-yellow-100 p-3 rounded-lg mr-4">
+                            <i class="fa-solid fa-sack-dollar text-yellow-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">수입/지출 & 순수익</h3>
+                            <p class="text-stone-500">캐디피, 오버피, 용품 지출을 기록하고 순수익을 자동 계산합니다.</p>
+                        </div>
+                    </div>
+                     <div class="flex items-start">
+                        <div class="bg-stone-200 p-3 rounded-lg mr-4">
+                            <i class="fa-solid fa-floppy-disk text-stone-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">데이터 백업 (Business Core)</h3>
+                            <p class="text-stone-500">JSON 내보내기/가져오기를 통해 기기 변경 시 유료 AS를 유도합니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- The Mobile App Simulator -->
+            <div class="mobile-frame relative bg-stone-50">
+                <!-- App Header -->
+                <div class="bg-emerald-600 text-white p-6 rounded-b-3xl shadow-md z-10 shrink-0">
+                    <div class="flex justify-between items-center mb-4">
+                        <h1 class="text-lg font-bold italic">Caddy Pro</h1>
+                        <button class="bg-emerald-500 p-2 rounded-full hover:bg-emerald-400 text-xs">
+                            <i class="fa-solid fa-gear"></i> 설정
+                        </button>
+                    </div>
+                    <div>
+                        <p class="text-emerald-100 text-xs mb-1">이번 달 순수익</p>
+                        <div class="text-3xl font-bold flex items-baseline gap-1" id="app-total-net">
+                            0 <span class="text-base font-normal">원</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- App Content Area (Scrollable) -->
+                <div id="app-content" class="flex-1 overflow-y-auto app-scroll p-4 bg-stone-50 relative">
+                    <!-- Content injected by JS based on Active Tab -->
+                </div>
+
+                <!-- App Navigation -->
+                <div class="bg-white border-t border-stone-200 p-2 grid grid-cols-4 gap-1 shrink-0 z-20">
+                    <button onclick="switchTab('schedule')" class="tab-btn flex flex-col items-center py-2 text-xs font-medium hover:bg-stone-50 rounded" id="btn-schedule">
+                        <i class="fa-solid fa-calendar-day text-lg mb-1"></i> 일정
+                    </button>
+                    <button onclick="switchTab('customer')" class="tab-btn flex flex-col items-center py-2 text-xs font-medium hover:bg-stone-50 rounded" id="btn-customer">
+                        <i class="fa-solid fa-address-book text-lg mb-1"></i> 고객DB
+                    </button>
+                    <button onclick="switchTab('money')" class="tab-btn flex flex-col items-center py-2 text-xs font-medium hover:bg-stone-50 rounded" id="btn-money">
+                        <i class="fa-solid fa-wallet text-lg mb-1"></i> 수입관리
+                    </button>
+                    <button onclick="switchTab('backup')" class="tab-btn flex flex-col items-center py-2 text-xs font-medium hover:bg-stone-50 rounded" id="btn-backup">
+                        <i class="fa-solid fa-cloud-arrow-down text-lg mb-1"></i> 백업
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: FEATURE BREAKDOWN (Analysis) -->
+        <!-- Analyzing the needs identified in the report -->
+        <section id="features" class="py-10">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-stone-900">왜 캐디들이 열광할까요?</h2>
+                <p class="text-stone-600 mt-2">현직 캐디들의 페인 포인트(Pain Point)를 정확히 해결했습니다.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Pain Point 1 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-100 hover:shadow-md transition">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-500 mb-4">
+                        <i class="fa-solid fa-user-secret text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-2">프라이버시 완벽 보호</h3>
+                    <p class="text-stone-600 text-sm mb-4">
+                        "내 수입이 서버에 남으면 찝찝해요."
+                    </p>
+                    <div class="bg-stone-50 p-3 rounded text-xs text-stone-500">
+                        <strong>Solution:</strong> Local Storage 기술로 모든 데이터는 사용자 핸드폰에만 저장됩니다. 서버에는 1바이트도 전송되지 않습니다.
+                    </div>
+                </div>
+
+                <!-- Pain Point 2 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-100 hover:shadow-md transition">
+                    <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-4">
+                        <i class="fa-solid fa-hand-holding-dollar text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-2">진상 고객 사전 차단</h3>
+                    <p class="text-stone-600 text-sm mb-4">
+                        "오늘 배정된 고객, 진상인지 미리 알 수 없을까?"
+                    </p>
+                    <div class="bg-stone-50 p-3 rounded text-xs text-stone-500">
+                        <strong>Solution:</strong> '나만의 블랙리스트' 기능. 검색 한 번으로 고객 성향을 미리 파악하고 마음의 준비를 할 수 있습니다.
+                    </div>
+                </div>
+
+                <!-- Pain Point 3 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-100 hover:shadow-md transition">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4">
+                        <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-2">정확한 순수익 계산</h3>
+                    <p class="text-stone-600 text-sm mb-4">
+                        "많이 번 것 같은데, 용품 사고 밥 먹고 나면 남는 게 없어요."
+                    </p>
+                    <div class="bg-stone-50 p-3 rounded text-xs text-stone-500">
+                        <strong>Solution:</strong> 오버피(팁)와 지출(용품, 식대)을 분리하여 '진짜 내 돈'이 얼마인지 정확히 보여줍니다.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: BUSINESS MODEL SIMULATOR -->
+        <!-- Interactive tool to calculate potential earnings based on the plan -->
+        <section id="business" class="bg-white rounded-2xl shadow-lg border border-stone-200 overflow-hidden">
+            <div class="p-8 border-b border-stone-100 bg-stone-50">
+                <h2 class="text-3xl font-bold text-stone-900 mb-2">수익성 분석 시뮬레이터</h2>
+                <p class="text-stone-600">판매량에 따른 예상 매출과 AS(재구매/복구)를 통한 지속적인 수익 모델을 확인하세요.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-0">
+                <!-- Controls -->
+                <div class="p-8 border-r border-stone-100">
+                    <h3 class="font-bold text-lg mb-6 text-stone-700">변수 설정</h3>
+                    
+                    <div class="mb-8">
+                        <label class="block text-sm font-medium text-stone-600 mb-2">프로그램 판매 가격</label>
+                        <div class="text-2xl font-bold text-stone-800">120,000 원 <span class="text-sm font-normal text-stone-400">(1회)</span></div>
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="block text-sm font-medium text-stone-600 mb-2">예상 월 판매량 (건)</label>
+                        <input type="range" id="salesSlider" min="10" max="300" value="50" class="w-full h-2 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                        <div class="flex justify-between mt-2">
+                            <span class="text-xs text-stone-400">10건</span>
+                            <span class="font-bold text-emerald-600 text-lg" id="salesValue">50건</span>
+                            <span class="text-xs text-stone-400">300건</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-stone-600 mb-2">기기 변경/AS 발생률 (예상)</label>
+                        <div class="text-xl font-bold text-blue-600">20% <span class="text-sm font-normal text-stone-400">(연간)</span></div>
+                        <p class="text-xs text-stone-500 mt-1">AS 비용: 건당 30,000원 (데이터 이관 서비스)</p>
+                    </div>
+
+                    <div class="bg-stone-50 p-4 rounded-lg mt-8">
+                        <h4 class="font-bold text-stone-700 mb-2">예상 월 수익</h4>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-stone-500">판매 수익</span>
+                            <span class="font-bold text-stone-800" id="revenue-sales">0 원</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-stone-200 pb-2 mb-2">
+                            <span class="text-sm text-stone-500">AS 수익 (잠재)</span>
+                            <span class="font-bold text-blue-600" id="revenue-as">0 원</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-stone-800">Total</span>
+                            <span class="font-bold text-2xl text-emerald-600" id="revenue-total">0 원</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="p-8 flex flex-col items-center justify-center bg-white">
+                    <h3 class="font-bold text-lg mb-4 text-stone-700 w-full text-left">12개월 누적 매출 시뮬레이션</h3>
+                    <div class="chart-container">
+                        <canvas id="businessChart"></canvas>
+                    </div>
+                    <p class="text-xs text-stone-400 mt-4 text-center">
+                        * 초기 판매 이후 누적 사용자 기반이 늘어날수록 AS 수익 비중이 점진적으로 증가하여 안정적인 Cash Flow를 형성합니다.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: ROADMAP -->
+        <section id="roadmap" class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-stone-900 mb-8 text-center">개발 및 출시 로드맵</h2>
+            <div class="relative border-l-4 border-emerald-200 ml-6 space-y-10">
+                
+                <!-- Step 1 -->
+                <div class="relative pl-8">
+                    <div class="absolute -left-3 top-0 bg-emerald-600 w-6 h-6 rounded-full border-4 border-white shadow"></div>
+                    <h3 class="text-xl font-bold text-stone-800">Step 1: UI/UX 확정 (완료)</h3>
+                    <p class="text-stone-600 mt-1">전체 디자인, 메뉴 구조, 색상 팔레트 확정. 현재 프로토타입 단계.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="relative pl-8">
+                    <div class="absolute -left-3 top-0 bg-white border-2 border-emerald-600 w-6 h-6 rounded-full shadow"></div>
+                    <h3 class="text-xl font-bold text-stone-800">Step 2: 핵심 기능 구현 (1주)</h3>
+                    <p class="text-stone-600 mt-1">Local Storage 연동, 수입/지출 계산 로직, JSON 백업 기능 코딩.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="relative pl-8">
+                    <div class="absolute -left-3 top-0 bg-white border-2 border-stone-300 w-6 h-6 rounded-full shadow"></div>
+                    <h3 class="text-xl font-bold text-stone-800">Step 3: 패키징 & 테스트</h3>
+                    <p class="text-stone-600 mt-1">PWA 아이콘 적용, 안드로이드 APK 변환, 현직 캐디 2명 베타 테스트.</p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="relative pl-8">
+                    <div class="absolute -left-3 top-0 bg-white border-2 border-stone-300 w-6 h-6 rounded-full shadow"></div>
+                    <h3 class="text-xl font-bold text-stone-800">Step 4: 출시 및 판매</h3>
+                    <p class="text-stone-600 mt-1">블로그/커뮤니티 홍보 시작. 가격 120,000원 책정.</p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-900 text-stone-400 py-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <i class="fa-solid fa-golf-ball-tee text-emerald-600 text-3xl mb-4"></i>
+            <h2 class="text-white text-2xl font-bold mb-2">Caddy Manager Pro</h2>
+            <p class="mb-8">캐디의 삶을 더 스마트하게, 더 풍요롭게.</p>
+            <div class="border-t border-stone-800 pt-8 text-sm">
+                &copy; 2024 Caddy Manager Project. All rights reserved. <br>
+                Based on Business Plan v1.0
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- APP DATA STATE (Simulated LocalStorage) ---
+        const appState = {
+            schedules: [
+                { id: 1, date: '2024-05-20', time: '06:30', title: '1부 첫팀 (VIP)', type: 'work' },
+                { id: 2, date: '2024-05-20', time: '19:00', title: '치과 예약', type: 'personal' },
+                { id: 3, date: '2024-05-21', time: '12:00', title: '2부 막팀', type: 'work' },
+            ],
+            customers: [
+                { id: 1, name: '김철수', type: 'bad', memo: '진행 재촉 심함, 반말', date: '2024-04-10' },
+                { id: 2, name: '이영희', type: 'good', memo: '팁 5만원, 음료수 사주심', date: '2024-05-01' },
+                { id: 3, name: '박민수', type: 'normal', memo: '특이사항 없음', date: '2024-05-15' },
+            ],
+            incomes: [
+                { id: 1, amount: 150000, type: 'fee', date: '2024-05-18' },
+                { id: 2, amount: 30000, type: 'tip', date: '2024-05-18' },
+            ],
+            expenses: [
+                { id: 1, amount: 25000, category: '식대', date: '2024-05-18' },
+                { id: 2, amount: 15000, category: '용품', date: '2024-05-19' },
+            ]
+        };
+
+        // --- CHART INSTANCES ---
+        let businessChartInstance = null;
+        let expenseChartInstance = null;
+
+        // --- APP SIMULATOR LOGIC ---
+        function switchTab(tabName) {
+            // Update Tab UI
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'text-emerald-600', 'border-emerald-600');
+                btn.classList.add('text-stone-400', 'border-transparent');
+            });
+            const activeBtn = document.getElementById(`btn-${tabName}`);
+            activeBtn.classList.add('active', 'text-emerald-600', 'border-emerald-600');
+            activeBtn.classList.remove('text-stone-400', 'border-transparent');
+
+            // Render Content
+            const container = document.getElementById('app-content');
+            container.innerHTML = ''; // Clear previous
+
+            if (tabName === 'schedule') renderSchedule(container);
+            else if (tabName === 'customer') renderCustomer(container);
+            else if (tabName === 'money') renderMoney(container);
+            else if (tabName === 'backup') renderBackup(container);
+        }
+
+        // 1. Schedule Render
+        function renderSchedule(container) {
+            let html = `<div class="space-y-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-sm">5월 일정</h3>
+                    <button class="bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow" onclick="alert('일정 추가 모달 (데모)')"><i class="fa-solid fa-plus"></i></button>
+                </div>`;
+            
+            appState.schedules.forEach(s => {
+                const colorClass = s.type === 'work' ? 'bg-emerald-50 border-emerald-200' : 'bg-orange-50 border-orange-200';
+                const iconClass = s.type === 'work' ? 'text-emerald-600 fa-golf-ball-tee' : 'text-orange-500 fa-calendar-check';
+                html += `
+                <div class="p-3 rounded-lg border ${colorClass} flex items-center shadow-sm">
+                    <div class="mr-3 w-8 text-center">
+                        <div class="text-xs font-bold text-stone-500">${s.date.slice(5)}</div>
+                        <div class="text-xs font-bold text-stone-800">${s.time}</div>
+                    </div>
+                    <div class="flex-1 border-l border-stone-200 pl-3">
+                        <div class="text-sm font-bold text-stone-800 flex items-center">
+                            <i class="fa-solid ${iconClass} mr-1.5"></i> ${s.title}
+                        </div>
+                        <div class="text-xs text-stone-500 mt-0.5">${s.type === 'work' ? '근무' : '개인'}</div>
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        // 2. Customer Render
+        function renderCustomer(container) {
+            let html = `
+            <div class="sticky top-0 bg-stone-50 pb-2 z-10">
+                <div class="relative">
+                    <input type="text" placeholder="고객 이름 검색..." class="w-full p-3 pl-10 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-emerald-500 shadow-sm" onkeyup="filterCustomers(this.value)">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-stone-400"></i>
+                </div>
+            </div>
+            <div id="customer-list" class="space-y-3 mt-2">`;
+            
+            // Initial Render of List
+            html += getCustomerListHTML(appState.customers);
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function getCustomerListHTML(list) {
+            if (list.length === 0) return '<div class="text-center text-xs text-stone-400 mt-4">검색 결과가 없습니다.</div>';
+            return list.map(c => {
+                let borderClass = 'border-l-4 border-stone-300';
+                let tagClass = 'bg-stone-100 text-stone-500';
+                let tagText = '일반';
+                
+                if (c.type === 'bad') {
+                    borderClass = 'border-l-4 border-red-500 bg-red-50';
+                    tagClass = 'bg-red-100 text-red-600';
+                    tagText = '진상';
+                } else if (c.type === 'good') {
+                    borderClass = 'border-l-4 border-blue-500 bg-blue-50';
+                    tagClass = 'bg-blue-100 text-blue-600';
+                    tagText = '천사';
+                }
+
+                return `
+                <div class="p-3 bg-white rounded-lg shadow-sm border border-stone-100 ${borderClass}">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="font-bold text-stone-800">${c.name}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-bold ${tagClass}">${tagText}</span>
+                    </div>
+                    <p class="text-xs text-stone-600 mb-1 line-clamp-2">${c.memo}</p>
+                    <div class="text-xs text-stone-400 text-right">${c.date}</div>
+                </div>`;
+            }).join('');
+        }
+
+        window.filterCustomers = function(query) {
+            const list = appState.customers.filter(c => c.name.includes(query));
+            document.getElementById('customer-list').innerHTML = getCustomerListHTML(list);
+        }
+
+        // 3. Money Render
+        function renderMoney(container) {
+            const totalIncome = appState.incomes.reduce((a, b) => a + b.amount, 0);
+            const totalExpense = appState.expenses.reduce((a, b) => a + b.amount, 0);
+            const net = totalIncome - totalExpense;
+
+            container.innerHTML = `
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                        <div class="text-xs text-emerald-700 font-bold mb-1">총 수입</div>
+                        <div class="text-lg font-bold text-emerald-600">${totalIncome.toLocaleString()}</div>
+                    </div>
+                    <div class="bg-red-50 p-3 rounded-lg border border-red-100">
+                        <div class="text-xs text-red-700 font-bold mb-1">총 지출</div>
+                        <div class="text-lg font-bold text-red-600">-${totalExpense.toLocaleString()}</div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-3 rounded-lg border border-stone-200 shadow-sm">
+                    <h4 class="text-xs font-bold text-stone-500 mb-2">지출 분석</h4>
+                    <div class="h-40 relative w-full">
+                         <canvas id="expenseChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold text-stone-500">최근 내역</h4>
+                    <div class="bg-white p-2 rounded border border-stone-100 flex justify-between items-center">
+                        <span class="text-xs font-bold text-stone-700">캐디피 (18홀)</span>
+                        <span class="text-xs font-bold text-emerald-600">+150,000</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-stone-100 flex justify-between items-center">
+                        <span class="text-xs font-bold text-stone-700">식대 (그늘집)</span>
+                        <span class="text-xs font-bold text-red-500">-25,000</span>
+                    </div>
+                </div>
+                
+                <button class="w-full py-3 bg-stone-800 text-white rounded-xl text-sm font-bold shadow-lg" onclick="alert('내역 추가 모달 (데모)')">
+                    <i class="fa-solid fa-pen mr-1"></i> 내역 추가하기
+                </button>
+            </div>`;
+
+            // Render Expense Chart
+            setTimeout(() => {
+                const ctx = document.getElementById('expenseChart').getContext('2d');
+                if (expenseChartInstance) expenseChartInstance.destroy();
+                expenseChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['식대', '용품', '교통비'],
+                        datasets: [{
+                            data: [25000, 15000, 0],
+                            backgroundColor: ['#f87171', '#fbbf24', '#9ca3af'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } }
+                        }
+                    }
+                });
+            }, 100);
+        }
+
+        // 4. Backup Render
+        function renderBackup(container) {
+            container.innerHTML = `
+            <div class="flex flex-col h-full justify-center items-center text-center p-4">
+                <div class="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-cloud-arrow-down text-4xl text-stone-400"></i>
+                </div>
+                <h3 class="text-lg font-bold text-stone-800 mb-2">데이터 백업 & 복구</h3>
+                <p class="text-xs text-stone-500 mb-8 leading-relaxed">
+                    서버가 없는 독립형 앱입니다.<br>
+                    폰을 바꾸기 전에 반드시 백업하세요.<br>
+                    <strong>백업 파일이 없으면 복구가 불가능합니다.</strong>
+                </p>
+                
+                <button class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md mb-3 hover:bg-blue-700 transition" onclick="downloadBackup()">
+                    <i class="fa-solid fa-download mr-2"></i> 데이터 백업 (저장)
+                </button>
+                <button class="w-full py-3 bg-stone-200 text-stone-600 rounded-xl font-bold hover:bg-stone-300 transition" onclick="alert('파일 선택창이 열립니다.')">
+                    <i class="fa-solid fa-upload mr-2"></i> 데이터 복구 (불러오기)
+                </button>
+            </div>`;
+        }
+        
+        function downloadBackup() {
+            alert('simulation: my_caddy_backup_20240520.json 파일이 다운로드 되었습니다.');
+        }
+
+        function updateGlobalNetIncome() {
+            const totalIncome = appState.incomes.reduce((a, b) => a + b.amount, 0);
+            const totalExpense = appState.expenses.reduce((a, b) => a + b.amount, 0);
+            document.getElementById('app-total-net').innerHTML = `${(totalIncome - totalExpense).toLocaleString()} <span class="text-base font-normal">원</span>`;
+        }
+
+        // --- BUSINESS SIMULATOR LOGIC ---
+        const UNIT_PRICE = 120000;
+        const AS_PRICE = 30000;
+        
+        function updateBusinessCalc() {
+            const monthlySales = parseInt(document.getElementById('salesSlider').value);
+            document.getElementById('salesValue').innerText = monthlySales + '건';
+
+            // Monthly Revenue Calculation
+            const salesRevenue = monthlySales * UNIT_PRICE;
+            // Assumption: AS requests start small but grow. For simplicity, let's say active user base grows by 'monthlySales' each month.
+            // Let's just calculate "Potential AS Revenue" based on a accumulated user base of 1 year (monthlySales * 12).
+            // AS Rate 20% per year.
+            // Monthly AS Revenue (Steady State after 1 year) = (UserBase * 0.20) / 12 * AS_PRICE
+            const userBaseOneYear = monthlySales * 12;
+            const monthlyASRevenue = Math.round((userBaseOneYear * 0.20 / 12) * AS_PRICE);
+
+            document.getElementById('revenue-sales').innerText = salesRevenue.toLocaleString() + ' 원';
+            document.getElementById('revenue-as').innerText = monthlyASRevenue.toLocaleString() + ' 원';
+            document.getElementById('revenue-total').innerText = (salesRevenue + monthlyASRevenue).toLocaleString() + ' 원';
+
+            updateBusinessChart(monthlySales);
+        }
+
+        function updateBusinessChart(monthlySales) {
+            const ctx = document.getElementById('businessChart').getContext('2d');
+            
+            // Generate 12 months data
+            const labels = [];
+            const salesData = [];
+            const asData = [];
+            let cumulativeUsers = 0;
+
+            for (let i = 1; i <= 12; i++) {
+                labels.push(i + '월');
+                salesData.push(monthlySales * UNIT_PRICE); // Constant sales assumption
+                
+                cumulativeUsers += monthlySales;
+                // AS revenue kicks in as user base grows. 
+                // Monthly AS incidents = Cumulative Users * (20% / 12 months)
+                const asIncidents = Math.floor(cumulativeUsers * (0.20 / 12)); 
+                asData.push(asIncidents * AS_PRICE);
+            }
+
+            if (businessChartInstance) businessChartInstance.destroy();
+
+            businessChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '프로그램 판매 수익',
+                            data: salesData,
+                            backgroundColor: '#059669', // Emerald 600
+                            stack: 'Stack 0',
+                        },
+                        {
+                            label: 'AS/유지보수 수익',
+                            data: asData,
+                            backgroundColor: '#2563eb', // Blue 600
+                            stack: 'Stack 0',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { 
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value / 10000 + '만';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize App Simulator
+            updateGlobalNetIncome();
+            switchTab('schedule'); // Default tab
+
+            // Initialize Business Simulator
+            const slider = document.getElementById('salesSlider');
+            slider.addEventListener('input', updateBusinessCalc);
+            updateBusinessCalc(); // Initial calc
+        });
+
+    </script>
+</body>
+</html>

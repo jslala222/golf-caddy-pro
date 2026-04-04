@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>기획 분석 — 딜러 수익 모델 & 토큰 충전제</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111;
+    --bg3: #1a1a1a;
+    --border: #2a2a2a;
+    --text: #e5e5e5;
+    --muted: #6b7280;
+    --emerald: #10b981;
+    --emerald-light: #34d399;
+    --blue: #3b82f6;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --violet: #8b5cf6;
+    --cyan: #06b6d4;
+    --orange: #f97316;
+    --rose: #f43f5e;
+    --yellow: #eab308;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 920px; margin: 0 auto; }
+
+  /* ── 헤더 ── */
+  .header {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #0f172a 100%);
+    border: 1px solid #4338ca;
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+  }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(99,102,241,.2); border: 1px solid rgba(99,102,241,.4);
+    color: #a5b4fc; font-size: .7rem; font-weight: 700;
+    padding: .3rem .8rem; border-radius: 999px; margin-bottom: 1rem;
+    text-transform: uppercase; letter-spacing: .1em;
+  }
+  .header h1 { font-size: 1.8rem; font-weight: 900; color: #fff; }
+  .header .subtitle { color: #a5b4fc; font-size: .9rem; margin-top: .4rem; }
+  .header .desc { color: #818cf8; font-size: .8rem; margin-top: .6rem; line-height: 1.8; }
+  .meta-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: .75rem; margin-top: 1.5rem;
+  }
+  .meta-item {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(99,102,241,.2);
+    border-radius: 12px; padding: .75rem 1rem;
+  }
+  .meta-item .label { font-size: .65rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+  .meta-item .value { font-size: .82rem; color: #a5b4fc; font-weight: 700; margin-top: 2px; }
+
+  /* ── 섹션 ── */
+  .section {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.75rem; margin-bottom: 1.5rem;
+  }
+  .section-title {
+    display: flex; align-items: center; gap: .6rem;
+    font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 1.25rem;
+    padding-bottom: .75rem; border-bottom: 1px solid var(--border);
+  }
+  .section-num {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 900; flex-shrink: 0;
+  }
+  .num-violet { background: rgba(139,92,246,.3); color: #c4b5fd; border: 1px solid rgba(139,92,246,.4); }
+  .num-blue   { background: rgba(59,130,246,.3);  color: #93c5fd; border: 1px solid rgba(59,130,246,.4); }
+  .num-amber  { background: rgba(245,158,11,.3);  color: #fcd34d; border: 1px solid rgba(245,158,11,.4); }
+  .num-emerald{ background: rgba(16,185,129,.3);  color: #6ee7b7; border: 1px solid rgba(16,185,129,.4); }
+  .num-red    { background: rgba(239,68,68,.3);   color: #fca5a5; border: 1px solid rgba(239,68,68,.4); }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .82rem; }
+  th {
+    background: var(--bg3); color: var(--muted);
+    text-align: left; padding: .65rem .9rem;
+    font-size: .66rem; text-transform: uppercase; letter-spacing: .08em;
+    font-weight: 700; border-bottom: 1px solid var(--border);
+  }
+  td { padding: .65rem .9rem; border-bottom: 1px solid #1f1f1f; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* ── 태그 ── */
+  .tag {
+    display: inline-block; font-size: .65rem; font-weight: 700;
+    padding: .18rem .55rem; border-radius: 6px; margin: 2px;
+  }
+  .tag-green  { background: rgba(16,185,129,.15); color: var(--emerald);      border: 1px solid rgba(16,185,129,.3); }
+  .tag-blue   { background: rgba(59,130,246,.15);  color: #60a5fa;             border: 1px solid rgba(59,130,246,.3); }
+  .tag-amber  { background: rgba(245,158,11,.15);  color: #fbbf24;             border: 1px solid rgba(245,158,11,.3); }
+  .tag-red    { background: rgba(239,68,68,.15);   color: #f87171;             border: 1px solid rgba(239,68,68,.3); }
+  .tag-violet { background: rgba(139,92,246,.15);  color: #a78bfa;             border: 1px solid rgba(139,92,246,.3); }
+  .tag-cyan   { background: rgba(6,182,212,.15);   color: #22d3ee;             border: 1px solid rgba(6,182,212,.3); }
+  .tag-rose   { background: rgba(244,63,94,.15);   color: #fb7185;             border: 1px solid rgba(244,63,94,.3); }
+  .tag-star   { background: rgba(234,179,8,.2);    color: #fde047;             border: 1px solid rgba(234,179,8,.4); font-size: .72rem; }
+
+  /* ── 안 카드 ── */
+  .plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+  .plan-card {
+    border-radius: 14px; padding: 1.25rem;
+    position: relative; overflow: hidden;
+  }
+  .plan-card-a { background: linear-gradient(135deg,#1e293b,#0f172a); border: 1px solid #3b82f6; }
+  .plan-card-b { background: linear-gradient(135deg,#1a1a2e,#0d0d1a); border: 1px solid #8b5cf6; }
+  .plan-card-c { background: linear-gradient(135deg,#161a10,#0a0f0a); border: 1px solid #10b981; }
+  .plan-label {
+    font-size: .65rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em;
+    padding: .2rem .6rem; border-radius: 6px; margin-bottom: .75rem; display: inline-block;
+  }
+  .label-a { background: rgba(59,130,246,.2); color: #93c5fd; border: 1px solid rgba(59,130,246,.3); }
+  .label-b { background: rgba(139,92,246,.2); color: #c4b5fd; border: 1px solid rgba(139,92,246,.3); }
+  .label-c { background: rgba(16,185,129,.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,.3); }
+  .plan-card h3 { font-size: .95rem; font-weight: 800; color: #fff; margin-bottom: .5rem; }
+  .plan-card p { font-size: .8rem; color: var(--muted); line-height: 1.6; margin-bottom: .75rem; }
+  .pros-cons { font-size: .78rem; }
+  .pros-cons li { 
+    padding: .25rem 0; display: flex; align-items: flex-start; gap: .4rem;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    line-height: 1.5;
+  }
+  .pros-cons li:last-child { border-bottom: none; }
+  .pro-icon { color: #34d399; flex-shrink: 0; margin-top: 1px; }
+  .con-icon { color: #f87171; flex-shrink: 0; margin-top: 1px; }
+  .neutral-icon { color: #fbbf24; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── 가격표 ── */
+  .price-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem; margin: .5rem 0;
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .price-period { 
+    font-size: .75rem; font-weight: 800; min-width: 60px;
+    color: #fff;
+  }
+  .price-row {
+    display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; flex: 1;
+  }
+  .price-item { text-align: center; }
+  .price-item .p-label { font-size: .6rem; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+  .price-item .p-value { font-size: .92rem; font-weight: 900; margin-top: 2px; }
+  .p-online  { color: #93c5fd; }
+  .p-dealer  { color: #fbbf24; }
+  .p-profit  { color: #34d399; }
+  .p-cost    { color: #f87171; }
+  .price-arrow { color: var(--muted); font-size: 1.1rem; }
+
+  /* ── 흐름도 ── */
+  .flow {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .4rem;
+    font-size: .78rem; margin: .75rem 0;
+  }
+  .flow-step {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: .3rem .8rem; color: #fff; font-weight: 600;
+  }
+  .flow-step-blue   { background: rgba(59,130,246,.15);  border-color: rgba(59,130,246,.3);  color: #93c5fd; }
+  .flow-step-violet { background: rgba(139,92,246,.15);  border-color: rgba(139,92,246,.3);  color: #c4b5fd; }
+  .flow-step-green  { background: rgba(16,185,129,.15);  border-color: rgba(16,185,129,.3);  color: #6ee7b7; }
+  .flow-step-amber  { background: rgba(245,158,11,.15);  border-color: rgba(245,158,11,.3);  color: #fcd34d; }
+  .flow-arrow { color: var(--muted); font-size: 1rem; }
+
+  /* ── 알림 박스 ── */
+  .alert {
+    border-radius: 10px; padding: .9rem 1.1rem; margin: .75rem 0;
+    font-size: .82rem; line-height: 1.7; display: flex; gap: .6rem;
+  }
+  .alert-icon { flex-shrink: 0; }
+  .alert-blue   { background: rgba(59,130,246,.1);  border: 1px solid rgba(59,130,246,.25);  color: #93c5fd; }
+  .alert-amber  { background: rgba(245,158,11,.1);  border: 1px solid rgba(245,158,11,.25);  color: #fcd34d; }
+  .alert-green  { background: rgba(16,185,129,.1);  border: 1px solid rgba(16,185,129,.25);  color: #6ee7b7; }
+  .alert-red    { background: rgba(239,68,68,.1);   border: 1px solid rgba(239,68,68,.25);   color: #fca5a5; }
+  .alert-violet { background: rgba(139,92,246,.1);  border: 1px solid rgba(139,92,246,.25);  color: #c4b5fd; }
+  .alert-star   { background: rgba(234,179,8,.12);  border: 2px solid rgba(234,179,8,.4);    color: #fde047; }
+
+  /* ── 추천 카드 ── */
+  .recommend-card {
+    background: linear-gradient(135deg, #052e16 0%, #064e3b 60%, #0f172a 100%);
+    border: 2px solid #10b981;
+    border-radius: 16px; padding: 1.75rem; margin-top: 1.5rem;
+  }
+  .recommend-card h3 { font-size: 1.1rem; font-weight: 900; color: #fff; margin-bottom: .5rem; }
+  .recommend-card .reason { font-size: .82rem; color: #6ee7b7; line-height: 1.8; }
+
+  /* ── 비교표 강조 ── */
+  .winner { color: #34d399; font-weight: 800; }
+  .loser  { color: #6b7280; }
+
+  /* ── 케이스 박스 ── */
+  .case-grid { display: grid; grid-template-columns: 1fr; gap: .6rem; margin: .75rem 0; }
+  .case-box {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem;
+  }
+  .case-box .case-title { font-size: .82rem; font-weight: 800; color: #fff; margin-bottom: .4rem; }
+  .case-box .case-body  { font-size: .78rem; color: var(--muted); line-height: 1.7; }
+  .case-rule { color: #fbbf24; font-weight: 700; }
+
+  /* ── 수익 시뮬레이터 ── */
+  .sim-table { font-size: .8rem; }
+  .sim-header { color: var(--muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; }
+
+  /* ── DB 스키마 ── */
+  .schema-box {
+    background: #0d1117; border: 1px solid #30363d;
+    border-radius: 10px; padding: 1rem 1.25rem; margin: .75rem 0;
+    font-family: 'Consolas', 'Monaco', monospace; font-size: .78rem;
+    color: #c9d1d9; overflow-x: auto; line-height: 1.8;
+  }
+  .schema-key   { color: #79c0ff; }
+  .schema-type  { color: #56d364; }
+  .schema-note  { color: #8b949e; }
+
+  /* ── 반응형 ── */
+  @media (max-width: 600px) {
+    .plan-grid { grid-template-columns: 1fr; }
+    .meta-grid { grid-template-columns: 1fr 1fr; }
+    .header h1 { font-size: 1.4rem; }
+    .price-row { gap: .75rem; }
+  }
+
+  /* ── 목차 ── */
+  .toc {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.25rem; margin-bottom: 1.5rem;
+  }
+  .toc-title { font-size: .75rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .75rem; }
+  .toc-list { list-style: none; }
+  .toc-list li { padding: .25rem 0; }
+  .toc-list a { font-size: .82rem; color: #a5b4fc; text-decoration: none; display: flex; align-items: center; gap: .5rem; }
+  .toc-list a:hover { color: #c7d2fe; }
+  .toc-num { font-size: .65rem; color: var(--muted); font-weight: 700; min-width: 20px; }
+
+  /* ── 결정 버튼 영역 ── */
+  .decision-area {
+    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+    border: 1px solid rgba(99,102,241,.4);
+    border-radius: 14px; padding: 1.5rem; margin-top: 1.5rem;
+    text-align: center;
+  }
+  .decision-area h3 { font-size: .9rem; color: #a5b4fc; font-weight: 700; margin-bottom: .75rem; }
+  .btn-group { display: flex; justify-content: center; gap: .75rem; flex-wrap: wrap; margin-top: .75rem; }
+  .btn {
+    padding: .65rem 1.5rem; border-radius: 10px; font-size: .82rem; font-weight: 800;
+    border: none; cursor: pointer; transition: opacity .15s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn-violet { background: linear-gradient(135deg,#6d28d9,#4c1d95); color: #fff; }
+  .btn-amber  { background: linear-gradient(135deg,#d97706,#92400e); color: #fff; }
+  .btn-green  { background: linear-gradient(135deg,#059669,#064e3b); color: #fff; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── 헤더 ── -->
+  <div class="header">
+    <div class="header-badge">⛳ 기획 분석 문서 / 2026.04.04</div>
+    <h1>딜러 수익 모델 & 토큰 충전제</h1>
+    <div class="subtitle">Caddy Manager Pro — 딜러 선택 안 기획 분석</div>
+    <div class="desc">
+      ✅ <strong style="color:#34d399">A+B 하이브리드 채택 완료</strong> — 신규발급(딜러 직접) + 카드결제 링크 병행 운영.<br>
+      ✅ <strong style="color:#a78bfa">갱신 = 기간 연장</strong> — 기존 코드 그대로 유지, expires_at만 갱신 (R2 백업 코드 유지 필요).<br>
+      <span style="color:#9ca3af;font-size:.8rem">원문: 수수료 배분 규칙과 토큰 충전 가격 미확정 → 3가지 안 비교 후 결정 → 확정 완료</span>
+    </div>
+    <div class="meta-grid">
+      <div class="meta-item"><div class="label">현재 1개월 가격</div><div class="value">9,900원</div></div>
+      <div class="meta-item"><div class="label">현재 6개월 가격</div><div class="value">55,000원</div></div>
+      <div class="meta-item"><div class="label">현재 1년 가격</div><div class="value">99,000원</div></div>
+      <div class="meta-item"><div class="label">딜러 추적 방식</div><div class="value">issued_by 컬럼</div></div>
+      <div class="meta-item"><div class="label" style="color:#34d399">채택 모델</div><div class="value" style="color:#34d399">A+B 하이브리드 ✅</div></div>
+      <div class="meta-item"><div class="label" style="color:#a78bfa">갱신 방식</div><div class="value" style="color:#a78bfa">기간 연장 ✅</div></div>
+    </div>
+  </div>
+
+  <!-- ── 목차 ── -->
+  <div class="toc">
+    <div class="toc-title">📋 목차</div>
+    <ul class="toc-list">
+      <li><a href="#section1"><span class="toc-num">01</span> 현재 구조 분석 (갭 분석)</a></li>
+      <li><a href="#section2"><span class="toc-num">02</span> 안 A — URL 링크 + 자동 수수료 (현재 방식 고도화)</a></li>
+      <li><a href="#section3"><span class="toc-num">03</span> 안 B — 토큰 충전제 (딜러 선구매)</a></li>
+      <li><a href="#section4"><span class="toc-num">04</span> 안 C — 하이브리드 (토큰 + 카드 병행) <span style="color:#34d399">← 확정 채택</span></a></li>
+      <li><a href="#section5"><span class="toc-num">05</span> 수수료 배분 규칙 (갱신/재계약 케이스)</a></li>
+      <li><a href="#section6"><span class="toc-num">06</span> 토큰 충전 가격표 (안 B/C 기준)</a></li>
+      <li><a href="#section7"><span class="toc-num">07</span> 비교표</a></li>
+      <li><a href="#section8"><span class="toc-num">08</span> 결론 및 추천 ⭐</a></li>
+    </ul>
+  </div>
+
+  <!-- ── 01. 현재 구조 분석 ── -->
+  <div class="section" id="section1">
+    <div class="section-title">
+      <div class="section-num num-violet">01</div>
+      현재 구조 / 문제 파악
+    </div>
+
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;">딜러와 관련된 현재 코드베이스 상태를 정리합니다.</p>
+
+    <div class="flow">
+      <div class="flow-step flow-step-violet">딜러 대시보드<br><small style="color:var(--muted)">/dealer/[token]/dashboard</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step flow-step-blue">링크 생성<br><small style="color:var(--muted)">/subscribe?name=고객명&phone=...&ref=TOKEN</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step flow-step-amber">고객이 직접 카드 결제<br><small style="color:var(--muted)">PortOne V2</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step flow-step-green">이용권 발급<br><small style="color:var(--muted)">issued_by: dealer_TOKEN</small></div>
+    </div>
+
+    <div class="alert alert-amber" style="margin-top:1rem;">
+      <span class="alert-icon">⚠️</span>
+      <div>
+        <strong style="color:#fbbf24">갭(Gap) 분석</strong><br>
+        <ul style="margin-top:.4rem;list-style:disc;padding-left:1.2rem;font-size:.8rem;line-height:1.9;">
+          <li><strong>수수료 계산 없음</strong> — ref= 파라미터만 저장, 실제 정산 로직 없음. 코드 주석에도 "(다음 구현 예정)"으로 표기됨</li>
+          <li><strong>딜러 충전가 미확정</strong> — 딜러가 얼마에 살 것인지 가격 정책 없음</li>
+          <li><strong>갱신/재계약 규칙 없음</strong> — 딜러 소개 고객이 직접 갱신할 때 수수료 누가 받는지 불명확</li>
+          <li><strong>딜러가 직접 발급 불가</strong> — 현재는 링크 생성 후 고객이 결제; 딜러가 현장에서 즉시 발급 못 함</li>
+        </ul>
+      </div>
+    </div>
+
+    <h4 style="font-size:.82rem;font-weight:800;color:#fff;margin:1rem 0 .5rem;">📡 현재 DB 구조 (딜러 관련)</h4>
+    <div class="schema-box">
+<span class="schema-note">-- 딜러 테이블 (aone_pro_caddypro_dealers)</span>
+<span class="schema-key">id</span>          <span class="schema-type">uuid</span>
+<span class="schema-key">name</span>        <span class="schema-type">text</span>         <span class="schema-note">-- 딜러 이름</span>
+<span class="schema-key">phone</span>       <span class="schema-type">text</span>
+<span class="schema-key">token</span>       <span class="schema-type">text</span>         <span class="schema-note">-- 딜러 고유 토큰 (URL에 사용)</span>
+<span class="schema-key">pin</span>         <span class="schema-type">text</span>         <span class="schema-note">-- 대시보드 접근 PIN</span>
+<span class="schema-key">is_active</span>   <span class="schema-type">boolean</span>
+<span class="schema-key">total_issued</span> <span class="schema-type">int</span>          <span class="schema-note">-- 총 발급 건수</span>
+
+<span class="schema-note">-- 이용권 테이블 (aone_pro_caddypro_licenses)</span>
+<span class="schema-key">issued_by</span>   <span class="schema-type">text</span>         <span class="schema-note">-- "dealer_TOKEN" | "admin" | "portone"</span>
+<span class="schema-key">ref</span>         <span class="schema-type">text</span>         <span class="schema-note">-- 딜러 token (수수료 추적용)</span>
+
+<span class="schema-note">-- ❌ 없는 컬럼</span>
+<span class="schema-note">-- dealer_credits (딜러 잔여 토큰 수) → 안 B/C에서 추가 필요</span>
+<span class="schema-note">-- commission_amount (수수료 금액)  → 안 A에서 추가 필요</span>
+    </div>
+  </div>
+
+  <!-- ── 02. 안 A ── -->
+  <div class="section" id="section2">
+    <div class="section-title">
+      <div class="section-num num-blue">02</div>
+      안 A — URL 링크 + 자동 수수료 (현행 방식 고도화)
+    </div>
+
+    <div class="plan-grid">
+      <div class="plan-card plan-card-a" style="grid-column:1/-1;">
+        <span class="plan-label label-a">안 A</span>
+        <h3>온라인 결제 후 자동 수수료 지급</h3>
+        <p>딜러가 링크를 생성해 고객에게 보내면, 고객이 카드 결제 후 수수료가 자동 계산 → 월말 정산.</p>
+        
+        <div class="flow" style="margin-bottom:1rem;">
+          <div class="flow-step flow-step-blue">딜러가 링크 생성</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step flow-step-amber">고객 카드 결제</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step flow-step-green">수수료 자동 계산<br><small>결제금액 × 요율</small></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">월말 정산</div>
+        </div>
+
+        <h4 style="font-size:.78rem;color:#60a5fa;margin-bottom:.5rem;">💰 수수료 요율 (예시)</h4>
+        <div class="price-card" style="margin-bottom:.4rem;">
+          <div class="price-period">1개월</div>
+          <div class="price-row">
+            <div class="price-item"><div class="p-label">판매가</div><div class="p-value p-online">9,900원</div></div>
+            <div class="price-arrow">→</div>
+            <div class="price-item"><div class="p-label">수수료 20%</div><div class="p-value p-profit">1,980원</div></div>
+            <div class="price-item"><div class="p-label">본사 수익</div><div class="p-value p-online">7,920원</div></div>
+          </div>
+        </div>
+        <div class="price-card" style="margin-bottom:.4rem;">
+          <div class="price-period">6개월</div>
+          <div class="price-row">
+            <div class="price-item"><div class="p-label">판매가</div><div class="p-value p-online">55,000원</div></div>
+            <div class="price-arrow">→</div>
+            <div class="price-item"><div class="p-label">수수료 20%</div><div class="p-value p-profit">11,000원</div></div>
+            <div class="price-item"><div class="p-label">본사 수익</div><div class="p-value p-online">44,000원</div></div>
+          </div>
+        </div>
+        <div class="price-card">
+          <div class="price-period">1년</div>
+          <div class="price-row">
+            <div class="price-item"><div class="p-label">판매가</div><div class="p-value p-online">99,000원</div></div>
+            <div class="price-arrow">→</div>
+            <div class="price-item"><div class="p-label">수수료 20%</div><div class="p-value p-profit">19,800원</div></div>
+            <div class="price-item"><div class="p-label">본사 수익</div><div class="p-value p-online">79,200원</div></div>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <h4 style="font-size:.78rem;color:#60a5fa;margin-bottom:.5rem;">⚙️ 구현 필요 사항</h4>
+          <ul class="pros-cons" style="list-style:none;">
+            <li><span class="neutral-icon">→</span> licenses 테이블에 commission_amount, commission_rate 컬럼 추가</li>
+            <li><span class="neutral-icon">→</span> api/payment/complete에서 ref= 있으면 수수료 자동 계산 저장</li>
+            <li><span class="neutral-icon">→</span> 딜러 대시보드에 수수료 내역 표시</li>
+            <li><span class="neutral-icon">→</span> 관리자 페이지에 월별 정산 현황 추가</li>
+          </ul>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <h4 style="font-size:.78rem;font-weight:800;color:#fff;margin-bottom:.5rem;">장점 / 단점</h4>
+          <ul class="pros-cons" style="list-style:none;">
+            <li><span class="pro-icon">✅</span> 기존 코드 구조 최소 변경 (ref= 파라미터 이미 있음)</li>
+            <li><span class="pro-icon">✅</span> 카드 결제라 정확한 금액 추적 가능</li>
+            <li><span class="pro-icon">✅</span> 딜러가 선 투자 불필요</li>
+            <li><span class="con-icon">❌</span> 딜러가 현장에서 즉시 발급 불가 (고객이 폰으로 직접 결제해야)</span></li>
+            <li><span class="con-icon">❌</span> 딜러가 가격 조정 불가 (온라인 공시가 고정)</li>
+            <li><span class="con-icon">❌</span> 월말 정산 처리 수작업 or 추가 개발 필요</li>
+            <li><span class="con-icon">❌</span> 딜러 동기부여 낮음 (직접 이익 체감 못 함)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 03. 안 B ── -->
+  <div class="section" id="section3">
+    <div class="section-title">
+      <div class="section-num num-violet">03</div>
+      안 B — 토큰 충전제 (딜러 선구매 → 즉시 발급)
+    </div>
+
+    <div class="plan-card plan-card-b" style="padding:1.5rem;margin-bottom:1rem;">
+      <span class="plan-label label-b">안 B</span>
+      <h3>딜러가 토큰(이용권)을 도매가로 미리 구매 → 고객에게 직접 발급</h3>
+      <p>본사가 딜러에게 이용권 토큰을 할인된 도매가로 판매. 딜러는 자신의 판매가를 자유롭게 설정해 현장에서 즉시 발급.</p>
+      
+      <div class="flow" style="margin-bottom:1rem;">
+        <div class="flow-step flow-step-violet">딜러가 본사에<br>선충전 (토큰 구매)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step flow-step-blue">크레딧(토큰) 충전<br>dealer_credits 증가</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step flow-step-amber">현장에서 고객 정보 입력<br>즉시 이용권 발급</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step flow-step-green">딜러 크레딧 차감<br>이용권 DB 저장</div>
+      </div>
+
+      <div class="alert alert-violet">
+        <span class="alert-icon">💡</span>
+        <div>
+          <strong style="color:#c4b5fd">핵심 원리</strong><br>
+          딜러는 "이용권 묶음"을 도매가로 사서, 소매가로 고객에게 팔아 차익 획득.<br>
+          카드 결제, 현금 결제, 지인 선물 — <strong>딜러가 알아서 판매</strong>. 본사는 개입 없음.
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <h4 style="font-size:.78rem;color:#c4b5fd;margin-bottom:.5rem;">⚙️ 추가 DB 컬럼 필요</h4>
+        <div class="schema-box">
+<span class="schema-note">-- dealers 테이블에 추가</span>
+<span class="schema-key">credits_1month</span>   <span class="schema-type">int default 0</span>   <span class="schema-note">-- 1개월권 잔여 토큰</span>
+<span class="schema-key">credits_6month</span>   <span class="schema-type">int default 0</span>   <span class="schema-note">-- 6개월권 잔여 토큰</span>
+<span class="schema-key">credits_year</span>     <span class="schema-type">int default 0</span>   <span class="schema-note">-- 1년권 잔여 토큰</span>
+
+<span class="schema-note">-- dealer_credit_history 테이블 (충전/사용 이력)</span>
+<span class="schema-key">dealer_id</span>     <span class="schema-type">uuid</span>
+<span class="schema-key">type</span>          <span class="schema-type">text</span>   <span class="schema-note">-- 'charge' | 'use'</span>
+<span class="schema-key">plan</span>          <span class="schema-type">text</span>   <span class="schema-note">-- 'month' | '6month' | 'year'</span>
+<span class="schema-key">qty</span>           <span class="schema-type">int</span>
+<span class="schema-key">paid_amount</span>   <span class="schema-type">int</span>    <span class="schema-note">-- 딜러가 본사에 낸 금액</span>
+<span class="schema-key">created_at</span>    <span class="schema-type">timestamp</span>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <h4 style="font-size:.78rem;font-weight:800;color:#fff;margin-bottom:.5rem;">장점 / 단점</h4>
+        <ul class="pros-cons" style="list-style:none;">
+          <li><span class="pro-icon">✅</span> 딜러가 현장에서 즉시 발급 가능 (현금 받고 바로)</li>
+          <li><span class="pro-icon">✅</span> 딜러 수익이 명확하고 즉각적 체감 → 동기부여 UP</li>
+          <li><span class="pro-icon">✅</span> 수수료 계산 자동화 불필요 (선충전이므로 이미 정산 완료)</li>
+          <li><span class="pro-icon">✅</span> 딜러가 가격 자유 설정 (50,000원, 60,000원 등)</li>
+          <li><span class="pro-icon">✅</span> 갱신 문제 없음 (딜러 토큰 소모하면 그만)</li>
+          <li><span class="con-icon">❌</span> 딜러가 선 투자 필요 (토큰 미리 구매해야)</li>
+          <li><span class="con-icon">❌</span> 딜러 토큰 관리 화면 추가 개발 필요</li>
+          <li><span class="con-icon">❌</span> 딜러가 충전하지 않으면 발급 불가 (재고 개념)</li>
+          <li><span class="con-icon">❌</span> 본사가 딜러 충전금 받는 결제 프로세스 필요</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 04. 안 C ── -->
+  <div class="section" id="section4">
+    <div class="section-title">
+      <div class="section-num num-emerald">04</div>
+      안 C — 하이브리드 (토큰 충전 + 카드 결제 병행)
+    </div>
+
+    <div class="plan-card plan-card-c" style="padding:1.5rem;margin-bottom:1rem;">
+      <span class="plan-label label-c">안 C</span>
+      <h3>딜러가 선충전(토큰)도 가능, 고객 링크 결제도 가능</h3>
+      <p>딜러 대시보드에서 두 가지 방식을 모두 지원. 토큰이 있으면 즉시 발급, 없으면 결제 링크 생성.</p>
+      
+      <div class="flow" style="margin-bottom:1rem;">
+        <div class="flow-step flow-step-green">딜러 대시보드</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step flow-step-violet">토큰 있음?<br><small style="opacity:.7">크레딧 확인</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step flow-step-green">YES: 즉시 발급</div>
+      </div>
+      <div class="flow" style="margin-left:200px;">
+        <div class="flow-arrow">↘ NO</div>
+        <div class="flow-step flow-step-blue">결제 링크 생성<br><small style="opacity:.7">고객이 카드결제</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step flow-step-amber">수수료 자동 계산</div>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <h4 style="font-size:.78rem;font-weight:800;color:#fff;margin-bottom:.5rem;">장점 / 단점</h4>
+        <ul class="pros-cons" style="list-style:none;">
+          <li><span class="pro-icon">✅</span> 가장 유연한 방식 (현장 + 온라인 모두 대응)</li>
+          <li><span class="pro-icon">✅</span> 딜러가 자금이 없어도 시작 가능</li>
+          <li><span class="con-icon">❌</span> 개발 공수 가장 높음 (안 A + 안 B 동시 구현)</li>
+          <li><span class="con-icon">❌</span> UI 복잡도 상승 (딜러 혼란 가능)</li>
+          <li><span class="con-icon">❌</span> 두 방식의 수수료 계산 방식이 달라 관리 복잡</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 05. 수수료 배분 규칙 ── -->
+  <div class="section" id="section5">
+    <div class="section-title">
+      <div class="section-num num-amber">05</div>
+      수수료 배분 규칙 — 갱신·재계약·휴면 케이스
+    </div>
+
+    <div class="alert alert-amber">
+      <span class="alert-icon">📌</span>
+      <div>
+        텍스트 파일에서 발견된 구체적 질문: <br>
+        <em>"딜러가 판매시 6개월 50,000원 판매했음. 7일전 딜러와 다시 6개월 계약 진행했을 경우 수익 분배는?"</em><br>
+        <em>"딜러가 판매시 6개월 50,000원 판매했음. 몇달 쉬었다 다시 판매했음. 판매코드는?"</em>
+      </div>
+    </div>
+
+    <div class="case-grid" style="margin-top:1rem;">
+
+      <div class="case-box">
+        <div class="case-title">📋 케이스 1 — 만료 7일 전 갱신 (딜러 통해 재계약)</div>
+        <div class="case-body">
+          상황: 딜러 A가 고객에게 6개월권 판매 → 만료 7일 전에 딜러 A를 통해 재계약<br><br>
+          <span class="case-rule">추천 규칙:</span> 딜러 수수료 100% 지급.<br>
+          이유: 딜러가 직접 관리하여 재계약으로 이어진 것. 딜러 영업 활동의 결과.
+        </div>
+      </div>
+
+      <div class="case-box">
+        <div class="case-title">📋 케이스 2 — 만료 7일 전 갱신 (고객이 직접 온라인 결제)</div>
+        <div class="case-body">
+          상황: 딜러 A가 고객에게 소개 → 고객이 직접 /subscribe 접속해서 카드 결제<br><br>
+          <span class="case-rule">추천 규칙 (안 A 기준):</span> 최초 이용권의 ref= 값 추적해서 수수료 지급.<br>
+          구현 방법: 고객 phone 번호로 기존 ref 조회 후 동일 딜러 수수료 적용.<br>
+          <span class="case-rule">추천 규칙 (안 B 기준):</span> 해당 없음. 딜러 토큰 소모 없으면 수수료 없음.
+        </div>
+      </div>
+
+      <div class="case-box">
+        <div class="case-title">📋 케이스 3 — 몇 달 쉬었다 재사용 (딜러 통해 재계약)</div>
+        <div class="case-body">
+          상황: 딜러 A 소개 → 3개월 사용 → 2개월 휴면 → 딜러 A 통해 재계약<br><br>
+          <span class="case-rule">추천 규칙:</span> 딜러 수수료 100% 지급. (딜러가 재접촉·영업한 결과)<br>
+          <span style="color:#a78bfa;font-weight:700">✅ 확정:</span> 기존 이용권 코드 기간 연장 (코드 변경 없음, expires_at만 갱신).<br>
+          이유: R2 백업 경로가 <code style="color:#fbbf24">{code}/latest.json</code>이므로 코드 변경 시 백업 데이터 유실.
+        </div>
+      </div>
+
+      <div class="case-box">
+        <div class="case-title">📋 케이스 4 — 몇 달 쉬었다 재사용 (고객이 직접 온라인 갱신)</div>
+        <div class="case-body">
+          상황: 딜러 A 소개 → 3개월 사용 → 2개월 휴면 → 고객 혼자 온라인 결제<br><br>
+          <span class="case-rule">추천 규칙:</span> 수수료 없음 OR 초회 딜러에게 10% 지급 (선택).<br>
+          권장: 수수료 없음. 딜러 영업 없이 고객 자발적 갱신이므로 본사 full 수익.
+        </div>
+      </div>
+
+      <div class="case-box">
+        <div class="case-title">📋 케이스 5 — 딜러 A 소개 → 이후 딜러 B 통해 갱신</div>
+        <div class="case-body">
+          상황: 딜러 A가 최초 소개했으나, 고객이 딜러 B를 통해 갱신 요청<br><br>
+          <span class="case-rule">추천 규칙:</span> 갱신 시점의 딜러(딜러 B)에게 수수료 지급.<br>
+          이유: 실제로 재판매한 딜러가 B이므로 B가 영업의 주체. 단순 명확성.
+        </div>
+      </div>
+
+      <div class="case-box">
+        <div class="case-title">📋 케이스 6 — 딜러가 한동안 영업을 안 했다가 재개 (판매코드)</div>
+        <div class="case-body">
+          상황: 딜러 A가 몇 달 쉬었다가 다시 판매 시작<br><br>
+          <span class="case-rule">추천 규칙 (안 B):</span> 기존 딜러 토큰(dealer URL) 그대로 유지. 크레딧 재충전만 하면 됨.<br>
+          <span class="case-rule">추천 규칙 (안 A):</span> 딜러 is_active 상태 관리. 관리자가 재활성화 처리.
+        </div>
+      </div>
+
+    </div>
+
+    <h4 style="font-size:.82rem;font-weight:800;color:#fff;margin:1.25rem 0 .75rem;">📐 수수료 배분 규칙 정리표</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>케이스</th>
+          <th>딜러 개입</th>
+          <th>수수료</th>
+          <th>이용권 코드</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>만료 임박 + 딜러 통해 갱신</td>
+          <td><span class="tag tag-green">O</span></td>
+          <td class="winner">100% 지급</td>
+          <td style="color:#a78bfa;font-weight:700">기간 연장</td>
+        </tr>
+        <tr>
+          <td>만료 임박 + 고객 직접 온라인 갱신</td>
+          <td><span class="tag tag-red">X</span></td>
+          <td>초회 딜러 20% (또는 0%)</td>
+          <td style="color:#a78bfa;font-weight:700">기간 연장</td>
+        </tr>
+        <tr>
+          <td>휴면 후 딜러 통해 재계약</td>
+          <td><span class="tag tag-green">O</span></td>
+          <td class="winner">100% 지급</td>
+          <td style="color:#a78bfa;font-weight:700">기간 연장</td>
+        </tr>
+        <tr>
+          <td>휴면 후 고객 혼자 갱신</td>
+          <td><span class="tag tag-red">X</span></td>
+          <td class="loser">0원 (본사 full)</td>
+          <td style="color:#a78bfa;font-weight:700">기간 연장</td>
+        </tr>
+        <tr>
+          <td>다른 딜러 통해 갱신</td>
+          <td><span class="tag tag-amber">타딜러</span></td>
+          <td>갱신 딜러 100%</td>
+          <td style="color:#a78bfa;font-weight:700">기간 연장</td>
+        </tr>
+        <tr>
+          <td>딜러 재가동 (휴면 딜러 재시작)</td>
+          <td>—</td>
+          <td>관리자 재활성화</td>
+          <td>기존 URL 유지</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── 06. 토큰 충전 가격표 ── -->
+  <div class="section" id="section6">
+    <div class="section-title">
+      <div class="section-num num-amber">06</div>
+      토큰 충전 가격표 (안 B / 안 C 기준)
+    </div>
+
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;">
+      딜러가 본사로부터 이용권 토큰을 도매가로 구매하는 가격입니다.<br>
+      딜러의 이익 = 딜러 판매가 − 본사 도매가
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>구분</th>
+          <th>온라인 공시가</th>
+          <th>딜러 도매가 (추천)</th>
+          <th>딜러 최소 판매가 (추천)</th>
+          <th>딜러 이익</th>
+          <th>이익률</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong style="color:#fff">1개월권</strong></td>
+          <td><span style="color:#93c5fd">9,900원</span></td>
+          <td><span class="tag tag-amber"> 7,000원</span></td>
+          <td>9,000 ~ 12,000원</td>
+          <td class="winner">2,000 ~ 5,000원</td>
+          <td>약 29 ~ 70%</td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">6개월권</strong></td>
+          <td><span style="color:#93c5fd">55,000원</span></td>
+          <td><span class="tag tag-amber">40,000원</span></td>
+          <td>48,000 ~ 60,000원</td>
+          <td class="winner">8,000 ~ 20,000원</td>
+          <td>약 20 ~ 50%</td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">1년권</strong></td>
+          <td><span style="color:#93c5fd">99,000원</span></td>
+          <td><span class="tag tag-amber">72,000원</span></td>
+          <td>85,000 ~ 99,000원</td>
+          <td class="winner">13,000 ~ 27,000원</td>
+          <td>약 18 ~ 37%</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-blue" style="margin-top:1rem;">
+      <span class="alert-icon">📌</span>
+      <div>
+        <strong style="color:#93c5fd">텍스트 파일에서 언급된 사례</strong><br>
+        "딜러가 판매시 6개월 50,000원을 판매했음" → 딜러가 55,000원짜리를 5,000원 할인해서 50,000원에 팔았던 사례.<br>
+        이 모델 기준: 딜러 도매 40,000원 → 50,000원 판매 → 이익 <strong style="color:#34d399">10,000원</strong>
+      </div>
+    </div>
+
+    <h4 style="font-size:.82rem;font-weight:800;color:#fff;margin:1.25rem 0 .75rem;">💡 딜러 수익 시뮬레이션</h4>
+    <table class="sim-table">
+      <thead>
+        <tr>
+          <th>월 판매 건수</th>
+          <th>상품</th>
+          <th>딜러 도매가</th>
+          <th>판매가</th>
+          <th>월 순수익</th>
+          <th>연 순수익</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>10건/월</td>
+          <td>6개월권</td>
+          <td>40,000 × 10 = 400,000원</td>
+          <td>50,000 × 10 = 500,000원</td>
+          <td class="winner">100,000원</td>
+          <td class="winner">1,200,000원</td>
+        </tr>
+        <tr>
+          <td>20건/월</td>
+          <td>6개월권</td>
+          <td>40,000 × 20 = 800,000원</td>
+          <td>50,000 × 20 = 1,000,000원</td>
+          <td class="winner">200,000원</td>
+          <td class="winner">2,400,000원</td>
+        </tr>
+        <tr>
+          <td>5건/월</td>
+          <td>1년권</td>
+          <td>72,000 × 5 = 360,000원</td>
+          <td>90,000 × 5 = 450,000원</td>
+          <td class="winner">90,000원</td>
+          <td class="winner">1,080,000원</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-amber" style="margin-top:1rem;">
+      <span class="alert-icon">⚠️</span>
+      <div>
+        <strong style="color:#fcd34d">딜러 대량 구매 할인 (선택 적용)</strong><br>
+        토큰 10개 이상 구매 시 추가 5% 할인 등 볼륨 디스카운트 정책 추후 적용 가능.<br>
+        현재는 단가 고정으로 단순화 권장.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 07. 비교표 ── -->
+  <div class="section" id="section7">
+    <div class="section-title">
+      <div class="section-num num-red">07</div>
+      비교표
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>안 A (URL + 자동 수수료)</th>
+          <th>안 B (토큰 충전제) ⭐</th>
+          <th>안 C (하이브리드)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong style="color:#fff">개발 공수</strong></td>
+          <td>중간 (수수료 계산 추가)</td>
+          <td class="winner">낮음 (크레딧 차감만)</td>
+          <td class="loser">높음 (둘 다 구현)</td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">딜러 즉시 발급</strong></td>
+          <td><span class="tag tag-red">불가</span></td>
+          <td class="winner"><span class="tag tag-green">가능</span></td>
+          <td><span class="tag tag-green">가능</span></td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">딜러 선 투자 필요</strong></td>
+          <td><span class="tag tag-green">불필요</span></td>
+          <td><span class="tag tag-amber">필요</span></td>
+          <td><span class="tag tag-amber">선택</span></td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">수익 명확성</strong></td>
+          <td>월말 정산 (불확실)</td>
+          <td class="winner">즉각 체감 (도매-소매 차익)</td>
+          <td>복잡</td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">갱신 수수료 처리</strong></td>
+          <td>추적 로직 추가 필요</td>
+          <td class="winner">해당 없음 (새 토큰 소모)</td>
+          <td>복잡</td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">딜러 가격 자유도</strong></td>
+          <td><span class="tag tag-red">없음 (공시가 고정)</span></td>
+          <td class="winner"><span class="tag tag-green">완전 자유</span></td>
+          <td><span class="tag tag-green">자유 (토큰 방식)</span></td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">현금 거래 지원</strong></td>
+          <td><span class="tag tag-red">불가</span></td>
+          <td class="winner"><span class="tag tag-green">가능</span></td>
+          <td><span class="tag tag-green">가능</span></td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">관리 복잡도</strong></td>
+          <td>중간</td>
+          <td class="winner">낮음</td>
+          <td class="loser">높음</td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">딜러 동기부여</strong></td>
+          <td>낮음</td>
+          <td class="winner">높음</td>
+          <td>중간</td>
+        </tr>
+        <tr>
+          <td><strong style="color:#fff">본사 입장 리스크</strong></td>
+          <td>낮음</td>
+          <td>낮음 (선결제이므로)</td>
+          <td>중간</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── 08. 결론 및 추천 ── -->
+  <div class="section" id="section8">
+    <div class="section-title">
+      <div class="section-num num-emerald">08</div>
+      결론 및 추천 ⭐
+    </div>
+
+    <div class="recommend-card">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+        <span style="font-size:1.5rem;">✅</span>
+        <h3>확정: 안 A + 안 B 하이브리드 채택 (구현 완료)</h3>
+      </div>
+      <div class="reason">
+        <strong style="color:#34d399;">왜 하이브리드인가?</strong><br><br>
+        
+        <strong>1. 딜러 상황별 유연성</strong><br>
+        조장 10명 묶음 판매 같은 현금 대량 거래는 딜러가 직접 즉시 발급(안 B 방식).<br>
+        처음에 충전 자금이 없는 신규 딜러나 고객이 직접 카드로 내겠다는 경우는 결제 링크(안 A 방식).<br><br>
+        
+        <strong>2. 젊은 세대 직접 결제 선호</strong><br>
+        "요즘 젊은 세대는 직접 결제에 1/N 방식을 좋아하기도 함" → 결제 링크가 필수.<br>딜러가 링크를 생성해서 카카오로 보내면 고객이 각자 결제 — 딜러는 현금 관리 부담 제로.<br><br>
+        
+        <strong>3. 갱신 = 기간 연장 (코드 유지)</strong><br>
+        갱신 시 이용권 코드를 신규 발급하지 않고 <strong style="color:#a78bfa">기존 코드의 expires_at만 연장</strong>.<br>
+        이유: R2 백업 경로가 <code style="color:#fbbf24">{code}/latest.json</code>이므로 코드 변경 시 백업 유실됨.<br>딜러 대시보드에서 전화번호 검색 → 기존 코드 조회 → 기간 연장 버튼으로 구현.<br><br>
+        
+        <strong>4. 딜러 대시보드 구현 상태</strong><br>
+        [신규 발급] / [기간 연장] 모드 토글 — 딜러가 탭 전환으로 편리하게 사용.<br>
+        기간 연장 완료 화면에서도 기존 코드 그대로 표시, 새 만료일 안내.
+      </div>
+
+      <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid rgba(16,185,129,.3);">
+        <strong style="color:#fff;font-size:.85rem;">📋 구현 순서 (우선순위)</strong>
+        <div style="margin-top:.75rem;font-size:.8rem;color:#6ee7b7;line-height:2.2;">
+          <div>① <strong>dealers 테이블</strong>에 credits_1month / credits_6month / credits_year 컬럼 추가</div>
+          <div>② <strong>dealer_credit_history 테이블</strong> 신규 생성 (충전/사용 이력)</div>
+          <div>③ <strong>관리자 페이지</strong>에 딜러 토큰 충전 기능 추가 (관리자가 충전해줌)</div>
+          <div>④ <strong>딜러 대시보드</strong>에 크레딧 잔여량 표시 + 즉시 발급 버튼</div>
+          <div>⑤ 이용권 발급 시 해당 딜러 크레딧 자동 차감</div>
+        </div>
+      </div>
+
+      <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid rgba(16,185,129,.3);">
+        <strong style="color:#fff;font-size:.85rem;">💰 최종 확정 가격표 (추천)</strong>
+        <table style="margin-top:.75rem;">
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>온라인 공시가</th>
+              <th>딜러 도매가</th>
+              <th>딜러 권장 판매가</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong style="color:#fff">1개월권</strong></td>
+              <td style="color:#93c5fd">9,900원</td>
+              <td><strong style="color:#fbbf24">7,000원</strong></td>
+              <td style="color:#34d399">9,000 ~ 11,000원</td>
+            </tr>
+            <tr>
+              <td><strong style="color:#fff">6개월권</strong></td>
+              <td style="color:#93c5fd">55,000원</td>
+              <td><strong style="color:#fbbf24">40,000원</strong></td>
+              <td style="color:#34d399">48,000 ~ 58,000원</td>
+            </tr>
+            <tr>
+              <td><strong style="color:#fff">1년권</strong></td>
+              <td style="color:#93c5fd">99,000원</td>
+              <td><strong style="color:#fbbf24">72,000원</strong></td>
+              <td style="color:#34d399">85,000 ~ 99,000원</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid rgba(16,185,129,.3);">
+        <strong style="color:#fff;font-size:.85rem;">📜 확정된 운영 규칙</strong>
+        <div style="margin-top:.75rem;font-size:.8rem;color:#6ee7b7;line-height:2.2;">
+          <div>✅ <strong>딜러 즉시 발급</strong> — 신규 고객에게 코드 즉시 생성 (이름+전화번호 입력)</div>
+          <div>✅ <strong>갱신 = 기간 연장</strong> — 전화번호 검색 → 기존 코드 기간만 연장 (코드 불변)</div>
+          <div>✅ <strong>결제 링크</strong> — 고객이 직접 카드/이체로 결제 시 자동 코드 발급 (안 A 방식)</div>
+          <div>✅ <strong>딜러 대시보드</strong> — [신규 발급] / [기간 연장] 탭 토글로 분리</div>
+          <div style="color:#a78bfa">📌 <strong>갱신 시 코드 변경 금지</strong> — R2 백업 경로가 코드 기반({code}/latest.json)이므로</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-star" style="margin-top:1.25rem;">
+      <span class="alert-icon">✅</span>
+      <div>
+        <strong>최종 확정 결론</strong><br>
+        <strong>안 A + 안 B 하이브리드</strong> 채택 — 구현 완료.<br>
+        딜러 대시보드: [신규 발급] 탭 (즉시) + [기간 연장] 탭 (전화번호 검색 → expires_at 갱신) + [결제 링크] 버튼.<br>
+        갱신 시 이용권 코드는 불변 — R2 백업 무결성 보장.
+      </div>
+    </div>
+
+    <div class="decision-area" style="margin-top:1.25rem;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.4);">
+      <h3>✅ 결정 완료 — 구현 진행 중</h3>
+      <p style="font-size:.8rem;color:#34d399;margin-bottom:.75rem;">아래 내용으로 확정되어 딜러 대시보드에 구현되었습니다</p>
+      <div class="btn-group">
+        <div class="btn btn-green" style="opacity:1">✅ A+B 하이브리드 — 구현 완료</div>
+        <div class="btn btn-violet" style="opacity:1">✅ 갱신 = 기간 연장 — 구현 완료</div>
+        <div class="btn" style="opacity:.4;background:#374151;color:#9ca3af;border-color:#4b5563">토큰 충전제(크레딧) — 추후 구현 예정</div>
+      </div>
+      <p style="font-size:.72rem;color:var(--muted);margin-top:.75rem;">dashboard/page.tsx — searchLicenseByPhone + extendLicense 구현 완료</p>
+    </div>
+  </div>
+
+  <!-- 푸터 -->
+  <div style="text-align:center;padding:2rem 0;color:var(--muted);font-size:.75rem;">
+    Caddy Manager Pro 기획 문서 — 2026.04.04 GitHub Copilot 작성
+  </div>
+
+</div>
+</body>
+</html>

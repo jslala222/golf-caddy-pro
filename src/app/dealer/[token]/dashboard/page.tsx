@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { PLANS, issueVoucher } from '@/lib/licenseUtils';
+import { PLANS, issueVoucher, searchLicenseByPhone, extendLicense } from '@/lib/licenseUtils';
 import type { PlanType } from '@/lib/licenseUtils';
 import { supabase } from '@/lib/supabaseClient';
 import {
     ShieldAlert, User, Check, Copy, Plus, Minus, Tag, CheckCircle2,
     Key, TrendingUp, Users, Receipt, Lock, Eye, EyeOff, RefreshCcw,
-    ChevronDown, ChevronUp, BadgeCheck, Clock, AlertCircle,
+    ChevronDown, ChevronUp, BadgeCheck, Clock, AlertCircle, Share2, ExternalLink,
+    Search, RotateCcw,
 } from 'lucide-react';
 
 // ── 타입 ──────────────────────────────────────────────────────────
@@ -31,7 +32,10 @@ interface License {
     is_active: boolean;
     user_name: string | null;
     user_phone: string | null;
-    created_at: string;
+    issued_at: string;
+    golf_course: string | null;
+    memo: string | null;
+    pay_method: string | null;
 }
 
 interface Settlement {
@@ -72,12 +76,36 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [days, setDays] = useState(30);
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
-    const [memo, setMemo] = useState('');
+    const [golfCourse, setGolfCourse] = useState('');
+    const [specialNote, setSpecialNote] = useState('');
+    const [payMethod, setPayMethod] = useState<'cash' | 'virtual_account' | 'transfer'>('cash');
     const [isIssuing, setIsIssuing] = useState(false);
     const [issuedCode, setIssuedCode] = useState('');
     const [issuedPlan, setIssuedPlan] = useState('');
     const [issuedDays, setIssuedDays] = useState(0);
     const [copied, setCopied] = useState(false);
+    const [paymentLink, setPaymentLink] = useState('');
+    const [linkCopied, setLinkCopied] = useState(false);
+
+    // 발급 모드 (신규 / 기간 연장)
+    const [issueMode, setIssueMode] = useState<'new' | 'renew'>('new');
+
+    // 갱신 전용 상태
+    const [renewPhone, setRenewPhone] = useState('');
+    const [renewSearching, setRenewSearching] = useState(false);
+    const [renewResult, setRenewResult] = useState<{
+        found: boolean; id?: string; code?: string; plan?: string;
+        expiresAt?: string | null; userName?: string | null;
+        daysLeft?: number; isExpired?: boolean;
+    } | null>(null);
+    const [isExtending, setIsExtending] = useState(false);
+    const [extendedResult, setExtendedResult] = useState<{ code: string; newExpiresAt: string } | null>(null);
+    const [renewName, setRenewName] = useState('');
+    const [renewResults, setRenewResults] = useState<Array<{
+        id: string; code: string; plan: string;
+        expiresAt: string | null; userName: string | null;
+        userPhone: string | null; isExpired: boolean; daysLeft?: number;
+    }>>([]);
 
     // 내 고객
     const [licenses, setLicenses] = useState<License[]>([]);
@@ -117,9 +145,9 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         setLicensesLoading(true);
         const { data } = await supabase
             .from('aone_pro_caddypro_licenses')
-            .select('id, code, plan, days, expires_at, first_used_at, is_active, user_name, user_phone, created_at')
+            .select('id, code, plan, days, expires_at, first_used_at, is_active, user_name, user_phone, issued_at, golf_course, memo, pay_method')
             .eq('issued_by', `dealer_${token}`)
-            .order('created_at', { ascending: false });
+            .order('issued_at', { ascending: false });
         setLicensesLoading(false);
         setLicenses((data as License[]) || []);
     }, [dealer, token]);
@@ -139,7 +167,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
 
     useEffect(() => {
         if (!authenticated || !dealer) return;
-        if (activeTab === 'customers') loadLicenses();
+        if (activeTab === 'customers' || activeTab === 'earnings') loadLicenses();
         if (activeTab === 'earnings' || activeTab === 'settlement') loadSettlements();
     }, [activeTab, authenticated, dealer, loadLicenses, loadSettlements]);
 
@@ -176,7 +204,9 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
             channel: 'dealer',
             plan,
             days,
-            memo: memo || `딜러: ${dealer.name}`,
+            memo: specialNote || undefined,
+            golfCourse: golfCourse || undefined,
+            payMethod: 'cash',
             userName: customerName.trim(),
             userPhone: customerPhone.trim(),
             issuedBy: `dealer_${token}`,
@@ -192,9 +222,126 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
             setIssuedPlan(PLANS[plan].label);
             setIssuedDays(days);
             setCopied(false);
-            setCustomerName(''); setCustomerPhone(''); setMemo('');
+            setCustomerName(''); setCustomerPhone(''); setGolfCourse(''); setSpecialNote('');
         } else {
             alert(`발급 실패: ${result.error}`);
+        }
+    };
+
+    const handleGenerateLink = () => {
+        if (!customerName.trim() || !customerPhone.trim()) {
+            alert('고객 이름과 연락처를 먼저 입력해주세요.');
+            return;
+        }
+        const params = new URLSearchParams({
+            name: customerName.trim(),
+            phone: customerPhone.trim(),
+            plan,
+            ref: token,            ...(golfCourse ? { golf_course: golfCourse.trim() } : {}),
+            ...(payMethod !== 'cash' ? { payMethod } : {}),        });
+        setPaymentLink(`${window.location.origin}/subscribe?${params.toString()}`);
+    };
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(paymentLink);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 3000);
+    };
+
+    const handleShareLink = () => {
+        const msg = `[캐디 매니저 프로] ${customerName}님, 아래 링크에서 이용권을 결제해주세요.\n${paymentLink}`;
+        if (navigator.share) {
+            navigator.share({ title: '캐디 매니저 프로 결제 링크', text: msg, url: paymentLink });
+        } else {
+            navigator.clipboard.writeText(msg);
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 3000);
+        }
+    };
+
+    // ── 이용권 검색 (갱신용) ──
+    const handleSearchLicense = async () => {
+        const digits = renewPhone.replace(/\D/g, '');
+        const hasFullPhone = digits.length >= 10;
+        const hasSuffix = digits.length >= 4 && digits.length < 10; // 끝 4~9자리
+        const hasName = renewName.trim().length >= 1;
+        if (!hasFullPhone && !hasSuffix && !hasName) return;
+        setRenewSearching(true);
+        setRenewResult(null);
+        setRenewResults([]);
+        if (hasFullPhone) {
+            const result = await searchLicenseByPhone(renewPhone);
+            if (result.found && hasName) {
+                const match = result.userName?.includes(renewName.trim()) !== false;
+                setRenewResult(match ? result : { found: false });
+            } else {
+                setRenewResult(result);
+            }
+        } else if (hasSuffix) {
+            // 끝자리 ilike 검색
+            let query = supabase
+                .from('aone_pro_caddypro_licenses')
+                .select('id, code, plan, expires_at, user_name, user_phone')
+                .ilike('user_phone', `%${digits}`);
+            if (hasName) query = query.ilike('user_name', `%${renewName.trim()}%`);
+            const { data } = await query.order('expires_at', { ascending: false }).limit(20);
+            const now = new Date();
+            const results = (data || []).map((d: { id: string; code: string; plan: string; expires_at: string | null; user_name: string | null; user_phone: string | null }) => ({
+                id: d.id, code: d.code, plan: d.plan,
+                expiresAt: d.expires_at, userName: d.user_name, userPhone: d.user_phone,
+                isExpired: d.expires_at ? now > new Date(d.expires_at) : false,
+                daysLeft: d.expires_at ? Math.ceil((new Date(d.expires_at).getTime() - now.getTime()) / 86_400_000) : undefined,
+            }));
+            if (results.length === 1) {
+                const r = results[0];
+                setRenewResult({ found: true, id: r.id, code: r.code, plan: r.plan, expiresAt: r.expiresAt, userName: r.userName, daysLeft: r.daysLeft, isExpired: r.isExpired });
+            } else if (results.length > 1) {
+                setRenewResults(results);
+            } else {
+                setRenewResult({ found: false });
+            }
+        } else {
+            const { data } = await supabase
+                .from('aone_pro_caddypro_licenses')
+                .select('id, code, plan, expires_at, user_name, user_phone')
+                .ilike('user_name', `%${renewName.trim()}%`)
+                .order('expires_at', { ascending: false })
+                .limit(20);
+            const now = new Date();
+            const results = (data || []).map((d: { id: string; code: string; plan: string; expires_at: string | null; user_name: string | null; user_phone: string | null }) => ({
+                id: d.id, code: d.code, plan: d.plan,
+                expiresAt: d.expires_at, userName: d.user_name, userPhone: d.user_phone,
+                isExpired: d.expires_at ? now > new Date(d.expires_at) : false,
+                daysLeft: d.expires_at ? Math.ceil((new Date(d.expires_at).getTime() - now.getTime()) / 86_400_000) : undefined,
+            }));
+            if (results.length === 1) {
+                const r = results[0];
+                setRenewResult({ found: true, id: r.id, code: r.code, plan: r.plan, expiresAt: r.expiresAt, userName: r.userName, daysLeft: r.daysLeft, isExpired: r.isExpired });
+            } else if (results.length > 1) {
+                setRenewResults(results);
+            } else {
+                setRenewResult({ found: false });
+            }
+        }
+        setRenewSearching(false);
+    };
+
+    // ── 기간 연장 ──
+    const handleExtend = async () => {
+        if (!renewResult?.id || !dealer) return;
+        setIsExtending(true);
+        const result = await extendLicense({ licenseId: renewResult.id, plan, days, dealerToken: token });
+        setIsExtending(false);
+        if (result.success && result.newExpiresAt) {
+            await supabase
+                .from('aone_pro_caddypro_dealers')
+                .update({ total_issued: dealer.total_issued + 1 })
+                .eq('id', dealer.id);
+            setDealer(prev => prev ? { ...prev, total_issued: prev.total_issued + 1 } : prev);
+            setExtendedResult({ code: renewResult.code!, newExpiresAt: result.newExpiresAt });
+            setRenewPhone(''); setRenewName(''); setRenewResult(null); setRenewResults([]);
+        } else {
+            alert(`연장 실패: ${result.error}`);
         }
     };
 
@@ -336,6 +483,43 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         );
     }
 
+    // ── 기간 연장 완료 화면 ──
+    if (extendedResult) {
+        const d = new Date(extendedResult.newExpiresAt);
+        const dateStr = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+        return (
+            <div className="fixed inset-0 bg-stone-900 flex items-center justify-center p-6 text-white">
+                <div className="w-full max-w-sm space-y-6 text-center">
+                    <RotateCcw size={72} className="mx-auto text-violet-400" />
+                    <div>
+                        <h1 className="text-2xl font-black text-violet-400 mb-1">기간 연장 완료!</h1>
+                        <p className="text-stone-400 text-sm">{PLANS[plan].label} · {days}일 추가</p>
+                    </div>
+                    <div className="bg-stone-800 rounded-3xl p-6 space-y-3">
+                        <p className="text-stone-400 text-xs">기존 이용권 코드 (변경 없음)</p>
+                        <div className="text-3xl font-black tracking-[0.15em] font-mono text-white">{extendedResult.code}</div>
+                        <div className="pt-2 border-t border-stone-700">
+                            <p className="text-stone-400 text-xs mb-1">새 만료일</p>
+                            <p className="text-violet-300 font-black text-xl">{dateStr}</p>
+                        </div>
+                        <p className="text-stone-500 text-[10px]">코드는 이대로입니다. 고객이 앱을 재시작하면 자동 반영됩니다.</p>
+                    </div>
+                    <button
+                        onClick={() => { navigator.clipboard.writeText(extendedResult.code); setCopied(true); setTimeout(() => setCopied(false), 3000); }}
+                        className={`w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition ${copied ? 'bg-emerald-600' : 'bg-violet-600 hover:bg-violet-500'}`}>
+                        {copied ? <Check size={22} /> : <Copy size={22} />}
+                        {copied ? '복사됨!' : '코드 복사하기'}
+                    </button>
+                    <button
+                        onClick={() => { setExtendedResult(null); setCopied(false); setIssueMode('renew'); }}
+                        className="w-full py-3 rounded-2xl font-bold text-stone-400 bg-stone-800 hover:bg-stone-700 transition text-sm">
+                        계속 작업하기
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // ── 메인 대시보드 ──
     return (
         <div className="min-h-screen bg-stone-950 text-white pb-28">
@@ -353,7 +537,11 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 {TABS.map(tab => (
                     <button
                         key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
+                        onClick={() => {
+                            setActiveTab(tab.key);
+                            setRenewPhone(''); setRenewName('');
+                            setRenewResult(null); setRenewResults([]);
+                        }}
                         className={`flex-1 min-w-[72px] py-3 flex flex-col items-center gap-1 text-[10px] font-bold transition ${activeTab === tab.key ? 'text-blue-400 border-b-2 border-blue-400' : 'text-stone-500'}`}
                     >
                         {tab.icon} {tab.label}
@@ -365,6 +553,21 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 {/* ── 코드발급 탭 ── */}
                 {activeTab === 'issue' && (
                     <div className="space-y-5">
+
+                        {/* 🔀 발급 모드 토글 */}
+                        <div className="flex gap-2 bg-stone-900 rounded-2xl p-1.5">
+                            <button onClick={() => setIssueMode('new')}
+                                className={`flex-1 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition ${issueMode === 'new' ? 'bg-blue-600 text-white' : 'text-stone-500'}`}>
+                                <Key size={14} /> 신규 발급
+                            </button>
+                            <button onClick={() => setIssueMode('renew')}
+                                className={`flex-1 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition ${issueMode === 'renew' ? 'bg-violet-600 text-white' : 'text-stone-500'}`}>
+                                <RotateCcw size={14} /> 기간 연장
+                            </button>
+                        </div>
+
+                        {/* ── 신규 발급 모드 ── */}
+                        {issueMode === 'new' && (<>
                         {/* 고객 정보 */}
                         <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
                             <div className="flex items-center gap-2 text-blue-400 font-bold text-sm">
@@ -379,7 +582,11 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">연락처 <span className="text-red-400">*</span></label>
-                                    <input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)}
+                                    <input value={customerPhone} onChange={e => {
+                                        const raw = e.target.value.replace(/\D/g, '').slice(0, 11);
+                                        const formatted = raw.length <= 3 ? raw : raw.length <= 7 ? `${raw.slice(0,3)}-${raw.slice(3)}` : `${raw.slice(0,3)}-${raw.slice(3,7)}-${raw.slice(7)}`;
+                                        setCustomerPhone(formatted);
+                                    }}
                                         placeholder="010-0000-0000" inputMode="tel"
                                         className="w-full p-4 bg-stone-800 border border-stone-700 rounded-2xl text-white placeholder-stone-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg" />
                                 </div>
@@ -427,19 +634,267 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                             <p className="text-stone-500 text-[10px] text-center mt-2">기본 {minDays}일 + 보너스 최대 {maxDays - minDays}일</p>
                         </section>
 
-                        {/* 메모 */}
-                        <section className="bg-stone-900 rounded-3xl p-5">
-                            <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">메모 (선택)</label>
-                            <input value={memo} onChange={e => setMemo(e.target.value)}
-                                placeholder={`딜러: ${dealer?.name}`}
-                                className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
+                        {/* 골프장명 + 특이사항 */}
+                        <section className="bg-stone-900 rounded-3xl p-5 space-y-3">
+                            <div className="flex items-center gap-2 text-stone-400 font-bold text-sm">
+                                <Tag size={16} /> 추가 정보 (선택)
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">골프장명</label>
+                                <input value={golfCourse} onChange={e => setGolfCourse(e.target.value)}
+                                    placeholder="예: 발리오스CC, 남서울CC"
+                                    className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">특이사항</label>
+                                <input value={specialNote} onChange={e => setSpecialNote(e.target.value)}
+                                    placeholder="예: 1조 조장, 캐디 10년차, 소개자 홍길동"
+                                    className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
+                            </div>
                         </section>
 
+                        {/* 결제 방식 선택 */}
+                        <section className="bg-stone-900 rounded-3xl p-5 space-y-3">
+                            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                                <Receipt size={16} /> 수금 방식
+                            </div>
+                            <div className="grid grid-cols-1 gap-2">
+                                <button onClick={() => setPayMethod('cash')}
+                                    className={`p-3.5 rounded-2xl border text-left transition ${payMethod === 'cash' ? 'border-amber-500 bg-amber-900/20' : 'border-stone-700 bg-stone-800'}`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-lg">💵</span>
+                                        <div>
+                                            <p className="text-sm font-bold text-white">안 A — 현금/계좌이체 수금</p>
+                                            <p className="text-[10px] text-stone-400">딜러가 직접 수금 → 이용권 즉시 발급 → 본사에 정산 요청</p>
+                                        </div>
+                                    </div>
+                                </button>
+                                <button onClick={() => setPayMethod('virtual_account')}
+                                    className={`p-3.5 rounded-2xl border text-left transition ${payMethod === 'virtual_account' ? 'border-blue-500 bg-blue-900/20' : 'border-stone-700 bg-stone-800'}`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-lg">🏦</span>
+                                        <div>
+                                            <p className="text-sm font-bold text-white">안 B — 가상계좌 발급</p>
+                                            <p className="text-[10px] text-stone-400">고객에게 가상계좌 번호 발송 → 입금 확인 후 코드 자동 발급</p>
+                                        </div>
+                                    </div>
+                                </button>
+                                <button onClick={() => setPayMethod('transfer')}
+                                    className={`p-3.5 rounded-2xl border text-left transition ${payMethod === 'transfer' ? 'border-purple-500 bg-purple-900/20' : 'border-stone-700 bg-stone-800'}`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-lg">📲</span>
+                                        <div>
+                                            <p className="text-sm font-bold text-white">안 B-2 — 실시간 계좌이체</p>
+                                            <p className="text-[10px] text-stone-400">고객이 링크에서 실시간 이체 → 즉시 코드 발급</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        </section>
+
+                        {/* 안A: 현금발급 버튼 */}
+                        {(payMethod === 'cash') && (
                         <button onClick={handleIssue} disabled={isIssuing || !customerName.trim() || !customerPhone.trim()}
                             className="w-full py-5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition">
                             {isIssuing ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Key size={24} />}
-                            {isIssuing ? '발급 중...' : '이용권 발급하기'}
+                            {isIssuing ? '발급 중...' : '💵 현금 수금 후 즉시 발급'}
                         </button>
+                        )}
+
+                        {/* 결제 링크 발송 (안B) */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3 text-stone-600">
+                                <div className="flex-1 h-px bg-stone-800" />
+                                <span className="text-xs">또는</span>
+                                <div className="flex-1 h-px bg-stone-800" />
+                            </div>
+                            <button onClick={handleGenerateLink}
+                                disabled={!customerName.trim() || !customerPhone.trim()}
+                                className="w-full py-4 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 rounded-3xl font-bold text-base flex items-center justify-center gap-2 transition">
+                                <ExternalLink size={18} /> 🏦 결제 링크 생성 (가상계좌/이체/카드)
+                            </button>
+                        </div>
+
+                        {paymentLink && (
+                            <div className="bg-stone-900 rounded-3xl p-4 space-y-3 border border-emerald-700">
+                                <p className="text-emerald-400 text-xs font-bold flex items-center gap-1.5">
+                                    <CheckCircle2 size={14} /> 결제 링크 생성 완료 — 카카오나 문자로 보내세요
+                                </p>
+                                <div className="bg-stone-800 rounded-2xl p-3 text-[11px] text-stone-400 break-all font-mono leading-relaxed">
+                                    {paymentLink}
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={handleCopyLink}
+                                        className={`flex-1 py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-1.5 transition ${linkCopied ? 'bg-emerald-600 text-white' : 'bg-stone-800 text-white hover:bg-stone-700'}`}>
+                                        {linkCopied ? <Check size={15} /> : <Copy size={15} />}
+                                        {linkCopied ? '복사됨!' : '링크 복사'}
+                                    </button>
+                                    <button onClick={handleShareLink}
+                                        className="flex-1 py-3 rounded-2xl font-bold text-sm bg-yellow-400 text-stone-900 hover:bg-yellow-300 transition flex items-center justify-center gap-1.5">
+                                        <Share2 size={15} /> 공유하기
+                                    </button>
+                                </div>
+                                <p className="text-stone-600 text-[10px]">
+                                    고객이 이 링크로 결제하면 이용권 코드가 자동 발급됩니다
+                                </p>
+                            </div>
+                        )}
+                        </>)}
+
+                        {/* ── 기간 연장 모드 ── */}
+                        {issueMode === 'renew' && (
+                            <div className="space-y-5">
+                                {/* 전화번호 검색 */}
+                                <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
+                                    <div className="flex items-center gap-2 text-violet-400 font-bold text-sm">
+                                        <Search size={16} /> 고객 이용권 검색
+                                    </div>
+                                    <p className="text-stone-500 text-xs">이름 또는 전화번호로 기존 이용권을 찾아 기간을 연장합니다. 코드는 그대로 유지됩니다.</p>
+                                    <div className="space-y-2">
+                                        <input
+                                            value={renewName}
+                                            onChange={e => { setRenewName(e.target.value); setRenewResult(null); setRenewResults([]); }}
+                                            onKeyDown={e => e.key === 'Enter' && handleSearchLicense()}
+                                            placeholder="고객 이름 (예: 김경준)"
+                                            className="w-full p-4 bg-stone-800 border border-stone-700 rounded-2xl text-white placeholder-stone-500 focus:ring-2 focus:ring-violet-500 focus:outline-none text-lg"
+                                        />
+                                        <div className="flex gap-2">
+                                            <input
+                                                value={renewPhone}
+                                                onChange={e => {
+                                                    const raw = e.target.value.replace(/\D/g, '').slice(0, 11);
+                                                    const fmt = raw.length <= 3 ? raw : raw.length <= 7
+                                                        ? `${raw.slice(0,3)}-${raw.slice(3)}`
+                                                        : `${raw.slice(0,3)}-${raw.slice(3,7)}-${raw.slice(7)}`;
+                                                    setRenewPhone(fmt);
+                                                    setRenewResult(null); setRenewResults([]);
+                                                }}
+                                                onKeyDown={e => e.key === 'Enter' && handleSearchLicense()}
+                                                placeholder="010-0000-0000 (선택)"
+                                                inputMode="tel"
+                                                className="flex-1 p-4 bg-stone-800 border border-stone-700 rounded-2xl text-white placeholder-stone-500 focus:ring-2 focus:ring-violet-500 focus:outline-none text-lg"
+                                            />
+                                            <button
+                                                onClick={handleSearchLicense}
+                                                disabled={renewSearching || (renewName.trim().length < 1 && renewPhone.replace(/\D/g,'').length < 4)}
+                                                className="w-14 h-14 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 rounded-2xl flex items-center justify-center transition">
+                                                {renewSearching
+                                                    ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    : <Search size={20} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {renewResult && !renewResult.found && (
+                                        <div className="bg-red-900/20 border border-red-800 rounded-2xl p-4 text-sm text-red-300 text-center">
+                                            이용권을 찾을 수 없습니다.
+                                        </div>
+                                    )}
+                                    {renewResults.length > 1 && (
+                                        <div className="space-y-2">
+                                            <p className="text-violet-300 text-xs font-bold">검색 결과 {renewResults.length}건 — 해당 고객을 선택하세요</p>
+                                            {renewResults.map(r => (
+                                                <button
+                                                    key={r.id}
+                                                    onClick={() => { setRenewResult({ found: true, id: r.id, code: r.code, plan: r.plan, expiresAt: r.expiresAt, userName: r.userName, daysLeft: r.daysLeft, isExpired: r.isExpired }); setRenewResults([]); }}
+                                                    className={`w-full text-left rounded-2xl p-3.5 border transition hover:border-violet-500 ${r.isExpired ? 'bg-red-900/15 border-red-800' : 'bg-stone-800 border-stone-700'}`}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-bold text-white text-sm">{r.userName || '(이름 없음)'}</span>
+                                                        <span className={`text-xs font-bold ${r.isExpired ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                            {r.isExpired ? '만료됨' : `${r.daysLeft}일 남음`}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between mt-1">
+                                                        <span className="text-stone-500 text-xs">{r.userPhone ? `${r.userPhone.slice(0,3)}-****-${r.userPhone.slice(-4)}` : '-'}</span>
+                                                        <span className="font-mono text-stone-400 text-xs">{r.code}</span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {renewResult?.found && (
+                                        <div className={`rounded-2xl p-4 space-y-2 border ${renewResult.isExpired ? 'bg-red-900/15 border-red-800' : 'bg-violet-900/20 border-violet-700'}`}>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-bold text-stone-400">이용권 코드</span>
+                                                <span className="font-mono font-black text-white text-sm">{renewResult.code}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-bold text-stone-400">고객명</span>
+                                                <span className="text-white text-sm">{renewResult.userName || '-'}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-bold text-stone-400">현재 만료일</span>
+                                                <span className={`text-sm font-bold ${renewResult.isExpired ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                    {renewResult.expiresAt
+                                                        ? new Date(renewResult.expiresAt).toLocaleDateString('ko-KR')
+                                                        : '미활성'}
+                                                    {renewResult.isExpired ? ' (만료됨)' : renewResult.daysLeft !== undefined ? ` (${renewResult.daysLeft}일 남음)` : ''}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </section>
+
+                                {renewResult?.found && (<>
+                                    <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
+                                        <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                                            <Tag size={16} /> 연장 요금제
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {(Object.entries(PLANS) as [PlanType, typeof PLANS[PlanType]][]).map(([key, p]) => (
+                                                <button key={key} onClick={() => setPlan(key)}
+                                                    className={`p-3 rounded-2xl border text-center transition ${plan === key ? 'border-violet-500 bg-violet-900/30' : 'border-stone-700 bg-stone-800'}`}>
+                                                    <p className="text-xs font-bold text-stone-300">{p.label}</p>
+                                                    <p className="text-[10px] text-stone-500 mt-0.5">{p.days}일</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </section>
+                                    <section className="bg-stone-900 rounded-3xl p-5">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-stone-300 text-sm font-bold">연장 기간</span>
+                                            <span className="text-violet-400 font-black text-xl">{days}일</span>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <button onClick={() => setDays(d => Math.max(minDays, d - 1))}
+                                                disabled={days <= minDays}
+                                                className="w-12 h-12 bg-stone-700 hover:bg-stone-600 disabled:opacity-30 rounded-full flex items-center justify-center transition">
+                                                <Minus size={20} />
+                                            </button>
+                                            <div className="flex-1 bg-stone-800 rounded-full h-2">
+                                                <div className="bg-violet-500 h-2 rounded-full transition-all"
+                                                    style={{ width: `${((days - minDays) / (maxDays - minDays || 1)) * 100}%` }} />
+                                            </div>
+                                            <button onClick={() => setDays(d => Math.min(maxDays, d + 1))}
+                                                disabled={days >= maxDays}
+                                                className="w-12 h-12 bg-stone-700 hover:bg-stone-600 disabled:opacity-30 rounded-full flex items-center justify-center transition">
+                                                <Plus size={20} />
+                                            </button>
+                                        </div>
+                                        <p className="text-stone-500 text-[10px] text-center mt-2">기본 {minDays}일 + 보너스 최대 {maxDays - minDays}일</p>
+                                    </section>
+                                    {(() => {
+                                        const base = renewResult.expiresAt && new Date(renewResult.expiresAt) > new Date()
+                                            ? new Date(renewResult.expiresAt) : new Date();
+                                        const newExp = new Date(base.getTime() + days * 86_400_000);
+                                        return (
+                                            <div className="bg-violet-900/20 border border-violet-700 rounded-2xl p-4 text-center">
+                                                <p className="text-stone-400 text-xs mb-1">연장 후 새 만료일</p>
+                                                <p className="text-violet-300 font-black text-xl">{newExp.toLocaleDateString('ko-KR')}</p>
+                                                <p className="text-stone-500 text-[10px] mt-1">코드 변경 없이 기간만 연장됩니다</p>
+                                            </div>
+                                        );
+                                    })()}
+                                    <button onClick={handleExtend} disabled={isExtending}
+                                        className="w-full py-5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition">
+                                        {isExtending
+                                            ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            : <RotateCcw size={24} />}
+                                        {isExtending ? '연장 중...' : '🔄 기간 연장하기'}
+                                    </button>
+                                </>)}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -448,12 +903,12 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-white font-bold text-sm flex items-center gap-2"><TrendingUp size={16} className="text-emerald-400" /> 수익 현황</h2>
-                            <button onClick={loadSettlements} className="text-stone-500 hover:text-stone-300">
+                            <button onClick={() => { loadSettlements(); loadLicenses(); }} className="text-stone-500 hover:text-stone-300">
                                 <RefreshCcw size={14} />
                             </button>
                         </div>
 
-                        {settlementsLoading ? (
+                        {settlementsLoading || licensesLoading ? (
                             <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
                         ) : (
                             <>
@@ -477,14 +932,87 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                     </div>
                                 </div>
 
-                                {/* 상세 내역 */}
+                                {/* 💵 현금 미입금 확인 (본사 정산용) */}
+                                {(() => {
+                                    const cashLicenses = licenses.filter(l => !l.pay_method || l.pay_method === 'cash');
+                                    const PLAN_PRICE: Record<string, number> = { month: 9900, '6month': 55000, year: 99000 };
+                                    const cashTotal = cashLicenses.reduce((a, l) => a + (PLAN_PRICE[l.plan] || 0), 0);
+                                    return cashLicenses.length > 0 ? (
+                                        <div className="bg-amber-900/20 border border-amber-700 rounded-2xl p-4 space-y-2">
+                                            <p className="text-amber-300 text-xs font-bold flex items-center gap-1">💵 현금 수금 내역 (본사 정산 대상)</p>
+                                            {cashLicenses.map(l => (
+                                                <div key={l.id} className="flex items-center justify-between text-xs py-1.5 border-b border-amber-900/30">
+                                                    <div>
+                                                        <span className="text-white font-mono font-bold">{l.user_name || '-'}</span>
+                                                        <span className="text-stone-400 ml-2">{l.plan} · {l.issued_at.slice(0, 10)}</span>
+                                                        {l.golf_course && <span className="text-emerald-400 ml-2">{l.golf_course}</span>}
+                                                    </div>
+                                                    <span className="text-amber-200 font-black">₩{(PLAN_PRICE[l.plan] || 0).toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                            <div className="flex justify-between pt-1 text-sm font-black">
+                                                <span className="text-amber-300">합계 ({cashLicenses.length}건)</span>
+                                                <span className="text-amber-100">₩{cashTotal.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    ) : null;
+                                })()}
+
+                                {/* 📊 날짜별/상품별 집계 */}
+                                {(() => {
+                                    const PLAN_PRICE: Record<string, number> = { month: 9900, '6month': 55000, year: 99000 };
+                                    const planCount: Record<string, number> = {};
+                                    const dateCount: Record<string, number> = {};
+                                    const dateAmount: Record<string, number> = {};
+                                    licenses.forEach(l => {
+                                        planCount[l.plan] = (planCount[l.plan] || 0) + 1;
+                                        const d = l.issued_at.slice(0, 10);
+                                        dateCount[d] = (dateCount[d] || 0) + 1;
+                                        dateAmount[d] = (dateAmount[d] || 0) + (PLAN_PRICE[l.plan] || 0);
+                                    });
+                                    const sortedDates = Object.keys(dateCount).sort().reverse();
+                                    return licenses.length > 0 ? (
+                                        <>
+                                            {/* 상품별 */}
+                                            <div className="bg-stone-900 rounded-2xl p-4">
+                                                <p className="text-stone-300 text-xs font-bold mb-3">📦 상품별 발급 현황</p>
+                                                {Object.entries(planCount).map(([p, cnt]) => (
+                                                    <div key={p} className="flex items-center justify-between py-1.5 text-xs border-b border-stone-800 last:border-0">
+                                                        <span className="text-stone-300">{p === 'month' ? '1개월권' : p === '6month' ? '6개월권' : '1년권'}</span>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-blue-400 font-bold">{cnt}건</span>
+                                                            <span className="text-stone-400">₩{((PLAN_PRICE[p] || 0) * cnt).toLocaleString()}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* 날짜별 */}
+                                            <div className="bg-stone-900 rounded-2xl p-4">
+                                                <p className="text-stone-300 text-xs font-bold mb-3">📅 날짜별 발급 현황</p>
+                                                {sortedDates.map(d => (
+                                                    <div key={d} className="flex items-center justify-between py-1.5 text-xs border-b border-stone-800 last:border-0">
+                                                        <span className="text-stone-300">{d}</span>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-blue-400 font-bold">{dateCount[d]}건</span>
+                                                            <span className="text-stone-400">₩{(dateAmount[d] || 0).toLocaleString()}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    ) : null;
+                                })()}
+
+                                {/* 정산 상세 내역 */}
                                 {settlements.length === 0 ? (
-                                    <div className="text-center text-stone-500 py-10 text-sm">
+                                    <div className="text-center text-stone-500 py-6 text-sm">
                                         <TrendingUp size={32} className="mx-auto mb-2 opacity-30" />
                                         수익 내역이 없습니다.
                                     </div>
                                 ) : (
-                                    <div className="space-y-2 mt-2">
+                                    <div className="space-y-2">
+                                        <p className="text-stone-400 text-xs font-bold">정산 내역</p>
                                         {settlements.slice(0, 30).map(s => (
                                             <div key={s.id} className="bg-stone-900 rounded-2xl p-4 flex items-center justify-between">
                                                 <div>
@@ -560,10 +1088,13 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                             {isExpanded && (
                                                 <div className="px-4 pb-4 border-t border-stone-800 pt-3 space-y-1.5 text-xs text-stone-400">
                                                     <p>연락처: <span className="text-stone-300">{lic.user_phone || '-'}</span></p>
-                                                    <p>발급일: <span className="text-stone-300">{lic.created_at.slice(0, 10)}</span></p>
+                                                    <p>발급일: <span className="text-stone-300">{lic.issued_at.slice(0, 10)}</span></p>
+                                                    <p>상품: <span className="text-blue-300 font-bold">{lic.plan} · {lic.days}일권</span></p>
+                                                    {lic.golf_course && <p>골프장: <span className="text-emerald-300">{lic.golf_course}</span></p>}
+                                                    {lic.memo && <p>특이사항: <span className="text-stone-300">{lic.memo}</span></p>}
+                                                    <p>수금방식: <span className="text-amber-300">{lic.pay_method === 'cash' ? '💵 현금/계좌이체' : lic.pay_method === 'virtual_account' ? '🏦 가상계좌' : lic.pay_method === 'transfer' ? '📲 실시간이체' : '카드'}</span></p>
                                                     {lic.first_used_at && <p>최초사용: <span className="text-stone-300">{lic.first_used_at.slice(0, 10)}</span></p>}
                                                     {lic.expires_at && <p>만료일: <span className={isExpired ? 'text-red-400' : 'text-stone-300'}>{lic.expires_at.slice(0, 10)}</span></p>}
-                                                    <p>이용기간: <span className="text-stone-300">{lic.days}일</span></p>
                                                 </div>
                                             )}
                                         </div>

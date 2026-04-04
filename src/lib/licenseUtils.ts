@@ -126,6 +126,8 @@ export const issueVoucher = async ({
     plan,
     days,
     memo,
+    golfCourse,
+    payMethod = 'cash',
     userName,
     userPhone,
     issuedBy = 'admin',
@@ -134,6 +136,8 @@ export const issueVoucher = async ({
     plan: PlanType;
     days: number;
     memo?: string;
+    golfCourse?: string;
+    payMethod?: string;
     userName?: string;
     userPhone?: string;
     issuedBy?: string;
@@ -151,6 +155,8 @@ export const issueVoucher = async ({
         days,
         is_active: false,
         memo: memo || null,
+        golf_course: golfCourse || null,
+        pay_method: payMethod,
         user_name: userName || null,
         user_phone: userPhone || null,
         issued_by: issuedBy,
@@ -185,7 +191,7 @@ export const verifyLicenseAsync = async (inputKey: string): Promise<{
     if (data.expires_at) {
         const now = new Date();
         const expires = new Date(data.expires_at);
-        if (now > expires) return { valid: false, reason: 'expired' };
+        if (now > expires) return { valid: false, reason: 'expired', expiresAt: data.expires_at };
         const daysLeft = Math.ceil((expires.getTime() - now.getTime()) / 86_400_000);
         return { valid: true, expiresAt: data.expires_at, daysLeft };
     }
@@ -206,4 +212,184 @@ export const verifyLicenseAsync = async (inputKey: string): Promise<{
     }
 
     return { valid: true };
+};
+
+/**
+ * 전화번호로 이용권 검색 (갱신용)
+ * 가장 최근 만료일 기준 이용권 1건 반환
+ */
+export const searchLicenseByPhone = async (phone: string): Promise<{
+    found: boolean;
+    id?: string;
+    code?: string;
+    plan?: string;
+    expiresAt?: string | null;
+    userName?: string | null;
+    daysLeft?: number;
+    isExpired?: boolean;
+}> => {
+    const { data } = await supabase
+        .from('aone_pro_caddypro_licenses')
+        .select('id, code, plan, expires_at, user_name, is_active')
+        .eq('user_phone', phone.replace(/\D/g, '').replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3').trim())
+        .order('expires_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    // 하이픈 없는 경우도 시도
+    if (!data) {
+        const digits = phone.replace(/\D/g, '');
+        const { data: data2 } = await supabase
+            .from('aone_pro_caddypro_licenses')
+            .select('id, code, plan, expires_at, user_name, is_active')
+            .or(`user_phone.eq.${digits},user_phone.ilike.%${digits}%`)
+            .order('expires_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (!data2) return { found: false };
+        const now2 = new Date();
+        const exp2 = data2.expires_at ? new Date(data2.expires_at) : null;
+        const dl2 = exp2 ? Math.ceil((exp2.getTime() - now2.getTime()) / 86_400_000) : undefined;
+        return {
+            found: true, id: data2.id, code: data2.code, plan: data2.plan,
+            expiresAt: data2.expires_at, userName: data2.user_name,
+            daysLeft: dl2, isExpired: exp2 ? now2 > exp2 : false,
+        };
+    }
+
+    const now = new Date();
+    const expires = data.expires_at ? new Date(data.expires_at) : null;
+    const daysLeft = expires ? Math.ceil((expires.getTime() - now.getTime()) / 86_400_000) : undefined;
+    return {
+        found: true, id: data.id, code: data.code, plan: data.plan,
+        expiresAt: data.expires_at, userName: data.user_name,
+        daysLeft, isExpired: expires ? now > expires : false,
+    };
+};
+
+/**
+ * 기존 이용권 기간 연장 (코드 불변, 만료일만 업데이트)
+ * - 아직 유효: 기존 만료일 기준으로 days 추가
+ * - 이미 만료: 오늘을 기준으로 days 추가
+ */
+export const extendLicense = async ({
+    licenseId,
+    plan,
+    days,
+    dealerToken,
+}: {
+    licenseId: string;
+    plan: PlanType;
+    days: number;
+    dealerToken: string;
+}): Promise<{ success: boolean; newExpiresAt?: string; error?: string }> => {
+    const { data: current, error: fetchError } = await supabase
+        .from('aone_pro_caddypro_licenses')
+        .select('expires_at')
+        .eq('id', licenseId)
+        .maybeSingle();
+    if (fetchError || !current) return { success: false, error: '이용권을 찾을 수 없습니다.' };
+
+    const now = new Date();
+    const baseDate = current.expires_at && new Date(current.expires_at) > now
+        ? new Date(current.expires_at)
+        : now;
+    const newExpiresAt = new Date(baseDate.getTime() + days * 86_400_000);
+
+    const { error } = await supabase
+        .from('aone_pro_caddypro_licenses')
+        .update({
+            expires_at: newExpiresAt.toISOString(),
+            is_active: true,
+            plan,
+            days,
+            issued_by: `dealer_${dealerToken}`,
+        })
+        .eq('id', licenseId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, newExpiresAt: newExpiresAt.toISOString() };
+};
+
+/**
+ * 이름 + 전화번호 + 코드(선택)로 이용권 검색
+ * 기존 회원 찾기용: 랜딩 페이지에서 사용
+ */
+export type MemberSearchResult = {
+    id: string;
+    code: string;
+    plan: string;
+    expiresAt: string | null;
+    userName: string | null;
+    userPhone: string | null;
+    isExpired: boolean;
+    daysLeft?: number;
+};
+
+export const searchLicenseByNamePhone = async ({
+    name, phone, code,
+}: {
+    name?: string;
+    phone?: string;
+    code?: string;
+}): Promise<MemberSearchResult[]> => {
+    const now = new Date();
+
+    const toResult = (d: {
+        id: string; code: string; plan: string;
+        expires_at: string | null; user_name: string | null; user_phone: string | null;
+    }): MemberSearchResult => {
+        const exp = d.expires_at ? new Date(d.expires_at) : null;
+        return {
+            id: d.id, code: d.code, plan: d.plan,
+            expiresAt: d.expires_at, userName: d.user_name, userPhone: d.user_phone,
+            isExpired: exp ? now > exp : false,
+            daysLeft: exp ? Math.ceil((exp.getTime() - now.getTime()) / 86_400_000) : undefined,
+        };
+    };
+
+    // 코드 직접 검색 (가장 정확)
+    if (code && code.trim().replace(/\D/g, '').length === 0 && code.trim().length >= 5) {
+        const { data } = await supabase
+            .from('aone_pro_caddypro_licenses')
+            .select('id, code, plan, expires_at, user_name, user_phone')
+            .eq('code', code.trim().toUpperCase())
+            .maybeSingle();
+        return data ? [toResult(data)] : [];
+    }
+
+    const hasPhone = phone && phone.replace(/\D/g, '').length >= 9;
+    const hasName = name && name.trim().length >= 1;
+    const hasCode = code && code.trim().length >= 5;
+
+    if (!hasPhone && !hasName && !hasCode) return [];
+
+    // 코드 포함 시 → 코드 우선 exact match
+    if (hasCode) {
+        const { data } = await supabase
+            .from('aone_pro_caddypro_licenses')
+            .select('id, code, plan, expires_at, user_name, user_phone')
+            .eq('code', code!.trim().toUpperCase())
+            .maybeSingle();
+        return data ? [toResult(data)] : [];
+    }
+
+    // 이름 + 전화번호 복합 검색
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase
+        .from('aone_pro_caddypro_licenses')
+        .select('id, code, plan, expires_at, user_name, user_phone')
+        .order('expires_at', { ascending: false })
+        .limit(20);
+
+    if (hasPhone) {
+        const digits = phone!.replace(/\D/g, '');
+        query = query.or(`user_phone.eq.${digits},user_phone.ilike.%${digits}%`);
+    }
+    if (hasName) {
+        query = query.ilike('user_name', `%${name!.trim()}%`);
+    }
+
+    const { data } = await query;
+    return (data || []).map(toResult);
 };

@@ -1,4 +1,6 @@
-'use client';
+import { writeFileSync } from 'fs';
+
+const code = `'use client';
 
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -79,7 +81,7 @@ export default function LandingPage() {
 
     // 기존 회원 검색
     const handleMemberSearch = async () => {
-        const hasInput = searchName.trim() || searchPhone.replace(/\D/g,'').length >= 9 || searchCode.trim().length >= 5;
+        const hasInput = searchName.trim() || searchPhone.replace(/\\D/g,'').length >= 9 || searchCode.trim().length >= 5;
         if (!hasInput) return;
         setSearching(true);
         setSearchResults(null);
@@ -95,7 +97,7 @@ export default function LandingPage() {
     // 검색결과 선택 → 유효 코드로 활성화
     const handleActivateResult = async (r: MemberSearchResult) => {
         if (r.isExpired) {
-            alert(`이용권(${r.code})이 만료되었습니다.\n온라인 갱신 또는 딜러를 통해 갱신해 주세요.`);
+            alert(\`이용권(\${r.code})이 만료되었습니다.\\n온라인 갱신 또는 딜러를 통해 갱신해 주세요.\`);
             return;
         }
         setActivatingId(r.id);
@@ -123,7 +125,7 @@ export default function LandingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-stone-950 text-white pb-10">
+        <div className="min-h-screen bg-stone-950 text-white pb-36">
 
             {/* 상단 바 */}
             <div className="flex items-center justify-between px-5 pt-10 pb-4">
@@ -168,17 +170,6 @@ export default function LandingPage() {
                 </div>
             </div>
 
-            {/* 시작하기 버튼 */}
-            <div className="px-5 mb-8">
-                <button
-                    onClick={() => setSheet('start')}
-                    className="w-full py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg transition active:scale-95"
-                >
-                    🚀 시작하기
-                </button>
-                <p className="text-center text-stone-500 text-[11px] mt-2">이용권 보유 · 신규 구매 · 딜러 코드 — 모두 여기서</p>
-            </div>
-
             {/* 기능 목록 */}
             <div className="px-5 mb-10">
                 <p className="text-stone-400 text-[11px] font-bold uppercase tracking-widest mb-4">주요 기능</p>
@@ -201,17 +192,17 @@ export default function LandingPage() {
                         <button
                             key={p.key}
                             onClick={() => setSelectedPlan(p.key)}
-                            className={`w-full p-4 rounded-2xl border text-left transition relative overflow-hidden ${
+                            className={\`w-full p-4 rounded-2xl border text-left transition relative overflow-hidden \${
                                 selectedPlan === p.key ? 'border-emerald-500 bg-emerald-500/10' : 'border-stone-800 bg-stone-900'
-                            }`}
+                            }\`}
                         >
                             {p.badge && (
-                                <span className={`absolute top-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r ${p.color} text-white`}>
+                                <span className={\`absolute top-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r \${p.color} text-white\`}>
                                     {p.badge}
                                 </span>
                             )}
                             <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedPlan === p.key ? 'border-emerald-500' : 'border-stone-600'}`}>
+                                <div className={\`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 \${selectedPlan === p.key ? 'border-emerald-500' : 'border-stone-600'}\`}>
                                     {selectedPlan === p.key && <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />}
                                 </div>
                                 <div>
@@ -219,7 +210,7 @@ export default function LandingPage() {
                                     <p className="text-stone-400 text-xs">{p.days}일 사용</p>
                                 </div>
                                 <div className="ml-auto text-right">
-                                    <p className={`font-black text-lg ${selectedPlan === p.key ? 'text-emerald-400' : 'text-white'}`}>{p.price}</p>
+                                    <p className={\`font-black text-lg \${selectedPlan === p.key ? 'text-emerald-400' : 'text-white'}\`}>{p.price}</p>
                                 </div>
                             </div>
                         </button>
@@ -236,64 +227,36 @@ export default function LandingPage() {
                 ))}
             </div>
 
+            {/* ── 하단 고정 CTA ── */}
+            <div className="fixed bottom-0 left-0 right-0 bg-stone-950/95 backdrop-blur-sm px-5 py-4 border-t border-stone-800 space-y-2">
+                <Link
+                    href={\`/subscribe?plan=\${selectedPlan}\`}
+                    className={\`w-full py-4 rounded-2xl font-black text-lg flex items-center justify-center gap-2 bg-gradient-to-r \${plan.color} text-white shadow-lg transition active:scale-95\`}
+                >
+                    {plan.label} 시작하기 · {plan.price}
+                    <ChevronRight size={20} />
+                </Link>
+                <div className="grid grid-cols-2 gap-2">
+                    <button
+                        onClick={() => setSheet('code')}
+                        className="py-3 rounded-2xl font-bold text-stone-300 text-sm bg-stone-800 hover:bg-stone-700 transition flex items-center justify-center gap-1.5"
+                    >
+                        <Key size={13} /> 코드 입력
+                    </button>
+                    <button
+                        onClick={() => setSheet('member')}
+                        className="py-3 rounded-2xl font-bold text-stone-300 text-sm bg-stone-800 hover:bg-stone-700 transition flex items-center justify-center gap-1.5"
+                    >
+                        <Phone size={13} /> 기존 회원
+                    </button>
+                </div>
+            </div>
+
             {/* ── 바텀시트 ── */}
             {sheet !== 'none' && (
                 <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={closeSheet}>
                     <div className="w-full bg-stone-900 rounded-t-3xl p-6 space-y-5 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="w-10 h-1 bg-stone-700 rounded-full mx-auto" />
-
-                        {/* ── 시작하기 분기 선택 ── */}
-                        {sheet === 'start' && (
-                            <>
-                                <div className="text-center">
-                                    <p className="text-white font-black text-lg">어떻게 이용하실 건가요?</p>
-                                    <p className="text-stone-400 text-xs mt-1">상황에 맞는 메뉴를 선택하세요</p>
-                                </div>
-                                <div className="space-y-3">
-                                    <button
-                                        onClick={() => setSheet('member')}
-                                        className="w-full py-4 px-5 rounded-2xl bg-violet-600 hover:bg-violet-500 transition text-white text-left flex items-center gap-4 active:scale-95"
-                                    >
-                                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-                                            <Phone size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="font-black text-base">기존 회원 찾기</p>
-                                            <p className="text-violet-200 text-xs">이름·전화번호로 내 이용권 찾기</p>
-                                        </div>
-                                        <ChevronRight size={18} className="ml-auto opacity-60" />
-                                    </button>
-                                    <button
-                                        onClick={() => setSheet('code')}
-                                        className="w-full py-4 px-5 rounded-2xl bg-stone-800 hover:bg-stone-700 transition text-white text-left flex items-center gap-4 active:scale-95"
-                                    >
-                                        <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
-                                            <Key size={20} className="text-emerald-400" />
-                                        </div>
-                                        <div>
-                                            <p className="font-black text-base">이용권 코드 입력</p>
-                                            <p className="text-stone-400 text-xs">딜러에게 받은 코드 직접 입력</p>
-                                        </div>
-                                        <ChevronRight size={18} className="ml-auto opacity-60" />
-                                    </button>
-                                    <div className="pt-2 border-t border-stone-800">
-                                        <p className="text-stone-500 text-[11px] text-center mb-3">이용권이 없으신가요?</p>
-                                        <div className="space-y-2">
-                                            {PLANS.map(p => (
-                                                <Link
-                                                    key={p.key}
-                                                    href={`/subscribe?plan=${p.key}`}
-                                                    className={`w-full py-3 px-5 rounded-2xl bg-gradient-to-r ${p.color} text-white flex items-center justify-between active:scale-95 transition`}
-                                                >
-                                                    <span className="font-bold text-sm">{p.label} 이용권</span>
-                                                    <span className="font-black">{p.price}</span>
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
 
                         {/* 코드 직접 입력 */}
                         {sheet === 'code' && (
@@ -363,10 +326,10 @@ export default function LandingPage() {
                                         <input
                                             value={searchPhone}
                                             onChange={e => {
-                                                const raw = e.target.value.replace(/\D/g, '').slice(0, 11);
+                                                const raw = e.target.value.replace(/\\D/g, '').slice(0, 11);
                                                 const fmt = raw.length <= 3 ? raw : raw.length <= 7
-                                                    ? `${raw.slice(0,3)}-${raw.slice(3)}`
-                                                    : `${raw.slice(0,3)}-${raw.slice(3,7)}-${raw.slice(7)}`;
+                                                    ? \`\${raw.slice(0,3)}-\${raw.slice(3)}\`
+                                                    : \`\${raw.slice(0,3)}-\${raw.slice(3,7)}-\${raw.slice(7)}\`;
                                                 setSearchPhone(fmt); setSearchResults(null);
                                             }}
                                             onKeyDown={e => e.key === 'Enter' && handleMemberSearch()}
@@ -387,7 +350,7 @@ export default function LandingPage() {
                                     </div>
                                     <button
                                         onClick={handleMemberSearch}
-                                        disabled={searching || (!searchName.trim() && searchPhone.replace(/\D/g,'').length < 9 && searchCode.trim().length < 5)}
+                                        disabled={searching || (!searchName.trim() && searchPhone.replace(/\\D/g,'').length < 9 && searchCode.trim().length < 5)}
                                         className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition bg-violet-600 hover:bg-violet-500 disabled:opacity-40"
                                     >
                                         {searching
@@ -409,16 +372,16 @@ export default function LandingPage() {
                                             <>
                                                 <p className="text-violet-300 text-xs font-bold">{searchResults.length}건 검색됨 · 본인 계정을 선택하세요.</p>
                                                 {searchResults.map(r => (
-                                                    <div key={r.id} className={`rounded-2xl p-4 border space-y-3 ${r.isExpired ? 'bg-red-900/15 border-red-800' : 'bg-stone-800 border-stone-700'}`}>
+                                                    <div key={r.id} className={\`rounded-2xl p-4 border space-y-3 \${r.isExpired ? 'bg-red-900/15 border-red-800' : 'bg-stone-800 border-stone-700'}\`}>
                                                         <div className="flex items-start justify-between">
                                                             <div>
                                                                 <p className="text-white font-black text-base">{r.userName || '(이름 없음)'}</p>
                                                                 <p className="text-stone-400 text-xs mt-0.5">
-                                                                    {r.userPhone ? `${r.userPhone.slice(0,3)}-****-${r.userPhone.slice(-4)}` : '번호 없음'}
+                                                                    {r.userPhone ? \`\${r.userPhone.slice(0,3)}-****-\${r.userPhone.slice(-4)}\` : '번호 없음'}
                                                                 </p>
                                                             </div>
-                                                            <span className={`text-xs font-black px-2 py-1 rounded-full ${r.isExpired ? 'bg-red-900/40 text-red-400' : 'bg-emerald-900/40 text-emerald-400'}`}>
-                                                                {r.isExpired ? '만료됨' : `D-${r.daysLeft}`}
+                                                            <span className={\`text-xs font-black px-2 py-1 rounded-full \${r.isExpired ? 'bg-red-900/40 text-red-400' : 'bg-emerald-900/40 text-emerald-400'}\`}>
+                                                                {r.isExpired ? '만료됨' : \`D-\${r.daysLeft}\`}
                                                             </span>
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-2 text-xs">
@@ -428,7 +391,7 @@ export default function LandingPage() {
                                                             </div>
                                                             <div>
                                                                 <p className="text-stone-500">만료일</p>
-                                                                <p className={`font-bold ${r.isExpired ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                                <p className={\`font-bold \${r.isExpired ? 'text-red-400' : 'text-emerald-400'}\`}>
                                                                     {r.expiresAt ? new Date(r.expiresAt).toLocaleDateString('ko-KR') : '알 수 없음'}
                                                                 </p>
                                                             </div>
@@ -468,3 +431,11 @@ export default function LandingPage() {
         </div>
     );
 }
+`;
+
+writeFileSync(
+  'c:/Users/User/Desktop/\uC81C\uBBF8\uB098\uC774 3/\uC5F0\uC2B5/Antigravity/golf-caddy/src/app/landing/page.tsx',
+  code,
+  'utf8'
+);
+console.log('완료!');

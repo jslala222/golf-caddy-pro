@@ -3,7 +3,7 @@
   "version": "0.1.5.130",
   "private": true,
   "scripts": {
-    "dev": "next build && next start -p 4455",
+    "dev": "next build && next start -p 4455 -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

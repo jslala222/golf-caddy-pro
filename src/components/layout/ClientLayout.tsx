@@ -39,6 +39,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     const isDealerPage = pathname?.startsWith('/dealer');
     const isSubscribePage = pathname?.startsWith('/subscribe');
     const isLandingPage = pathname?.startsWith('/landing');
+    const isDealerLoginPage = pathname?.startsWith('/dealer-login');
     const [isKakaotalk, setIsKakaotalk] = useState(false);
     const [showBanner, setShowBanner] = useState(true);
 
@@ -88,7 +89,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                     </div>
                 </div>
             )}
-            {isAdminPage || isDealerPage || isSubscribePage || isLandingPage ? (
+            {isAdminPage || isDealerPage || isSubscribePage || isLandingPage || isDealerLoginPage ? (
                 children
             ) : (
                 <LicenseGuard>

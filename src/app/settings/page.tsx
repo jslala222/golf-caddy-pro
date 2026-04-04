@@ -4,13 +4,23 @@
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud } from 'lucide-react';
+import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
 
 export default function SettingsPage() {
     const { exportData, importData, resetData, feeSettings, updateFeeSettings } = useAppStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // 이용권 정보
+    const [licenseCode, setLicenseCode] = useState<string | null>(null);
+    const [licenseExpiresAt, setLicenseExpiresAt] = useState<string | null>(null);
+    const [codeCopied, setCodeCopied] = useState(false);
+
+    useEffect(() => {
+        setLicenseCode(localStorage.getItem('caddy_license_key'));
+        setLicenseExpiresAt(localStorage.getItem('caddy_expires_at'));
+    }, []);
 
     // 클라우드 백업 상태
     const [cloudStatus, setCloudStatus] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
@@ -150,6 +160,50 @@ export default function SettingsPage() {
             <InstallPWA />
 
             <hr className="border-stone-200" />
+
+            {/* 회원 이용권 정보 */}
+            {licenseCode && (() => {
+                const now = new Date();
+                const exp = licenseExpiresAt ? new Date(licenseExpiresAt) : null;
+                const daysLeft = exp ? Math.ceil((exp.getTime() - now.getTime()) / 86_400_000) : null;
+                const isExpired = exp ? now > exp : false;
+                const expStr = exp ? `${exp.getFullYear()}/${exp.getMonth()+1}/${exp.getDate()}` : '미활성';
+                return (
+                    <section className="space-y-3">
+                        <h2 className="text-lg font-bold text-stone-800 flex items-center">
+                            <Key size={18} className="mr-2 text-emerald-600" /> 이용권 정보
+                        </h2>
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-stone-500 font-bold">코드</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono font-black text-stone-800 text-base tracking-widest">{licenseCode}</span>
+                                    <button
+                                        onClick={() => { navigator.clipboard.writeText(licenseCode); setCodeCopied(true); setTimeout(() => setCodeCopied(false), 2000); }}
+                                        className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 transition text-emerald-700"
+                                    >
+                                        {codeCopied ? <Check size={14} /> : <Copy size={14} />}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between border-t border-emerald-100 pt-3">
+                                <span className="text-sm text-stone-500 font-bold">만료일</span>
+                                <span className={`font-bold text-sm ${isExpired ? 'text-red-500' : 'text-emerald-700'}`}>{expStr}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-stone-500 font-bold">상태</span>
+                                <span className={`text-sm font-black ${
+                                    isExpired ? 'text-red-500' :
+                                    daysLeft !== null && daysLeft <= 7 ? 'text-amber-500' : 'text-emerald-600'
+                                }`}>
+                                    {isExpired ? '❌ 만료됨' :
+                                     daysLeft !== null ? `✅ 이용 중 (D-${daysLeft})` : '✅ 활성화됨'}
+                                </span>
+                            </div>
+                        </div>
+                    </section>
+                );
+            })()}
 
             {/* Fee Settings Section */}
             <section className="space-y-4">
@@ -418,11 +472,16 @@ export default function SettingsPage() {
                 </div>
             </details>
 
-            <div className="text-center text-xs text-stone-400 mt-10 pb-10">
-                <Link href="/admin" className="inline-block py-2 px-6 bg-stone-100 rounded-full text-stone-500 font-bold hover:bg-stone-200 transition-colors border border-stone-200">
-                    관리자 도구 (v1.0)
-                </Link>
-                <p className="mt-2 text-[10px]">Data stored locally on your device.</p>
+            <div className="text-center text-xs text-stone-400 mt-10 pb-10 space-y-2">
+                <div className="flex items-center justify-center gap-2">
+                    <Link href="/admin" className="inline-block py-2 px-6 bg-stone-100 rounded-full text-stone-500 font-bold hover:bg-stone-200 transition-colors border border-stone-200">
+                        관리자 도구 (v1.0)
+                    </Link>
+                    <Link href="/dealer-login" className="inline-block py-2 px-4 bg-blue-50 rounded-full text-blue-500 font-bold hover:bg-blue-100 transition-colors border border-blue-200 text-[11px]">
+                        딜러 로그인
+                    </Link>
+                </div>
+                <p className="text-[10px]">Data stored locally on your device.</p>
             </div>
         </div>
     );

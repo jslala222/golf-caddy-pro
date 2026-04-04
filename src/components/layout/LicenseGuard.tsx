@@ -1,39 +1,37 @@
-﻿
-'use client';
+﻿'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { verifyLicense, verifyLicenseAsync } from '@/lib/licenseUtils';
-import { Lock, Key, CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import { AlertTriangle, X, RefreshCcw } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export function LicenseGuard({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const [isActivated, setIsActivated] = useState<boolean | null>(null);
-    const tapCountRef = useRef(0);
-    const lastTapRef = useRef(0);
-    const [inputKey, setInputKey] = useState('');
-    const [error, setError] = useState('');
-    const [isVerifying, setIsVerifying] = useState(false);
 
     // 만료 경고 상태
     const [daysLeft, setDaysLeft] = useState<number | null>(null);
     const [showExpireBanner, setShowExpireBanner] = useState(false);
 
+    // 만료 모달 상태
+    const [expiredCode, setExpiredCode] = useState<string | null>(null);
+    const [expiredAt, setExpiredAt] = useState<string | null>(null);
+
     useEffect(() => {
         const init = () => {
             try {
-                // 랜딩 페이지에서 전달된 pending_code 자동 적용
-                const pendingCode = localStorage.getItem('caddy_pending_code');
-                if (pendingCode) {
-                    localStorage.removeItem('caddy_pending_code');
-                    setInputKey(pendingCode);
-                }
-
                 const storedKey = localStorage.getItem('caddy_license_key');
                 if (storedKey && verifyLicense(storedKey)) {
-                    setIsActivated(true);
-                    // 저장된 만료일 확인
                     const expiresAt = localStorage.getItem('caddy_expires_at');
+                    if (expiresAt && new Date(expiresAt) < new Date()) {
+                        setExpiredCode(storedKey);
+                        setExpiredAt(expiresAt);
+                        setIsActivated(false);
+                        return;
+                    }
+                    setIsActivated(true);
                     if (expiresAt) {
                         const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000);
                         if (days <= 7 && days > 0) {
@@ -41,56 +39,55 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                             setShowExpireBanner(true);
                         }
                     }
+                    // 백그라운드: DB에서 최신 만료일 갱신
+                    (async () => {
+                        try {
+                            const { data } = await supabase
+                                .from('aone_pro_caddypro_licenses')
+                                .select('expires_at')
+                                .eq('code', storedKey.trim().toUpperCase())
+                                .maybeSingle();
+                            if (data?.expires_at) {
+                                localStorage.setItem('caddy_expires_at', data.expires_at);
+                            }
+                        } catch { /* 오프라인 무시 */ }
+                    })();
                 } else {
-                    setIsActivated(false);
+                    router.replace('/landing');
+                    return;
                 }
-            } catch (e) {
-                console.error('라이선스 확인 실패:', e);
-                setIsActivated(false);
+            } catch {
+                router.replace('/landing');
+                return;
             }
         };
         init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleActivate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-
-        // 1단계: 로컬 체크섬 빠른 검증
-        if (!verifyLicense(inputKey)) {
-            setError('유효하지 않은 이용권 코드입니다. 다시 확인해 주세요.');
-            return;
-        }
-
-        // 2단계: Supabase 서버 검증 (만료일 확인 + 첫 사용 처리)
-        setIsVerifying(true);
-        try {
-            const result = await verifyLicenseAsync(inputKey);
-            if (!result.valid) {
-                const msg = result.reason === 'expired'
-                    ? '이용 기간이 만료된 코드입니다. 새 이용권을 구매해 주세요.'
-                    : result.reason === 'not_found'
-                        ? '등록되지 않은 코드입니다. 관리자에게 문의해 주세요.'
-                        : '코드 인증에 실패했습니다. 다시 시도해 주세요.';
-                setError(msg);
-                setIsVerifying(false);
-                return;
+    // pending_code 처리
+    useEffect(() => {
+        const pendingCode = localStorage.getItem('caddy_pending_code');
+        if (!pendingCode) return;
+        localStorage.removeItem('caddy_pending_code');
+        const activate = async () => {
+            try {
+                const result = await verifyLicenseAsync(pendingCode.trim().toUpperCase());
+                if (result.valid) {
+                    localStorage.setItem('caddy_license_key', pendingCode.trim().toUpperCase());
+                    if (result.expiresAt) localStorage.setItem('caddy_expires_at', result.expiresAt);
+                    setIsActivated(true);
+                } else {
+                    router.replace('/landing');
+                }
+            } catch {
+                localStorage.setItem('caddy_license_key', pendingCode.trim().toUpperCase());
+                setIsActivated(true);
             }
-
-            // 성공 — 로컬 저장
-            localStorage.setItem('caddy_license_key', inputKey.trim().toUpperCase());
-            if (result.expiresAt) {
-                localStorage.setItem('caddy_expires_at', result.expiresAt);
-            }
-            setIsActivated(true);
-        } catch {
-            // 오프라인 등 Supabase 불가 시 로컬 검증만으로 통과
-            localStorage.setItem('caddy_license_key', inputKey.trim().toUpperCase());
-            setIsActivated(true);
-        } finally {
-            setIsVerifying(false);
-        }
-    };
+        };
+        activate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     if (isActivated === null) {
         return (
@@ -102,10 +99,55 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
+    if (!isActivated && expiredCode) {
+        const expDate = expiredAt ? new Date(expiredAt) : null;
+        const expStr = expDate ? `${expDate.getFullYear()}년 ${expDate.getMonth()+1}월 ${expDate.getDate()}일` : '알 수 없음';
+        return (
+            <div className="fixed inset-0 bg-stone-900 z-[9999] flex items-center justify-center p-6 text-white">
+                <div className="w-full max-w-sm space-y-6 animate-in fade-in zoom-in duration-300">
+                    <div className="text-center space-y-3">
+                        <div className="inline-flex p-4 bg-amber-500/20 rounded-full text-amber-400 mb-2">
+                            <AlertTriangle size={48} />
+                        </div>
+                        <h1 className="text-2xl font-black">이용권이 만료되었습니다</h1>
+                        <p className="text-stone-400 text-sm">갱신하시면 기존 데이터를 그대로 이어 쓸 수 있습니다.</p>
+                    </div>
+                    <div className="bg-stone-800 rounded-2xl p-4 space-y-2 text-center">
+                        <p className="text-stone-500 text-xs font-bold">이용권 코드</p>
+                        <p className="font-mono font-black text-xl tracking-widest text-white">{expiredCode}</p>
+                        <div className="pt-2 border-t border-stone-700">
+                            <p className="text-stone-500 text-xs">만료일</p>
+                            <p className="text-amber-400 font-bold text-sm mt-0.5">{expStr}</p>
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        <Link href="/subscribe?plan=6month"
+                            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black text-lg flex items-center justify-center gap-2 transition active:scale-95">
+                            <RefreshCcw size={20} /> 온라인으로 바로 갱신
+                        </Link>
+                        <div className="bg-stone-800 rounded-2xl p-4 text-sm text-stone-400 text-center space-y-1">
+                            <p className="font-bold text-stone-300 text-xs">딜러 통해 갱신하시려면?</p>
+                            <p className="text-[11px] leading-relaxed">담당 딜러에게 연락하시거나,<br />딜러 대시보드에서 전화번호 검색 후 기간 연장 가능합니다.</p>
+                        </div>
+                        <button
+                            onClick={() => {
+                                localStorage.removeItem('caddy_license_key');
+                                localStorage.removeItem('caddy_expires_at');
+                                router.replace('/landing');
+                            }}
+                            className="w-full py-3 text-stone-500 text-sm hover:text-stone-300 transition"
+                        >
+                            랜딩 페이지로 돌아가기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (isActivated) {
         return (
             <>
-                {/* 만료 임박 경고 배너 (7일 이하) */}
                 {showExpireBanner && daysLeft !== null && (
                     <div className="sticky top-0 left-0 right-0 bg-amber-500 text-white px-4 py-3 z-[9998] flex items-center gap-3 shadow-lg">
                         <AlertTriangle size={18} className="shrink-0" />
@@ -122,74 +164,5 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
-    return (
-        <div className="fixed inset-0 bg-stone-900 z-[9999] flex items-center justify-center p-6 text-white overflow-y-auto">
-            <div className="w-full max-w-sm space-y-8 animate-in fade-in zoom-in duration-300">
-                <div className="text-center space-y-4">
-                    <div className="inline-flex p-4 bg-emerald-500/20 rounded-full text-emerald-500 mb-2">
-                        <Lock size={48} />
-                    </div>
-                    <h1 className="text-3xl font-black tracking-tight select-none">
-                        Caddy Manager<br />
-                        <span
-                            className="text-emerald-500 text-2xl font-bold cursor-default"
-                            onClick={() => {
-                                const now = Date.now();
-                                if (now - lastTapRef.current > 2000) {
-                                    tapCountRef.current = 0;
-                                }
-                                lastTapRef.current = now;
-                                tapCountRef.current += 1;
-                                if (tapCountRef.current >= 5) {
-                                    tapCountRef.current = 0;
-                                    router.push('/admin');
-                                }
-                            }}
-                        >
-                            PRO
-                        </span>
-                    </h1>
-                    <p className="text-stone-400 text-sm leading-relaxed">
-                        이 앱은 유료 이용권이 필요한 프리미엄 서비스입니다.<br />
-                        구매 후 발급받은 이용권 코드를 입력해 주세요.
-                    </p>
-                </div>
-
-                <form onSubmit={handleActivate} className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-stone-500 ml-1">이용권 코드 입력</label>
-                        <div className="relative">
-                            <Key size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500" />
-                            <input
-                                type="text"
-                                value={inputKey}
-                                onChange={(e) => setInputKey(e.target.value.toUpperCase())}
-                                placeholder="sm-XXX-XXX"
-                                className="w-full bg-stone-800 border-none rounded-2xl py-4 pl-12 pr-4 text-lg font-mono tracking-widest focus:ring-2 focus:ring-emerald-500 placeholder:text-stone-600"
-                                required
-                            />
-                        </div>
-                        {error && <p className="text-red-400 text-xs font-bold text-center animate-bounce mt-2">{error}</p>}
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={isVerifying}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-900/20 text-lg flex items-center justify-center gap-2 disabled:opacity-60"
-                    >
-                        {isVerifying
-                            ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> 확인 중...</>
-                            : <><CheckCircle size={24} /> 활성화하기</>
-                        }
-                    </button>
-                </form>
-
-                <div className="text-center pt-4">
-                    <p className="text-[10px] text-stone-600 uppercase tracking-widest font-bold">
-                        Privacy First • Ver 1.5.21 • Only Local
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
+    return null;
 }

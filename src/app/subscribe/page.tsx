@@ -28,6 +28,20 @@ function SubscribeInner() {
   const [loading, setLoading] = useState(false);
   const [issuedCode, setIssuedCode] = useState('');
   const [copied, setCopied] = useState(false);
+  const [dealerRef, setDealerRef] = useState('');
+
+  // ── 딜러 링크에서 온 경우 폼 자동입력 ──────────────────────
+  useEffect(() => {
+    const n  = searchParams.get('name');
+    const p  = searchParams.get('phone');
+    const pl = searchParams.get('plan');
+    const r  = searchParams.get('ref');
+    if (n) setName(n);
+    if (p) setPhone(p);
+    if (pl && ['month', '6month', 'year'].includes(pl)) setSelectedPlan(pl as PortOneProductKey);
+    if (r) setDealerRef(r);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── 모바일 리다이렉트 복구 ──────────────────────────────────
   useEffect(() => {
@@ -170,6 +184,17 @@ function SubscribeInner() {
         <h1 className="text-2xl font-black">이용권 구매</h1>
         <p className="text-stone-400 text-sm mt-1">결제 즉시 코드가 발급됩니다</p>
       </div>
+
+      {/* 딜러 추천 배너 */}
+      {dealerRef && (
+        <div className="mx-6 mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-700 flex items-center gap-2">
+          <span className="text-lg">⛳</span>
+          <div>
+            <p className="font-bold">딜러 추천 링크로 접속하셨습니다</p>
+            <p className="text-xs text-emerald-600">이름과 연락처가 미리 입력되었습니다. 확인 후 결제해주세요.</p>
+          </div>
+        </div>
+      )}
 
       <div className="p-6 space-y-6">
 

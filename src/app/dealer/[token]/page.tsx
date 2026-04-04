@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PLANS, issueVoucher } from '@/lib/licenseUtils';
 import type { PlanType } from '@/lib/licenseUtils';
 import { supabase } from '@/lib/supabaseClient';
-import { ShieldAlert, User, Check, Copy, Plus, Minus, Tag, CheckCircle2 } from 'lucide-react';
+import { ShieldAlert, User, Check, Copy, Plus, Minus, Tag, CheckCircle2, Share2, ExternalLink } from 'lucide-react';
 
 interface DealerInfo {
     id: string;
@@ -35,6 +35,10 @@ export default function DealerPage({ params }: { params: { token: string } }) {
     const [issuedPlan, setIssuedPlan] = useState('');
     const [issuedDays, setIssuedDays] = useState(0);
     const [copied, setCopied] = useState(false);
+
+    // 결제 링크
+    const [paymentLink, setPaymentLink] = useState('');
+    const [linkCopied, setLinkCopied] = useState(false);
 
     // 요금제 변경 시 일수 자동 세팅
     useEffect(() => {
@@ -115,6 +119,37 @@ export default function DealerPage({ params }: { params: { token: string } }) {
         setIssuedPlan('');
         setIssuedDays(0);
         setCopied(false);
+    };
+
+    const handleGenerateLink = () => {
+        if (!customerName.trim() || !customerPhone.trim()) {
+            alert('고객 이름과 연락처를 먼저 입력해주세요.');
+            return;
+        }
+        const params = new URLSearchParams({
+            name: customerName.trim(),
+            phone: customerPhone.trim(),
+            plan,
+            ref: token,
+        });
+        setPaymentLink(`${window.location.origin}/subscribe?${params.toString()}`);
+    };
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(paymentLink);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 3000);
+    };
+
+    const handleShareLink = () => {
+        const msg = `[캐디 매니저 프로] ${customerName}님, 아래 링크에서 이용권을 결제해주세요.\n${paymentLink}`;
+        if (navigator.share) {
+            navigator.share({ title: '캐디 매니저 프로 결제 링크', text: msg, url: paymentLink });
+        } else {
+            navigator.clipboard.writeText(msg);
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 3000);
+        }
     };
 
     // ── 로딩 ──
@@ -208,7 +243,11 @@ export default function DealerPage({ params }: { params: { token: string } }) {
                             <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">
                                 연락처 <span className="text-red-400">*</span>
                             </label>
-                            <input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)}
+                            <input value={customerPhone} onChange={e => {
+                                const raw = e.target.value.replace(/\D/g, '').slice(0, 11);
+                                const formatted = raw.length <= 3 ? raw : raw.length <= 7 ? `${raw.slice(0,3)}-${raw.slice(3)}` : `${raw.slice(0,3)}-${raw.slice(3,7)}-${raw.slice(7)}`;
+                                setCustomerPhone(formatted);
+                            }}
                                 placeholder="010-0000-0000"
                                 inputMode="tel"
                                 className="w-full p-4 bg-stone-800 border border-stone-700 rounded-2xl text-white placeholder-stone-500 focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-transparent text-lg" />
@@ -276,6 +315,46 @@ export default function DealerPage({ params }: { params: { token: string } }) {
                         : <><CheckCircle2 size={24} /> 이용권 즉시 발급</>
                     }
                 </button>
+
+                {/* 결제 링크 발송 (고객 직접 카드결제) */}
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-stone-600">
+                        <div className="flex-1 h-px bg-stone-800" />
+                        <span className="text-xs">또는</span>
+                        <div className="flex-1 h-px bg-stone-800" />
+                    </div>
+                    <button onClick={handleGenerateLink}
+                        disabled={!customerName.trim() || !customerPhone.trim()}
+                        className="w-full bg-emerald-700 text-white font-bold py-4 rounded-3xl text-base hover:bg-emerald-600 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <ExternalLink size={18} /> 결제 링크 생성 (고객 직접 카드결제)
+                    </button>
+                </div>
+
+                {/* 결제 링크 패널 */}
+                {paymentLink && (
+                    <div className="bg-stone-900 rounded-3xl p-5 space-y-3 border border-emerald-700">
+                        <p className="text-emerald-400 text-xs font-bold flex items-center gap-1.5">
+                            <CheckCircle2 size={14} /> 결제 링크 생성 완료 — 카카오나 문자로 보내세요
+                        </p>
+                        <div className="bg-stone-800 rounded-2xl p-3 text-[11px] text-stone-400 break-all font-mono leading-relaxed">
+                            {paymentLink}
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={handleCopyLink}
+                                className={`flex-1 py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-1.5 transition ${linkCopied ? 'bg-emerald-600 text-white' : 'bg-stone-800 text-white hover:bg-stone-700'}`}>
+                                {linkCopied ? <Check size={15} /> : <Copy size={15} />}
+                                {linkCopied ? '복사됨!' : '링크 복사'}
+                            </button>
+                            <button onClick={handleShareLink}
+                                className="flex-1 py-3 rounded-2xl font-bold text-sm bg-yellow-400 text-stone-900 hover:bg-yellow-300 transition flex items-center justify-center gap-1.5">
+                                <Share2 size={15} /> 공유하기
+                            </button>
+                        </div>
+                        <p className="text-stone-600 text-[10px]">
+                            고객이 이 링크로 결제하면 이용권 코드가 자동 발급됩니다
+                        </p>
+                    </div>
+                )}
 
                 <p className="text-center text-stone-600 text-xs">
                     발급된 코드는 고객이 앱 첫 실행 시부터 카운트 시작<br />

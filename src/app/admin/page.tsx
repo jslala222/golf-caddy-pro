@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { issueVoucher, PLANS, CHANNELS } from '@/lib/licenseUtils';
+import { issueVoucher, PLANS, CHANNELS, searchLicenseByPhone } from '@/lib/licenseUtils';
 import type { PlanType, ChannelType } from '@/lib/licenseUtils';
 import { supabase } from '@/lib/supabaseClient';
 import {
@@ -111,6 +111,16 @@ export default function AdminPage() {
     const [restoreStatus, setRestoreStatus] = useState<'idle' | 'loading' | 'found' | 'notfound' | 'error'>('idle');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [restoreData, setRestoreData] = useState<any>(null);
+
+    // 이름/전화번호 검색
+    const [restoreSearchMode, setRestoreSearchMode] = useState<'code' | 'phone'>('code');
+    const [restoreSearchPhone, setRestoreSearchPhone] = useState('');
+    const [restoreSearchName, setRestoreSearchName] = useState('');
+    const [restoreSearching, setRestoreSearching] = useState(false);
+    const [restoreSearchResults, setRestoreSearchResults] = useState<{
+        id: string; code: string; plan: string;
+        expiresAt: string | null; userName: string | null; isExpired: boolean;
+    }[]>([]);
 
     // 요금제 변경 시 일수 자동 세팅
     useEffect(() => {
@@ -232,21 +242,26 @@ export default function AdminPage() {
         }
         if (newDealerPin && !/^\d{4,8}$/.test(newDealerPin)) { setDealerFormError('PIN은 4~8자리 숫자로 입력해주세요.'); return; }
         setIsAddingDealer(true);
-        const token = makeDealerToken();
-        const { error } = await supabase.from('aone_pro_caddypro_dealers').insert({
-            name: newDealerName.trim(),
-            phone: newDealerPhone.trim() || null,
-            email: newDealerEmail.trim() || null,
-            token,
-            pin: newDealerPin.trim() || null,
-        });
-        setIsAddingDealer(false);
-        if (error) { setDealerFormError(`딜러 등록 실패: ${error.message}`); return; }
-        setNewDealerName('');
-        setNewDealerPhone('');
-        setNewDealerEmail('');
-        setNewDealerPin('');
-        loadDealers();
+        try {
+            const token = makeDealerToken();
+            const { error } = await supabase.from('aone_pro_caddypro_dealers').insert({
+                name: newDealerName.trim(),
+                phone: newDealerPhone.trim() || null,
+                email: newDealerEmail.trim() || null,
+                token,
+                pin: newDealerPin.trim() || null,
+            });
+            if (error) { setDealerFormError(`딜러 등록 실패: ${error.message}`); return; }
+            setNewDealerName('');
+            setNewDealerPhone('');
+            setNewDealerEmail('');
+            setNewDealerPin('');
+            loadDealers();
+        } catch (e: any) {
+            setDealerFormError(`오류: ${e?.message ?? '알 수 없는 오류'}`);
+        } finally {
+            setIsAddingDealer(false);
+        }
     };
 
     const copyDealerDashboardUrl = (token: string) => {
@@ -299,7 +314,7 @@ export default function AdminPage() {
                 <form onSubmit={handleAuth} className="w-full max-w-xs space-y-6 text-center">
                     <ShieldCheck size={64} className={`mx-auto mb-2 ${isLocked ? 'text-red-500' : 'text-emerald-500'}`} />
                     <h1 className="text-xl font-black">관리자 인증</h1>
-                    <p className="text-stone-400 text-sm">대표님 전용 관리 페이지입니다.</p>
+                    <p className="text-stone-700 text-sm">대표님 전용 관리 페이지입니다.</p>
                     {isLocked ? (
                         <div className="bg-red-500/20 border border-red-500/50 p-4 rounded-2xl text-red-400 text-sm font-bold">
                             {Math.ceil((lockoutExpiry! - Date.now()) / 60000)}분간 차단됨
@@ -311,7 +326,7 @@ export default function AdminPage() {
                             autoFocus />
                     )}
                     {!isLocked && <button type="submit" className="w-full bg-emerald-600 py-4 rounded-2xl font-bold text-lg">로그인</button>}
-                    <Link href="/" className="block text-stone-500 text-sm font-bold mt-4">나가기</Link>
+                    <Link href="/" className="block text-stone-700 text-sm font-bold mt-4">나가기</Link>
                 </form>
             </div>
         );
@@ -349,6 +364,52 @@ export default function AdminPage() {
         }
     };
 
+    const handlePhoneSearch = async () => {
+        const phone = restoreSearchPhone.trim();
+        const name = restoreSearchName.trim();
+        if (!phone && !name) return;
+        setRestoreSearching(true);
+        setRestoreSearchResults([]);
+        try {
+            // 전화번호로 검색 (있으면)
+            if (phone) {
+                const single = await searchLicenseByPhone(phone);
+                if (single.found && single.id && single.code) {
+                    // 이름 필터 적용
+                    if (!name || (single.userName && single.userName.includes(name))) {
+                        setRestoreSearchResults([{
+                            id: single.id, code: single.code!, plan: single.plan || '',
+                            expiresAt: single.expiresAt ?? null, userName: single.userName ?? null,
+                            isExpired: single.isExpired ?? false,
+                        }]);
+                    } else {
+                        setRestoreSearchResults([]);
+                    }
+                } else {
+                    setRestoreSearchResults([]);
+                }
+            } else {
+                // 이름만으로 검색
+                const { data } = await supabase
+                    .from('aone_pro_caddypro_licenses')
+                    .select('id, code, plan, expires_at, user_name, is_active')
+                    .ilike('user_name', `%${name}%`)
+                    .order('expires_at', { ascending: false })
+                    .limit(20);
+                if (data) {
+                    const now = new Date();
+                    setRestoreSearchResults(data.map((d: any) => ({
+                        id: d.id, code: d.code, plan: d.plan,
+                        expiresAt: d.expires_at, userName: d.user_name,
+                        isExpired: d.expires_at ? now > new Date(d.expires_at) : false,
+                    })));
+                }
+            }
+        } finally {
+            setRestoreSearching(false);
+        }
+    };
+
     const handleRestoreDownload = () => {
         if (!restoreData) return;
         const blob = new Blob([JSON.stringify(restoreData, null, 2)], { type: 'application/json' });
@@ -375,7 +436,7 @@ export default function AdminPage() {
             <header className="bg-white border-b border-stone-100 px-6 pt-12 pb-4 sticky top-0 z-10">
                 <div className="flex items-center justify-between mb-3">
                     <div>
-                        <Link href="/settings" className="inline-flex items-center text-stone-400 text-xs font-bold gap-1 mb-1">
+                        <Link href="/settings" className="inline-flex items-center text-stone-700 text-xs font-bold gap-1 mb-1">
                             <ChevronLeft size={14} /> 설정
                         </Link>
                         <h1 className="text-xl font-black text-stone-900 flex items-center gap-2">
@@ -390,7 +451,7 @@ export default function AdminPage() {
                             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
                                 activeTab === tab.key
                                     ? 'bg-stone-900 text-white'
-                                    : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                             }`}>
                             {tab.icon}{tab.label}
                         </button>
@@ -410,7 +471,7 @@ export default function AdminPage() {
 
                             {/* 채널 선택 */}
                             <div>
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">판매 채널</label>
+                                <label className="text-[10px] font-bold text-stone-700 uppercase tracking-widest mb-1.5 block">판매 채널</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     {(Object.entries(CHANNELS) as [ChannelType, string][]).map(([key, label]) => (
                                         <button key={key} onClick={() => setChannel(key)}
@@ -423,7 +484,7 @@ export default function AdminPage() {
 
                             {/* 요금제 선택 */}
                             <div>
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">요금제</label>
+                                <label className="text-[10px] font-bold text-stone-700 uppercase tracking-widest mb-1.5 block">요금제</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     {(Object.entries(PLANS) as [PlanType, typeof PLANS[PlanType]][]).map(([key, info]) => (
                                         <button key={key} onClick={() => setPlan(key)}
@@ -437,8 +498,8 @@ export default function AdminPage() {
 
                             {/* 일수 조정 */}
                             <div>
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">
-                                    부여 일수 <span className="text-stone-300 normal-case">(기본 {PLANS[plan].days}일 / {minDays}~{maxDays}일 조정 가능)</span>
+                                <label className="text-[10px] font-bold text-stone-700 uppercase tracking-widest mb-1.5 block">
+                                    부여 일수 <span className="text-stone-500 normal-case">(기본 {PLANS[plan].days}일 / {minDays}~{maxDays}일 조정 가능)</span>
                                 </label>
                                 <div className="flex items-center gap-3">
                                     <button onClick={() => setDays(d => Math.max(minDays, d - 5))}
@@ -456,13 +517,13 @@ export default function AdminPage() {
                             {/* 고객 정보 */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-[10px] font-bold text-stone-400 mb-1 block">고객 이름 (선택)</label>
+                                    <label className="text-[10px] font-bold text-stone-700 mb-1 block">고객 이름 (선택)</label>
                                     <input value={userName} onChange={e => setUserName(e.target.value)}
                                         placeholder="홍길동"
                                         className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none" />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-bold text-stone-400 mb-1 block">연락처 (선택)</label>
+                                    <label className="text-[10px] font-bold text-stone-700 mb-1 block">연락처 (선택)</label>
                                     <input value={userPhone} onChange={e => setUserPhone(e.target.value)}
                                         placeholder="010-0000-0000"
                                         className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none" />
@@ -471,7 +532,7 @@ export default function AdminPage() {
 
                             {/* 메모 */}
                             <div>
-                                <label className="text-[10px] font-bold text-stone-400 mb-1 block">메모 (선택)</label>
+                                <label className="text-[10px] font-bold text-stone-700 mb-1 block">메모 (선택)</label>
                                 <input value={memo} onChange={e => setMemo(e.target.value)}
                                     placeholder="예: 3월 이벤트, 기기변경 복원 요청..."
                                     className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none" />
@@ -512,7 +573,7 @@ export default function AdminPage() {
                 {activeTab === 'licenses' && (
                     <div className="space-y-4">
                         <div className="relative">
-                            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
+                            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-700" />
                             <input
                                 value={licenseSearch}
                                 onChange={e => setLicenseSearch(e.target.value)}
@@ -528,12 +589,12 @@ export default function AdminPage() {
 
                         {licenseLoading && (
                             <div className="flex justify-center py-8">
-                                <RefreshCcw size={24} className="animate-spin text-stone-400" />
+                                <RefreshCcw size={24} className="animate-spin text-stone-700" />
                             </div>
                         )}
 
                         {!licenseLoading && licenses.length === 0 && (
-                            <p className="text-center text-stone-400 text-sm py-8">검색 결과가 없습니다.</p>
+                            <p className="text-center text-stone-700 text-sm py-8">검색 결과가 없습니다.</p>
                         )}
 
                         {!licenseLoading && licenses.map(lic => {
@@ -554,21 +615,21 @@ export default function AdminPage() {
                                                 <div>
                                                     <p className="font-bold text-stone-900 text-sm">
                                                         {lic.user_name || '(이름 없음)'}
-                                                        {lic.user_phone && <span className="text-stone-400 font-normal ml-2 text-xs">{lic.user_phone}</span>}
+                                                        {lic.user_phone && <span className="text-stone-700 font-normal ml-2 text-xs">{lic.user_phone}</span>}
                                                     </p>
-                                                    <p className="font-mono text-xs text-stone-500 tracking-wider">{lic.code}</p>
+                                                    <p className="font-mono text-xs text-stone-700 tracking-wider">{lic.code}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right flex items-center gap-2">
                                                 <div>
                                                     {daysLeft === null
-                                                        ? <span className="text-[10px] text-stone-400">미사용</span>
+                                                        ? <span className="text-[10px] text-stone-700">미사용</span>
                                                         : isExpired
                                                         ? <span className="text-[10px] font-bold text-red-500">만료됨</span>
                                                         : <span className={`text-[10px] font-bold ${isWarning ? 'text-amber-600' : 'text-emerald-600'}`}>{daysLeft}일 남음</span>
                                                     }
                                                 </div>
-                                                {isExpanded ? <ChevronUp size={14} className="text-stone-400" /> : <ChevronDown size={14} className="text-stone-400" />}
+                                                {isExpanded ? <ChevronUp size={14} className="text-stone-700" /> : <ChevronDown size={14} className="text-stone-700" />}
                                             </div>
                                         </div>
                                     </button>
@@ -576,14 +637,14 @@ export default function AdminPage() {
                                     {isExpanded && (
                                         <div className="px-4 pb-4 border-t border-stone-50 pt-3 space-y-2">
                                             <div className="grid grid-cols-2 gap-2 text-[11px]">
-                                                <div><span className="text-stone-400">채널</span> <span className="font-bold ml-1">{CHANNELS[lic.channel as ChannelType] || lic.channel}</span></div>
-                                                <div><span className="text-stone-400">요금제</span> <span className="font-bold ml-1">{PLANS[lic.plan as PlanType]?.label || lic.plan} ({lic.days}일)</span></div>
-                                                <div><span className="text-stone-400">발급일</span> <span className="font-bold ml-1">{formatDate(lic.created_at)}</span></div>
-                                                <div><span className="text-stone-400">첫 사용</span> <span className="font-bold ml-1">{formatDate(lic.first_used_at)}</span></div>
-                                                <div><span className="text-stone-400">만료일</span> <span className="font-bold ml-1">{formatDate(lic.expires_at)}</span></div>
-                                                <div><span className="text-stone-400">발급자</span> <span className="font-bold ml-1">{lic.issued_by}</span></div>
+                                                <div><span className="text-stone-700">채널</span> <span className="font-bold ml-1">{CHANNELS[lic.channel as ChannelType] || lic.channel}</span></div>
+                                                <div><span className="text-stone-700">요금제</span> <span className="font-bold ml-1">{PLANS[lic.plan as PlanType]?.label || lic.plan} ({lic.days}일)</span></div>
+                                                <div><span className="text-stone-700">발급일</span> <span className="font-bold ml-1">{formatDate(lic.created_at)}</span></div>
+                                                <div><span className="text-stone-700">첫 사용</span> <span className="font-bold ml-1">{formatDate(lic.first_used_at)}</span></div>
+                                                <div><span className="text-stone-700">만료일</span> <span className="font-bold ml-1">{formatDate(lic.expires_at)}</span></div>
+                                                <div><span className="text-stone-700">발급자</span> <span className="font-bold ml-1">{lic.issued_by}</span></div>
                                             </div>
-                                            {lic.memo && <p className="text-[11px] text-stone-500 bg-stone-50 p-2 rounded-xl">📝 {lic.memo}</p>}
+                                            {lic.memo && <p className="text-[11px] text-stone-700 bg-stone-50 p-2 rounded-xl">📝 {lic.memo}</p>}
                                             <button onClick={() => { navigator.clipboard.writeText(lic.code); }}
                                                 className="flex items-center gap-1 text-[10px] bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl font-bold text-stone-600 transition">
                                                 <Copy size={11} /> 코드 복사 (기기변경 복원용)
@@ -594,7 +655,7 @@ export default function AdminPage() {
                             );
                         })}
 
-                        <p className="text-center text-stone-400 text-[10px]">최근 50건 표시 · 검색으로 더 찾기</p>
+                        <p className="text-center text-stone-700 text-[10px]">최근 50건 표시 · 검색으로 더 찾기</p>
                     </div>
                 )}
 
@@ -605,7 +666,7 @@ export default function AdminPage() {
                             <div className="flex items-center gap-2 text-blue-600 font-bold text-sm">
                                 <Link2 size={18} /> 현장 딜러 관리
                             </div>
-                            <p className="text-stone-400 text-[11px] leading-relaxed">
+                            <p className="text-stone-700 text-[11px] leading-relaxed">
                                 딜러를 등록하면 전용 URL이 생성됩니다. 딜러는 현장에서 고객 정보를 입력하고 즉시 이용권을 발급할 수 있습니다.
                             </p>
 
@@ -664,12 +725,12 @@ export default function AdminPage() {
                                             <div className="flex items-center justify-between mb-2">
                                                 <div>
                                                     <span className="font-bold text-sm text-stone-800">{d.name}</span>
-                                                    {d.phone && <span className="text-stone-400 text-xs ml-2">{d.phone}</span>}
-                                                    <span className="ml-2 text-[10px] text-stone-400">누적 {d.total_issued}건</span>
-                                                    {d.pin && <span className="ml-2 text-[10px] text-stone-400">PIN: {d.pin}</span>}
+                                                    {d.phone && <span className="text-stone-700 text-xs ml-2">{d.phone}</span>}
+                                                    <span className="ml-2 text-[10px] text-stone-700">누적 {d.total_issued}건</span>
+                                                    {d.pin && <span className="ml-2 text-[10px] text-stone-700">PIN: {d.pin}</span>}
                                                 </div>
                                                 <button onClick={() => handleToggleDealer(d.id, d.is_active)}
-                                                    className={`text-[10px] font-bold px-2 py-1 rounded-full ${d.is_active ? 'bg-blue-100 text-blue-700' : 'bg-stone-200 text-stone-500'}`}>
+                                                    className={`text-[10px] font-bold px-2 py-1 rounded-full ${d.is_active ? 'bg-blue-100 text-blue-700' : 'bg-stone-200 text-stone-700'}`}>
                                                     {d.is_active ? '활성' : '비활성'}
                                                 </button>
                                             </div>
@@ -698,7 +759,7 @@ export default function AdminPage() {
                                 </div>
                             )}
                             {dealers.length === 0 && (
-                                <p className="text-center text-stone-300 text-xs py-4">등록된 딜러가 없습니다.</p>
+                                <p className="text-center text-stone-500 text-xs py-4">등록된 딜러가 없습니다.</p>
                             )}
                         </section>
                     </div>
@@ -711,7 +772,7 @@ export default function AdminPage() {
                         <div className="flex gap-2 flex-wrap">
                             {(['pending', 'done', 'all'] as const).map(f => (
                                 <button key={f} onClick={() => setSettlementFilter(f)}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${settlementFilter === f ? 'bg-stone-900 text-white' : 'bg-white border border-stone-200 text-stone-500'}`}>
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${settlementFilter === f ? 'bg-stone-900 text-white' : 'bg-white border border-stone-200 text-stone-700'}`}>
                                     {f === 'pending' ? '미정산' : f === 'done' ? '정산완료' : '전체'}
                                 </button>
                             ))}
@@ -741,12 +802,12 @@ export default function AdminPage() {
 
                         {settlementLoading && (
                             <div className="flex justify-center py-8">
-                                <RefreshCcw size={24} className="animate-spin text-stone-400" />
+                                <RefreshCcw size={24} className="animate-spin text-stone-700" />
                             </div>
                         )}
 
                         {!settlementLoading && filteredSettlements.length === 0 && (
-                            <p className="text-center text-stone-400 text-sm py-8">
+                            <p className="text-center text-stone-700 text-sm py-8">
                                 {settlementFilter === 'pending' ? '미정산 내역이 없습니다.' : '내역이 없습니다.'}
                             </p>
                         )}
@@ -761,13 +822,13 @@ export default function AdminPage() {
                                                 {s.type === 'first' ? '최초' : '재구독'}
                                             </span>
                                         </div>
-                                        <p className="font-mono text-[10px] text-stone-400">{s.license_code}</p>
-                                        <p className="text-[10px] text-stone-400 mt-1">{formatDate(s.created_at)}</p>
+                                        <p className="font-mono text-[10px] text-stone-700">{s.license_code}</p>
+                                        <p className="text-[10px] text-stone-700 mt-1">{formatDate(s.created_at)}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-xs text-stone-400">판매가 ₩{s.sale_amount.toLocaleString()}</p>
+                                        <p className="text-xs text-stone-700">판매가 ₩{s.sale_amount.toLocaleString()}</p>
                                         <p className="text-lg font-black text-stone-900">₩{s.commission_amount.toLocaleString()}</p>
-                                        <p className="text-[9px] text-stone-400">({Math.round(s.commission_rate * 100)}%)</p>
+                                        <p className="text-[9px] text-stone-700">({Math.round(s.commission_rate * 100)}%)</p>
                                         {s.settled
                                             ? <p className="text-[10px] text-emerald-600 font-bold mt-1">✓ {formatDate(s.settled_at)}</p>
                                             : <button onClick={() => handleMarkSettled([s.id])}
@@ -827,7 +888,24 @@ export default function AdminPage() {
                             <p>• 고객은 설정 → 파일 불러오기로 복원합니다.</p>
                         </div>
 
-                        {/* 코드 입력 */}
+                        {/* 검색 모드 토글 */}
+                        <div className="flex gap-1.5 bg-stone-100 p-1 rounded-xl">
+                            <button
+                                onClick={() => { setRestoreSearchMode('code'); setRestoreSearchResults([]); }}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${restoreSearchMode === 'code' ? 'bg-white text-blue-600 shadow-sm' : 'text-stone-500'}`}
+                            >
+                                이용권 코드로 찾기
+                            </button>
+                            <button
+                                onClick={() => { setRestoreSearchMode('phone'); setRestoreStatus('idle'); setRestoreData(null); }}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${restoreSearchMode === 'phone' ? 'bg-white text-blue-600 shadow-sm' : 'text-stone-500'}`}
+                            >
+                                이름 / 전화번호로 찾기
+                            </button>
+                        </div>
+
+                        {restoreSearchMode === 'code' ? (
+                        /* 코드 입력 */
                         <div className="flex gap-2">
                             <input
                                 type="text"
@@ -845,6 +923,76 @@ export default function AdminPage() {
                                 {restoreStatus === 'loading' ? '조회 중…' : '백업 조회'}
                             </button>
                         </div>
+                        ) : (
+                        /* 이름 / 전화번호 검색 */
+                        <div className="space-y-2">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={restoreSearchName}
+                                    onChange={e => setRestoreSearchName(e.target.value)}
+                                    placeholder="이름 (예: 홍길동)"
+                                    className="flex-1 border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                />
+                                <input
+                                    type="text"
+                                    value={restoreSearchPhone}
+                                    onChange={e => {
+                                        const raw = e.target.value.replace(/\D/g, '').slice(0, 11);
+                                        const fmt = raw.length <= 3 ? raw : raw.length <= 7
+                                            ? `${raw.slice(0,3)}-${raw.slice(3)}`
+                                            : `${raw.slice(0,3)}-${raw.slice(3,7)}-${raw.slice(7)}`;
+                                        setRestoreSearchPhone(fmt);
+                                    }}
+                                    onKeyDown={e => e.key === 'Enter' && handlePhoneSearch()}
+                                    inputMode="tel"
+                                    placeholder="전화번호 (예: 010-1234-5678)"
+                                    className="flex-1 border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                />
+                                <button
+                                    onClick={handlePhoneSearch}
+                                    disabled={restoreSearching || (!restoreSearchPhone.trim() && !restoreSearchName.trim())}
+                                    className="px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 disabled:opacity-40 transition whitespace-nowrap flex items-center gap-1.5"
+                                >
+                                    {restoreSearching
+                                        ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        : <Search size={14} />}
+                                    검색
+                                </button>
+                            </div>
+                            {/* 검색 결과 목록 */}
+                            {!restoreSearching && restoreSearchResults.length === 0 && (restoreSearchPhone || restoreSearchName) && (
+                                <p className="text-xs text-stone-400 text-center py-2">검색 결과가 없습니다.</p>
+                            )}
+                            {restoreSearchResults.length > 0 && (
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {restoreSearchResults.map(r => (
+                                        <div key={r.id}
+                                            className="flex items-center justify-between border border-stone-200 rounded-xl px-4 py-3 bg-stone-50 hover:bg-blue-50 transition cursor-pointer"
+                                            onClick={() => {
+                                                setRestoreCode(r.code);
+                                                setRestoreSearchMode('code');
+                                                setRestoreSearchResults([]);
+                                            }}
+                                        >
+                                            <div>
+                                                <p className="text-sm font-bold text-stone-800">{r.userName || '이름 없음'}</p>
+                                                <p className="font-mono text-xs text-stone-500">{r.code}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.isExpired ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                    {r.isExpired ? '만료' : '유효'}
+                                                </span>
+                                                <p className="text-[10px] text-stone-400 mt-0.5">
+                                                    {r.expiresAt ? new Date(r.expiresAt).toLocaleDateString('ko-KR') : '-'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        )}
 
                         {/* 결과 */}
                         {restoreStatus === 'found' && restoreData && (
@@ -866,8 +1014,8 @@ export default function AdminPage() {
                         )}
 
                         {restoreStatus === 'notfound' && (
-                            <div className="flex items-center gap-3 bg-stone-50 p-4 rounded-2xl border border-stone-200 text-stone-500 text-xs font-medium">
-                                <CloudOff size={18} className="text-stone-400" />
+                            <div className="flex items-center gap-3 bg-stone-50 p-4 rounded-2xl border border-stone-200 text-stone-700 text-xs font-medium">
+                                <CloudOff size={18} className="text-stone-700" />
                                 해당 코드의 백업 데이터가 없습니다.
                             </div>
                         )}

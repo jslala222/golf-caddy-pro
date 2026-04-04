@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>캐디 매니저 프로 — 결제 링크 공유 흐름 미리보기</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Apple SD Gothic Neo', 'Segoe UI', sans-serif;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  /* ── 헤더 ── */
+  .header {
+    background: linear-gradient(135deg, #111827, #1e2a3b);
+    border-bottom: 1px solid #1e293b;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .header-logo {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .header-info h1 { font-size: 17px; font-weight: 800; color: #f1f5f9; }
+  .header-info p  { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .header-badge {
+    margin-left: auto;
+    background: #10b981;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  /* ── 메인 레이아웃 ── */
+  .main {
+    padding: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* ── 섹션 제목 ── */
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #1e293b;
+  }
+
+  /* ── 흐름 화살표 ── */
+  .flow-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 40px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all 0.5s;
+  }
+  .flow-step.visible { opacity: 1; transform: translateY(0); }
+  .flow-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    border: 2px solid;
+  }
+  .dot-dealer  { background: #1d3a6e; border-color: #3b82f6; }
+  .dot-link    { background: #0f3a2b; border-color: #10b981; }
+  .dot-send    { background: #3a2b00; border-color: #fbbf24; }
+  .dot-pay     { background: #2d1a4a; border-color: #8b5cf6; }
+  .dot-done    { background: #0f3a2b; border-color: #10b981; }
+  .flow-label  { font-size: 10px; color: #94a3b8; text-align: center; white-space: nowrap; }
+  .flow-arrow  { font-size: 20px; color: #334155; margin: 0 4px; padding-bottom: 18px; flex-shrink: 0; }
+
+  /* ── 폰 3개 레이아웃 ── */
+  .phones-row {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+  }
+  .phone-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .phone-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .phone-label .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  .phone {
+    width: 240px;
+    height: 480px;
+    background: #111827;
+    border-radius: 34px;
+    border: 3px solid #1e293b;
+    box-shadow: 0 0 0 1px #0d1117, 0 24px 64px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 11px; left: 50%;
+    transform: translateX(-50%);
+    width: 70px; height: 5px;
+    background: #0a0e1a;
+    border-radius: 3px;
+    z-index: 20;
+  }
+  .phone-screen {
+    flex: 1;
+    padding: 26px 14px 14px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── 딜러 앱 화면 ── */
+  .app-bar {
+    background: #1e40af;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -26px -14px 12px;
+  }
+  .app-bar-icon {
+    width: 26px; height: 26px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .app-bar-text { font-size: 12px; font-weight: 700; color: white; }
+  .app-bar-sub { font-size: 9px; color: rgba(255,255,255,0.6); }
+
+  .form-row {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 7px;
+  }
+  .form-label { font-size: 9px; color: #475569; margin-bottom: 2px; }
+  .form-value { font-size: 12px; color: #e2e8f0; font-weight: 500; min-height: 16px; }
+  .form-value.typing::after { content: '|'; animation: blink 0.7s infinite; color: #3b82f6; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .plan-chips {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  .plan-chip {
+    flex: 1;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 5px 4px;
+    text-align: center;
+    font-size: 9px;
+    color: #64748b;
+  }
+  .plan-chip.selected {
+    background: #1d3a6e;
+    border-color: #3b82f6;
+    color: #93c5fd;
+    font-weight: 700;
+  }
+
+  /* 버튼들 */
+  .app-btn {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 7px;
+    transition: all 0.3s;
+  }
+  .btn-blue { background: #1d4ed8; color: white; }
+  .btn-green { background: #059669; color: white; }
+  .btn-dim { background: #1e293b; color: #475569; }
+
+  /* 결과 카드 */
+  .result-card {
+    background: #0f3a2b;
+    border: 1px solid #10b981;
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 8px;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .result-card.show { opacity: 1; transform: scale(1); }
+  .result-card-title {
+    font-size: 9px;
+    color: #34d399;
+    font-weight: 700;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .result-url {
+    font-size: 8.5px;
+    color: #64748b;
+    font-family: monospace;
+    word-break: break-all;
+    background: #0f172a;
+    border-radius: 6px;
+    padding: 5px 7px;
+    margin-bottom: 7px;
+    line-height: 1.4;
+  }
+  .result-url .highlight { color: #34d399; }
+  .share-btns {
+    display: flex;
+    gap: 5px;
+  }
+  .share-btn {
+    flex: 1;
+    padding: 7px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+  }
+  .share-copy { background: #1e293b; color: #94a3b8; }
+  .share-kakao { background: #FEE500; color: #1a1a1a; }
+
+  /* ── 알림톡 화면 ── */
+  .notif-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #0a0f1e, #0f1729);
+    z-index: 10;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .notif-overlay.slide-up { transform: translateY(-100%); }
+
+  .lock-time { font-size: 42px; font-weight: 200; color: #f1f5f9; text-align: center; margin-top: 60px; }
+  .lock-date { font-size: 11px; color: #64748b; text-align: center; margin-top: 4px; }
+  .lock-icon { text-align: center; font-size: 22px; margin-top: 20px; }
+
+  .notif-pill {
+    position: absolute;
+    top: -70px;
+    left: 10px; right: 10px;
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(12px);
+    border-radius: 14px;
+    padding: 10px 12px;
+    display: flex;
+    gap: 10px;
+    z-index: 11;
+    transition: top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+  .notif-pill.show { top: 8px; }
+  .notif-pill-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .icon-kakao { background: #FEE500; }
+  .notif-pill-title { font-size: 10px; font-weight: 700; color: #f1f5f9; }
+  .notif-pill-msg { font-size: 9px; color: #94a3b8; line-height: 1.4; margin-top: 1px; }
+  .notif-pill-time { font-size: 8px; color: #475569; margin-top: 2px; }
+
+  /* 카카오 채팅 화면 */
+  .kakao-screen {
+    position: absolute;
+    inset: 0;
+    background: #aebfd0;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.4s;
+    display: flex;
+    flex-direction: column;
+  }
+  .kakao-screen.show { opacity: 1; }
+  .kakao-bar {
+    background: #3f5060;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .kakao-bar-name { font-size: 12px; font-weight: 700; color: white; }
+  .chat-list {
+    flex: 1;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+  }
+  .bubble {
+    max-width: 76%;
+    background: white;
+    border-radius: 4px 12px 12px 12px;
+    padding: 8px 10px;
+    font-size: 10px;
+    color: #1a1a1a;
+    line-height: 1.55;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    opacity: 0;
+    transform: translateX(-14px);
+    transition: all 0.4s;
+  }
+  .bubble.show { opacity: 1; transform: translateX(0); }
+  .bubble strong { font-weight: 700; }
+  .bubble .code-em { 
+    display: block; 
+    font-size: 12px; 
+    font-weight: 800; 
+    color: #1d4ed8; 
+    letter-spacing: 1.5px; 
+    margin: 4px 0; 
+  }
+  .bubble-link {
+    display: block;
+    background: #FEE500;
+    color: #1a1a1a;
+    text-align: center;
+    padding: 7px 10px;
+    border-radius: 9px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 7px;
+    cursor: pointer;
+  }
+  .bubble-link-blue {
+    display: block;
+    background: #1d4ed8;
+    color: white;
+    text-align: center;
+    padding: 7px 10px;
+    border-radius: 9px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 7px;
+    cursor: pointer;
+  }
+
+  /* ── 결제 페이지 화면 ── */
+  .pay-screen {
+    position: absolute;
+    inset: 0;
+    background: #f8fafc;
+    z-index: 8;
+    opacity: 0;
+    transition: opacity 0.4s;
+    display: flex;
+    flex-direction: column;
+  }
+  .pay-screen.show { opacity: 1; }
+  .pay-bar {
+    background: #1e3a8a;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pay-bar span { font-size: 12px; font-weight: 700; color: white; }
+  .pay-body { padding: 14px; flex: 1; }
+  .pay-notice {
+    background: #ecfdf5;
+    border: 1px solid #6ee7b7;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 9px;
+    color: #065f46;
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .pay-plan {
+    background: white;
+    border: 2px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .pay-plan-name { font-size: 12px; font-weight: 700; color: #1e40af; }
+  .pay-plan-price { font-size: 18px; font-weight: 800; color: #0f172a; }
+  .pay-plan-days  { font-size: 9px; color: #64748b; }
+  .pay-field { margin-bottom: 7px; }
+  .pay-field-label { font-size: 9px; color: #64748b; font-weight: 600; margin-bottom: 2px; }
+  .pay-field-val {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 11px;
+    color: #1e293b;
+    font-weight: 600;
+  }
+  .pay-cta {
+    background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 11px;
+    font-size: 12px;
+    font-weight: 800;
+    width: 100%;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  /* 결제 완료 */
+  .done-screen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #f0fdf4, #ecfdf5);
+    z-index: 9;
+    opacity: 0;
+    transition: opacity 0.5s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+  }
+  .done-screen.show { opacity: 1; }
+  .done-check {
+    width: 64px; height: 64px;
+    background: #10b981;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+    color: white;
+    animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes pop {
+    0% { transform: scale(0); }
+    100% { transform: scale(1); }
+  }
+  .done-title { font-size: 18px; font-weight: 800; color: #065f46; }
+  .done-code-box {
+    background: white;
+    border: 2px dashed #10b981;
+    border-radius: 14px;
+    padding: 14px 24px;
+    text-align: center;
+  }
+  .done-code-label { font-size: 9px; color: #64748b; font-weight: 600; }
+  .done-code { font-size: 20px; font-weight: 800; color: #1d4ed8; letter-spacing: 3px; font-family: monospace; }
+  .done-notice { font-size: 9.5px; color: #6b7280; text-align: center; line-height: 1.6; }
+
+  /* ── 비교 섹션 ── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .compare-card {
+    background: #0f172a;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid;
+  }
+  .compare-card h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .compare-item {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.7;
+    display: flex;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .compare-item .ci { flex-shrink: 0; }
+
+  /* ── 컨트롤 ── */
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .ctrl {
+    padding: 11px 28px;
+    border-radius: 12px;
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ctrl-play  { background: linear-gradient(135deg, #1d4ed8, #7c3aed); color: white; box-shadow: 0 4px 20px rgba(59,130,246,0.35); }
+  .ctrl-play:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(59,130,246,0.45); }
+  .ctrl-reset { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+
+  /* ── 설명 띠 ── */
+  .desc-strip {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 18px 24px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .desc-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f1f5f9;
+    flex: 1;
+  }
+  .progress-row {
+    display: flex;
+    gap: 6px;
+  }
+  .pd {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: #1e293b;
+    transition: all 0.4s;
+  }
+  .pd.active { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+  .pd.done   { background: #10b981; }
+
+  /* ── 구현 안내 박스 ── */
+  .guide-box {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+  .guide-box h3 { font-size: 14px; font-weight: 700; color: #f1f5f9; margin-bottom: 16px; }
+  .guide-steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .guide-step {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .guide-step-num {
+    font-size: 10px;
+    font-weight: 700;
+    color: #3b82f6;
+    margin-bottom: 6px;
+  }
+  .guide-step-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 6px;
+  }
+  .guide-step-desc {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.6;
+  }
+  .code-block {
+    background: #0a0e1a;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 8px;
+    line-height: 1.7;
+    border: 1px solid #1e293b;
+  }
+  .code-block .ck { color: #34d399; }
+  .code-block .cv { color: #fbbf24; }
+  .code-block .cm { color: #475569; }
+
+  @media (max-width: 900px) {
+    .phones-row { flex-direction: column; align-items: center; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .guide-steps { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="header">
+  <div class="header-logo">⛳</div>
+  <div class="header-info">
+    <h1>캐디 매니저 프로 — 결제 링크 공유 흐름</h1>
+    <p>딜러 → 결제 링크 생성 → 고객 카카오 수신 → 직접 결제 → 코드 자동 발급</p>
+  </div>
+  <div class="header-badge">✅ 수정 완료</div>
+</div>
+
+<div class="main">
+
+  <!-- 흐름 바 -->
+  <p class="section-title">📌 전체 흐름</p>
+  <div class="flow-bar">
+    <div class="flow-step" id="f0">
+      <div class="flow-dot dot-dealer">⛳</div>
+      <div class="flow-label">①딜러<br>정보입력</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" id="f1">
+      <div class="flow-dot dot-link">🔗</div>
+      <div class="flow-label">②링크<br>생성</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" id="f2">
+      <div class="flow-dot dot-send">💛</div>
+      <div class="flow-label">③카카오<br>공유</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" id="f3">
+      <div class="flow-dot dot-pay">📱</div>
+      <div class="flow-label">④고객<br>수신</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" id="f4">
+      <div class="flow-dot dot-pay">💳</div>
+      <div class="flow-label">⑤카드<br>결제</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" id="f5">
+      <div class="flow-dot dot-done">🎉</div>
+      <div class="flow-label">⑥코드<br>발급</div>
+    </div>
+  </div>
+
+  <!-- 설명 띠 -->
+  <div class="desc-strip">
+    <div class="desc-text" id="desc">▶ 아래 재생 버튼을 눌러 시연을 시작하세요</div>
+    <div class="progress-row">
+      <div class="pd active" id="pd0"></div>
+      <div class="pd" id="pd1"></div>
+      <div class="pd" id="pd2"></div>
+      <div class="pd" id="pd3"></div>
+      <div class="pd" id="pd4"></div>
+      <div class="pd" id="pd5"></div>
+    </div>
+  </div>
+
+  <!-- 컨트롤 -->
+  <div class="controls">
+    <button class="ctrl ctrl-reset" onclick="resetAll()">↺ 처음부터</button>
+    <button class="ctrl ctrl-play" id="playBtn" onclick="nextStep()">▶ 다음 단계</button>
+  </div>
+
+  <!-- 폰 3개 -->
+  <div class="phones-row">
+
+    <!-- 딜러 폰 -->
+    <div class="phone-wrapper">
+      <div class="phone-label">
+        <span class="dot" style="background:#3b82f6"></span> 딜러 폰 (캐디 매니저 프로)
+      </div>
+      <div class="phone">
+        <div class="phone-screen">
+
+          <!-- 앱 바 -->
+          <div class="app-bar">
+            <div class="app-bar-icon">⛳</div>
+            <div>
+              <div class="app-bar-text">이용권 발급</div>
+              <div class="app-bar-sub">코드발급 탭</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-label">고객 이름</div>
+            <div class="form-value" id="v-name">...</div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">고객 연락처</div>
+            <div class="form-value" id="v-phone">...</div>
+          </div>
+
+          <div class="plan-chips">
+            <div class="plan-chip">1개월<br>₩19,900</div>
+            <div class="plan-chip selected">3개월<br>₩39,900</div>
+            <div class="plan-chip">1년<br>₩99,000</div>
+          </div>
+
+          <div class="app-btn btn-blue">✓ 이용권 즉시 발급</div>
+
+          <div style="display:flex;align-items:center;gap:6px;margin:6px 0">
+            <div style="flex:1;height:1px;background:#1e293b"></div>
+            <span style="font-size:9px;color:#475569">또는</span>
+            <div style="flex:1;height:1px;background:#1e293b"></div>
+          </div>
+
+          <button class="app-btn btn-green" id="genLinkBtn" onclick="step2()">
+            🔗 결제 링크 생성 (고객 직접 결제)
+          </button>
+
+          <!-- 결과 카드 -->
+          <div class="result-card" id="resultCard">
+            <div class="result-card-title">✅ 결제 링크 생성 완료!</div>
+            <div class="result-url" id="resultUrl">
+              caddypro.app/<span class="highlight">subscribe?</span><br>
+              name=<span class="highlight">박지수</span>&amp;<br>
+              phone=<span class="highlight">010-3344-5566</span>&amp;<br>
+              plan=<span class="highlight">3month</span>&amp;<br>
+              ref=<span class="highlight">RWC64HZ4</span>
+            </div>
+            <div class="share-btns">
+              <button class="share-btn share-copy">📋 링크 복사</button>
+              <button class="share-btn share-kakao" onclick="step3()">💛 공유하기</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- 고객 폰 A (알림 수신 → 카카오 채팅) -->
+    <div class="phone-wrapper">
+      <div class="phone-label">
+        <span class="dot" style="background:#fbbf24"></span> 고객 폰 — 카카오 수신
+      </div>
+      <div class="phone">
+        <div class="phone-screen">
+
+          <!-- 잠금 화면 -->
+          <div class="notif-overlay" id="lockscreen">
+            <div class="lock-time">09:41</div>
+            <div class="lock-date">2026년 4월 3일 금요일</div>
+            <div class="lock-icon">🔒</div>
+
+            <!-- 알림 배너 -->
+            <div class="notif-pill" id="notifPill">
+              <div class="notif-pill-icon icon-kakao">💬</div>
+              <div>
+                <div class="notif-pill-title">카카오 알림톡</div>
+                <div class="notif-pill-msg" id="notifMsg">[캐디매니저프로] 결제 링크가 도착했습니다</div>
+                <div class="notif-pill-time">방금 전</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 카카오 채팅 -->
+          <div class="kakao-screen" id="kakaoScreen">
+            <div class="kakao-bar">
+              <span style="font-size:15px">💛</span>
+              <div class="kakao-bar-name">캐디 매니저 프로</div>
+            </div>
+            <div class="chat-list">
+              <div class="bubble" id="b1">
+                안녕하세요! <strong>박지수</strong> 고객님 👋
+              </div>
+              <div class="bubble" id="b2">
+                <strong>딜러 김민준</strong>님이 고객님께 이용권 결제 링크를 보내드렸습니다.<br><br>
+                📋 플랜: <strong>3개월권</strong><br>
+                💰 금액: <strong>₩39,900</strong><br>
+                📅 이용기간: <strong>90일</strong>
+              </div>
+              <div class="bubble" id="b3">
+                이름과 연락처가 미리 입력되어 있습니다.<br>아래 버튼을 눌러 결제를 완료해주세요.
+                <span class="bubble-link-blue" onclick="step5()">💳 결제하러 가기 →</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- 고객 폰 B (결제 페이지 → 완료) -->
+    <div class="phone-wrapper">
+      <div class="phone-label">
+        <span class="dot" style="background:#10b981"></span> 고객 폰 — 결제 완료
+      </div>
+      <div class="phone">
+        <div class="phone-screen">
+
+          <!-- 초기 빈 화면 -->
+          <div style="height:100%;display:flex;align-items:center;justify-content:center;opacity:0.2" id="emptyScreen">
+            <div style="text-align:center">
+              <div style="font-size:32px;margin-bottom:8px">📱</div>
+              <div style="font-size:11px;color:#475569">결제 링크 클릭 후<br>이 화면이 열립니다</div>
+            </div>
+          </div>
+
+          <!-- 결제 페이지 -->
+          <div class="pay-screen" id="payScreen">
+            <div class="pay-bar">
+              <span style="font-size:14px">⛳</span>
+              <span>캐디 매니저 프로 결제</span>
+            </div>
+            <div class="pay-body">
+
+              <div class="pay-notice">
+                💚 <strong>딜러 추천 링크</strong>로 접속하셨습니다.<br>
+                이름과 연락처가 자동 입력되었습니다.
+              </div>
+
+              <div class="pay-plan">
+                <div class="pay-plan-name">⛳ 3개월권</div>
+                <div class="pay-plan-price">₩39,900</div>
+                <div class="pay-plan-days">90일 이용 · 결제 즉시 코드 발급</div>
+              </div>
+
+              <div class="pay-field">
+                <div class="pay-field-label">이름</div>
+                <div class="pay-field-val">박지수</div>
+              </div>
+              <div class="pay-field">
+                <div class="pay-field-label">연락처</div>
+                <div class="pay-field-val">010-3344-5566</div>
+              </div>
+
+              <button class="pay-cta" onclick="step6()">💳 카드결제 (₩39,900)</button>
+            </div>
+          </div>
+
+          <!-- 결제 완료 화면 -->
+          <div class="done-screen" id="doneScreen">
+            <div class="done-check">✓</div>
+            <div class="done-title">결제 완료!</div>
+            <div class="done-code-box">
+              <div class="done-code-label">이용권 코드</div>
+              <div class="done-code">SM-7F9-Q3W</div>
+            </div>
+            <div class="done-notice">
+              앱에서 이 코드를 입력하면<br>즉시 이용 가능합니다 🎉<br><br>
+              <strong style="color:#065f46">코드를 안전한 곳에 보관하세요</strong>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.phones-row -->
+
+  <!-- 비교 카드 3개 -->
+  <p class="section-title">⚖️ 방식 비교</p>
+  <div class="compare-grid">
+    <div class="compare-card" style="border-color:#ef4444">
+      <h3 style="color:#fca5a5">❌ 기존 방식 (문제)</h3>
+      <div class="compare-item"><span class="ci">🔴</span> 딜러가 발급 후 코드를 화면에서 직접 보고 수동 전달</div>
+      <div class="compare-item"><span class="ci">🔴</span> 딜러 실수로 코드 전달 누락 가능</div>
+      <div class="compare-item"><span class="ci">🔴</span> 고객이 코드 받았는지 확인 불가</div>
+      <div class="compare-item"><span class="ci">🔴</span> 딜러가 바쁘면 전달 지연</div>
+      <div class="compare-item"><span class="ci">🔴</span> 고객 입장에서 신뢰도 낮음</div>
+    </div>
+    <div class="compare-card" style="border-color:#10b981">
+      <h3 style="color:#6ee7b7">✅ 현재 구현 (결제 링크)</h3>
+      <div class="compare-item"><span class="ci">🟢</span> 딜러가 결제 링크 생성 → 공유하기로 카카오/문자 발송</div>
+      <div class="compare-item"><span class="ci">🟢</span> 고객이 직접 카드결제 → 코드 자동 발급</div>
+      <div class="compare-item"><span class="ci">🟢</span> 이름·연락처·플랜 자동 입력 (오타 없음)</div>
+      <div class="compare-item"><span class="ci">🟢</span> 딜러 토큰(`ref=`) 포함 → 실적 자동 추적</div>
+      <div class="compare-item"><span class="ci">🟢</span> API 연동 없이 즉시 사용 가능</div>
+    </div>
+    <div class="compare-card" style="border-color:#8b5cf6">
+      <h3 style="color:#c4b5fd">🚀 다음 단계 (자동 발송)</h3>
+      <div class="compare-item"><span class="ci">💡</span> 솔라피(Solapi) API → 코드 발급 즉시 문자 자동 발송</div>
+      <div class="compare-item"><span class="ci">💡</span> 카카오 비즈메시지 → 알림톡 자동 발송</div>
+      <div class="compare-item"><span class="ci">💡</span> 딜러가 아무것도 안 해도 고객 폰으로 날아감</div>
+      <div class="compare-item"><span class="ci">💡</span> 환경변수에 API Key만 추가하면 됨</div>
+      <div class="compare-item"><span class="ci">💡</span> SMS 비용: 건당 약 8~11원</div>
+    </div>
+  </div>
+
+  <!-- 구현 안내 -->
+  <p class="section-title">🛠️ 구현 내용 (수정된 파일)</p>
+  <div class="guide-box">
+    <h3>7회차 수정 파일 및 내용</h3>
+    <div class="guide-steps">
+      <div class="guide-step">
+        <div class="guide-step-num">FILE 1</div>
+        <div class="guide-step-title">dealer/[token]/page.tsx</div>
+        <div class="guide-step-desc">
+          현장발급 페이지에 결제 링크 생성 버튼 추가.<br>
+          Share2, ExternalLink 아이콘 추가.<br>
+          결제 링크 패널: URL 미리보기 + 복사 + 공유
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">FILE 2</div>
+        <div class="guide-step-title">dealer/[token]/dashboard/page.tsx</div>
+        <div class="guide-step-desc">
+          딜러 대시보드 코드발급 탭에도 동일 기능 추가.<br>
+          <code>handleGenerateLink</code>, <code>handleShareLink</code> 핸들러<br>
+          링크 패널 JSX 추가
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">FILE 3</div>
+        <div class="guide-step-title">subscribe/page.tsx</div>
+        <div class="guide-step-desc">
+          URL 파라미터 자동 읽기 추가 (name, phone, plan, ref).<br>
+          딜러 ref 있으면 상단에 "딜러 추천 링크" 배너 표시.<br>
+          dealerRef 상태 추가
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">URL 구조</div>
+        <div class="guide-step-title">생성되는 결제 링크 형태</div>
+        <div class="code-block">
+          <span class="cm">// 딜러가 생성하는 링크</span><br>
+          /subscribe?<br>
+          &nbsp;&nbsp;<span class="ck">name</span>=<span class="cv">박지수</span>&amp;<br>
+          &nbsp;&nbsp;<span class="ck">phone</span>=<span class="cv">010-3344-5566</span>&amp;<br>
+          &nbsp;&nbsp;<span class="ck">plan</span>=<span class="cv">6month</span>&amp;<br>
+          &nbsp;&nbsp;<span class="ck">ref</span>=<span class="cv">RWC64HZ4</span><br><br>
+          <span class="cm">// ref = 딜러 token → 실적 추적</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let step = 0;
+const TOTAL = 6;
+
+const descs = [
+  '① 딜러가 고객 이름과 전화번호를 입력합니다',
+  '② "결제 링크 생성" 버튼을 클릭하면 개인화된 URL이 생성됩니다',
+  '③ "공유하기" 버튼으로 카카오톡/문자에 링크를 붙여넣어 보냅니다',
+  '④ 고객 폰에 카카오 알림이 도착합니다 — 링크가 포함되어 있습니다',
+  '⑤ 링크 클릭 → 이름·연락처·플랜이 자동 입력된 결제 페이지가 열립니다',
+  '⑥ 고객이 카드결제 완료 → 이용권 코드(SM-7F9-Q3W)가 즉시 발급됩니다!',
+];
+
+function setDesc(i) {
+  document.getElementById('desc').textContent = descs[i];
+  for (let j = 0; j < TOTAL; j++) {
+    const d = document.getElementById('pd' + j);
+    d.classList.remove('active', 'done');
+    if (j < i) d.classList.add('done');
+    else if (j === i) d.classList.add('active');
+  }
+  // 흐름 바
+  const el = document.getElementById('f' + i);
+  if (el) el.classList.add('visible');
+}
+
+function nextStep() {
+  if (step >= TOTAL) return;
+  setDesc(step);
+  switch(step) {
+    case 0: typeText('v-name', '박지수', 80); break;
+    case 1: typeText('v-phone', '010-3344-5566', 55, step2); break;
+    case 2: step3(); break;
+    case 3: step4(); break;
+    case 4: step5(); break;
+    case 5: step6(); break;
+  }
+  step++;
+  if (step >= TOTAL) {
+    document.getElementById('playBtn').textContent = '🏁 완료';
+    document.getElementById('playBtn').disabled = true;
+  }
+}
+
+function step2() {
+  document.getElementById('resultCard').classList.add('show');
+}
+function step3() {
+  // 딜러 폰에서 공유 → 고객 폰에 알림 도착
+}
+function step4() {
+  document.getElementById('notifPill').classList.add('show');
+  setTimeout(() => {
+    document.getElementById('lockscreen').classList.add('slide-up');
+    document.getElementById('kakaoScreen').classList.add('show');
+    setTimeout(() => document.getElementById('b1').classList.add('show'), 300);
+    setTimeout(() => document.getElementById('b2').classList.add('show'), 800);
+    setTimeout(() => document.getElementById('b3').classList.add('show'), 1400);
+  }, 1600);
+}
+function step5() {
+  document.getElementById('emptyScreen').style.display = 'none';
+  document.getElementById('payScreen').classList.add('show');
+}
+function step6() {
+  document.getElementById('doneScreen').classList.add('show');
+}
+
+function typeText(id, text, speed, cb) {
+  const el = document.getElementById(id);
+  el.textContent = '';
+  el.classList.add('typing');
+  let i = 0;
+  const t = setInterval(() => {
+    el.textContent += text[i++];
+    if (i >= text.length) {
+      clearInterval(t);
+      el.classList.remove('typing');
+      if (cb) cb();
+    }
+  }, speed);
+}
+
+function resetAll() {
+  step = 0;
+  // 폼
+  document.getElementById('v-name').textContent = '...';
+  document.getElementById('v-phone').textContent = '...';
+  document.getElementById('resultCard').classList.remove('show');
+  // 고객 폰 A
+  document.getElementById('lockscreen').classList.remove('slide-up');
+  document.getElementById('notifPill').classList.remove('show');
+  document.getElementById('kakaoScreen').classList.remove('show');
+  ['b1','b2','b3'].forEach(id => document.getElementById(id).classList.remove('show'));
+  // 고객 폰 B
+  document.getElementById('payScreen').classList.remove('show');
+  document.getElementById('doneScreen').classList.remove('show');
+  document.getElementById('emptyScreen').style.display = '';
+  // 버튼
+  const pb = document.getElementById('playBtn');
+  pb.textContent = '▶ 다음 단계';
+  pb.disabled = false;
+  // 설명
+  document.getElementById('desc').textContent = '▶ 아래 재생 버튼을 눌러 시연을 시작하세요';
+  for (let j = 0; j < TOTAL; j++) {
+    const d = document.getElementById('pd' + j);
+    d.classList.remove('active', 'done');
+    if (j === 0) d.classList.add('active');
+    const f = document.getElementById('f' + j);
+    if (f) f.classList.remove('visible');
+  }
+}
+
+// 페이지 로드 시 흐름 바 순차 등장
+window.addEventListener('load', () => {
+  for (let i = 0; i < 6; i++) {
+    setTimeout(() => {
+      const el = document.getElementById('f' + i);
+      if (el) el.classList.add('visible');
+    }, i * 100);
+  }
+});
+</script>
+</body>
+</html>
