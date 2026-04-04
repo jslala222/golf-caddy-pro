@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
-import { Calendar as CalendarIcon, Wallet, ChevronRight, TrendingUp, TrendingDown, LogOut } from 'lucide-react';
+import { Calendar as CalendarIcon, Wallet, ChevronRight, TrendingUp, TrendingDown, LogOut, Plus, X, DollarSign } from 'lucide-react';
 import { Calendar } from '@/components/Calendar';
 
 export default function HomePage() {
@@ -12,6 +12,13 @@ export default function HomePage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [userName, setUserName] = useState<string | null>(null);
+
+  // 빠른 수입 입력 모달
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [qCaddyFee, setQCaddyFee] = useState('');
+  const [qTip, setQTip] = useState('');
+  const [qOverFee, setQOverFee] = useState('');
+  const [qMemo, setQMemo] = useState('');
 
   useEffect(() => {
     const code = localStorage.getItem('caddy_license_key');
@@ -54,7 +61,38 @@ export default function HomePage() {
     );
   }
 
-  const { transactions = [], schedules = [], clients = [], feeSettings } = store;
+  const { transactions = [], schedules = [], clients = [], feeSettings, addTransaction } = store;
+
+  // 빠른 수입 입력 모달 열기 (캐디피 기본값 자동 설정)
+  const openQuickModal = () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const alreadyToday = transactions.filter(t => t.date === todayStr && t.type === 'income');
+    // 오늘 이미 캐디피 입력 없을 때만 기본값 설정
+    const hasFeesToday = alreadyToday.some(t => t.category === 'caddy_fee');
+    if (!hasFeesToday && feeSettings) {
+      setQCaddyFee(String(feeSettings.shift1));
+    } else {
+      setQCaddyFee('');
+    }
+    setQTip('');
+    setQOverFee('');
+    setQMemo('');
+    setQuickOpen(true);
+  };
+
+  const handleQuickIncome = () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const toNum = (s: string) => parseInt(s.replace(/[^0-9]/g, ''), 10) || 0;
+    if (toNum(qCaddyFee) > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qCaddyFee), category: 'caddy_fee', memo: '캐디피' + (qMemo ? ` (${qMemo})` : '') });
+    if (toNum(qTip)      > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qTip),      category: 'tip',       memo: '팁' });
+    if (toNum(qOverFee)  > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qOverFee),  category: 'over_fee',  memo: '오버피' });
+    setQuickOpen(false);
+  };
+
+  const fmtInput = (v: string) => {
+    const n = v.replace(/[^0-9]/g, '');
+    return n ? parseInt(n, 10).toLocaleString() : '';
+  };
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const today = new Date().toISOString().split('T')[0];
@@ -108,6 +146,7 @@ export default function HomePage() {
   const todaySchedule = schedules.filter(s => s.date === today);
 
   return (
+    <>
     <div className="p-6 space-y-8 pb-32" style={{ backgroundColor: 'white', minHeight: '100vh' }}>
       {/* Header */}
       <header className="flex justify-between items-center">
@@ -216,6 +255,35 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* 오늘 수입 빠른 입력 버튼 */}
+      <section>
+        <button
+          onClick={openQuickModal}
+          className="w-full flex items-center justify-center gap-2 bg-emerald-50 border-2 border-emerald-200 border-dashed rounded-2xl py-4 text-emerald-700 font-bold text-sm hover:bg-emerald-100 active:scale-[.98] transition"
+        >
+          <Plus size={18} />
+          오늘 수입 입력
+        </button>
+        {/* 오늘 입력된 수입 리스트 */}
+        {(() => {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const todayIncomes = transactions.filter(t => t.date === todayStr && t.type === 'income');
+          if (todayIncomes.length === 0) return null;
+          const todayTotal = todayIncomes.reduce((s, t) => s + t.amount, 0);
+          return (
+            <div className="mt-2 bg-white border border-stone-100 rounded-xl p-3 space-y-1">
+              <p className="text-[11px] text-stone-400 font-semibold mb-1">오늘 수입 합계 — <span className="text-emerald-600 font-bold">{todayTotal.toLocaleString()}원</span></p>
+              {todayIncomes.map(t => (
+                <div key={t.id} className="flex justify-between items-center text-xs">
+                  <span className="text-stone-500">{t.memo || t.category}</span>
+                  <span className="font-bold text-stone-800">{t.amount.toLocaleString()}원</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+      </section>
+
       {/* Monthly Calendar */}
       <section>
         <Calendar
@@ -238,7 +306,7 @@ export default function HomePage() {
           <div className="w-12 h-12 bg-yellow-50 text-yellow-600 rounded-full flex items-center justify-center mb-3">
             <Wallet size={24} />
           </div>
-          <span className="font-bold text-stone-700">수입 기록</span>
+          <span className="font-bold text-stone-700">수입/지출 전체</span>
         </Link>
       </section>
 
@@ -297,5 +365,97 @@ export default function HomePage() {
         </div>
       </section>
     </div>
+
+    {/* 빠른 수입 입력 모달 */}
+    {quickOpen && (
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setQuickOpen(false)}>
+        <div
+          className="w-full max-w-[480px] bg-white rounded-t-3xl p-6 pb-10 shadow-2xl space-y-4"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* 헤더 */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+              <DollarSign size={20} className="text-emerald-600" />
+              오늘 수입 입력
+            </h3>
+            <button onClick={() => setQuickOpen(false)} className="p-1 text-stone-400 hover:text-stone-600">
+              <X size={22} />
+            </button>
+          </div>
+
+          {/* 캐디피 */}
+          <div>
+            <label className="text-xs font-bold text-stone-500 block mb-1">캐디피 (원)</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="150,000"
+              value={qCaddyFee}
+              onChange={e => setQCaddyFee(fmtInput(e.target.value))}
+              className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 font-bold text-right text-lg focus:outline-none focus:border-emerald-400"
+            />
+          </div>
+
+          {/* 팁 */}
+          <div>
+            <label className="text-xs font-bold text-stone-500 block mb-1">팁 (원)</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              value={qTip}
+              onChange={e => setQTip(fmtInput(e.target.value))}
+              className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 font-bold text-right text-lg focus:outline-none focus:border-emerald-400"
+            />
+          </div>
+
+          {/* 오버피 */}
+          <div>
+            <label className="text-xs font-bold text-stone-500 block mb-1">오버피 (원)</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              value={qOverFee}
+              onChange={e => setQOverFee(fmtInput(e.target.value))}
+              className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 font-bold text-right text-lg focus:outline-none focus:border-emerald-400"
+            />
+          </div>
+
+          {/* 메모 */}
+          <div>
+            <label className="text-xs font-bold text-stone-500 block mb-1">메모 (선택)</label>
+            <input
+              type="text"
+              placeholder="골프장명, 특이사항 등"
+              value={qMemo}
+              onChange={e => setQMemo(e.target.value)}
+              className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-700 text-sm focus:outline-none focus:border-emerald-400"
+            />
+          </div>
+
+          {/* 합계 미리보기 */}
+          {(parseInt(qCaddyFee.replace(/,/g,''),10)||0) + (parseInt(qTip.replace(/,/g,''),10)||0) + (parseInt(qOverFee.replace(/,/g,''),10)||0) > 0 && (
+            <div className="bg-emerald-50 rounded-xl px-4 py-3 flex justify-between items-center">
+              <span className="text-sm text-emerald-700 font-semibold">오늘 총 수입</span>
+              <span className="text-emerald-700 font-bold text-lg">
+                {((parseInt(qCaddyFee.replace(/,/g,''),10)||0) + (parseInt(qTip.replace(/,/g,''),10)||0) + (parseInt(qOverFee.replace(/,/g,''),10)||0)).toLocaleString()}원
+              </span>
+            </div>
+          )}
+
+          {/* 저장 버튼 */}
+          <button
+            onClick={handleQuickIncome}
+            disabled={!qCaddyFee && !qTip && !qOverFee}
+            className="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl text-base disabled:opacity-40 active:scale-[.98] transition"
+          >
+            저장
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

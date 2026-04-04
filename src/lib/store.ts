@@ -8,7 +8,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type ScheduleType = 'work' | 'personal' | 'holiday';
 export type TransactionType = 'income' | 'expense';
-export type ExpenseCategory = 'food' | 'transport' | 'gear' | 'other';
+export type ExpenseCategory = 'food' | 'transport' | 'gear' | 'other' | 'caddy_fee' | 'tip' | 'over_fee';
 export type ClientGrade = 'vip' | 'gn' | 'normal';
 
 export interface Schedule {
@@ -100,7 +100,7 @@ export const useAppStore = create<AppState>()(
                 useShift3: true,
             },
 
-            addSchedule: (schedule) =>
+            addSchedule: (schedule) => {
                 set((state) => {
                     // Check if shift is already taken for that day
                     if (schedule.type === 'work' && schedule.shift) {
@@ -109,39 +109,39 @@ export const useAppStore = create<AppState>()(
                             s.type === 'work' &&
                             s.shift === schedule.shift
                         );
-
                         if (existingShift) {
                             if (typeof window !== 'undefined') alert(`이미 ${schedule.shift}부 근무가 등록되어 있습니다!`);
                             return { schedules: state.schedules };
                         }
                     }
-
-                    // Fallback limit check (just in case)
                     const dateSchedules = state.schedules.filter(s => s.date === schedule.date && s.type === 'work');
                     if (schedule.type === 'work' && dateSchedules.length >= 3) {
                         if (typeof window !== 'undefined') alert('하루에 최대 3번까지만 근무를 등록할 수 있습니다!');
                         return { schedules: state.schedules };
                     }
+                    const newSchedule: Schedule = { ...schedule, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+                    if (typeof window !== 'undefined') {
+                        import('./supabaseDB').then(({ syncAddSchedule }) => syncAddSchedule(newSchedule));
+                    }
+                    return { schedules: [...state.schedules, newSchedule] };
+                });
+            },
 
-                    return {
-                        schedules: [
-                            ...state.schedules,
-                            { ...schedule, id: crypto.randomUUID(), createdAt: new Date().toISOString() },
-                        ],
-                    };
-                }),
-
-            updateSchedule: (id, updates) =>
+            updateSchedule: (id, updates) => {
                 set((state) => ({
-                    schedules: state.schedules.map((s) =>
-                        s.id === id ? { ...s, ...updates } : s
-                    ),
-                })),
+                    schedules: state.schedules.map((s) => s.id === id ? { ...s, ...updates } : s),
+                }));
+                if (typeof window !== 'undefined') {
+                    import('./supabaseDB').then(({ syncUpdateSchedule }) => syncUpdateSchedule(id, updates));
+                }
+            },
 
-            deleteSchedule: (id) =>
-                set((state) => ({
-                    schedules: state.schedules.filter((s) => s.id !== id),
-                })),
+            deleteSchedule: (id) => {
+                set((state) => ({ schedules: state.schedules.filter((s) => s.id !== id) }));
+                if (typeof window !== 'undefined') {
+                    import('./supabaseDB').then(({ syncDeleteSchedule }) => syncDeleteSchedule(id));
+                }
+            },
 
             deleteSchedulesByDate: (date) =>
                 set((state) => ({
@@ -168,18 +168,20 @@ export const useAppStore = create<AppState>()(
                     clients: state.clients.filter((c) => c.id !== id),
                 })),
 
-            addTransaction: (transaction) =>
-                set((state) => ({
-                    transactions: [
-                        ...state.transactions,
-                        { ...transaction, id: crypto.randomUUID(), createdAt: new Date().toISOString() },
-                    ],
-                })),
+            addTransaction: (transaction) => {
+                const newTx: Transaction = { ...transaction, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+                set((state) => ({ transactions: [...state.transactions, newTx] }));
+                if (typeof window !== 'undefined') {
+                    import('./supabaseDB').then(({ syncAddTransaction }) => syncAddTransaction(newTx));
+                }
+            },
 
-            deleteTransaction: (id) =>
-                set((state) => ({
-                    transactions: state.transactions.filter((t) => t.id !== id),
-                })),
+            deleteTransaction: (id) => {
+                set((state) => ({ transactions: state.transactions.filter((t) => t.id !== id) }));
+                if (typeof window !== 'undefined') {
+                    import('./supabaseDB').then(({ syncDeleteTransaction }) => syncDeleteTransaction(id));
+                }
+            },
 
             updateFeeSettings: (newSettings) =>
                 set(() => ({

@@ -391,7 +391,7 @@ export const searchLicenseByNamePhone = async ({
     if (hasCode) {
         const { data } = await supabase
             .from('aone_pro_caddypro_licenses')
-            .select('id, code, plan, tier, expires_at, user_name, user_phone')
+            .select('id, code, plan, tier, expires_at, user_name, user_phone, issued_by')
             .ilike('code', code!.trim())
             .maybeSingle();
         return data ? [toResult(data)] : [];

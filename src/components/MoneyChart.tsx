@@ -27,7 +27,7 @@ export function MoneyChart({ year, month }: MoneyChartProps) {
     const targetMonth = month ?? targetDate.getMonth();
 
     const chartData = useMemo(() => {
-        const categories = {
+        const categories: Record<string, { label: string; amount: number; color: string }> = {
             'food': { label: '식대', amount: 0, color: '#10b981' }, // Emerald 500
             'transport': { label: '교통', amount: 0, color: '#3b82f6' }, // Blue 500
             'gear': { label: '용품', amount: 0, color: '#f59e0b' }, // Amber 500
