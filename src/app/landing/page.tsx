@@ -156,16 +156,6 @@ export default function LandingPage() {
 
     // 뒤로가기 처리 (capture:true → Next.js Router보다 먼저 실행)
     useEffect(() => {
-        // 이미 이용권이 있으면 /home으로 자동 이동
-        const existingKey = localStorage.getItem('caddy_license_key');
-        if (existingKey && existingKey.length >= 5) {
-            const expiresAt = localStorage.getItem('caddy_expires_at');
-            if (!expiresAt || new Date(expiresAt) > new Date()) {
-                router.replace('/home');
-                return;
-            }
-        }
-
         window.history.replaceState({ sheetState: 'none' }, '');
         const handlePop = (e: PopStateEvent) => {
             const target = (e.state?.sheetState ?? 'none') as Sheet;
