@@ -18,6 +18,11 @@ export default function HomePage() {
     if (cached) { setUserName(cached); return; }
     const code = localStorage.getItem('caddy_license_key');
     if (!code) return;
+    if (code.trim().toUpperCase() === '0827') {
+      setUserName('관리자');
+      localStorage.setItem('caddy_user_name', '관리자');
+      return;
+    }
     import('@/lib/supabaseClient').then(({ supabase }) => {
       supabase
         .from('aone_pro_caddypro_licenses')
