@@ -24,6 +24,12 @@ export const PORTONE_PRODUCTS = {
   year:     { name: 'Caddy Manager Pro 1년',   amount: 99_000, days: 365 },
 } as const;
 
+export const PORTONE_PRODUCTS_PREMIUM = {
+  month:    { name: 'Caddy Manager Pro 1개월 (프리미엄)', amount: 12_900, days: 30  },
+  '6month': { name: 'Caddy Manager Pro 6개월 (프리미엄)', amount: 69_000, days: 180 },
+  year:     { name: 'Caddy Manager Pro 1년 (프리미엄)',   amount: 129_000, days: 365 },
+} as const;
+
 export type PortOneProductKey = keyof typeof PORTONE_PRODUCTS;
 
 export interface PaymentResult {
@@ -44,22 +50,24 @@ export async function requestCaddyPayment({
   name,
   phone,
   planKey,
+  tier = 'standard',
 }: {
   name: string;
   phone: string;
   planKey: PortOneProductKey;
+  tier?: 'standard' | 'premium';
 }): Promise<PaymentResult> {
   if (typeof window === 'undefined' || !window.PortOne) {
     return { success: false, error: '결제 모듈을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.' };
   }
 
-  const product = PORTONE_PRODUCTS[planKey];
+  const product = tier === 'premium' ? PORTONE_PRODUCTS_PREMIUM[planKey] : PORTONE_PRODUCTS[planKey];
   const paymentId = generateOrderId();
 
   // 모바일 리다이렉트 대비 — 구매자 정보 임시 저장
   sessionStorage.setItem(
     'caddy_payment_info',
-    JSON.stringify({ name, phone, planKey, paymentId }),
+    JSON.stringify({ name, phone, planKey, paymentId, tier }),
   );
 
   try {

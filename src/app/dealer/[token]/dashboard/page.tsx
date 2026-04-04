@@ -89,6 +89,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
 
     // 발급 모드 (신규 / 기간 연장)
     const [issueMode, setIssueMode] = useState<'new' | 'renew'>('new');
+    const [issueTier, setIssueTier] = useState<'standard' | 'premium'>('standard');
 
     // 갱신 전용 상태
     const [renewPhone, setRenewPhone] = useState('');
@@ -204,6 +205,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
             channel: 'dealer',
             plan,
             days,
+            tier: issueTier,
             memo: specialNote || undefined,
             golfCourse: golfCourse || undefined,
             payMethod: 'cash',
@@ -606,6 +608,26 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                         <p className="text-[10px] text-stone-500 mt-0.5">{p.days}일</p>
                                     </button>
                                 ))}
+                            </div>
+                        </section>
+
+                        {/* 이용권 종류 */}
+                        <section className="bg-stone-900 rounded-3xl p-5 space-y-3">
+                            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                                <BadgeCheck size={16} /> 이용권 종류
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => setIssueTier('standard')}
+                                    className={`p-3 rounded-2xl border text-center transition ${issueTier === 'standard' ? 'border-blue-500 bg-blue-900/30' : 'border-stone-700 bg-stone-800'}`}>
+                                    <p className="text-xs font-bold text-stone-300">스탠다드</p>
+                                    <p className="text-[10px] text-stone-500 mt-0.5">수동 복구</p>
+                                </button>
+                                <button onClick={() => setIssueTier('premium')}
+                                    className={`p-3 rounded-2xl border text-center transition relative ${issueTier === 'premium' ? 'border-emerald-500 bg-emerald-900/30' : 'border-stone-700 bg-stone-800'}`}>
+                                    <div className="absolute top-1.5 right-1.5 bg-emerald-500 text-white text-[8px] font-black px-1 py-0.5 rounded-full">추천</div>
+                                    <p className="text-xs font-bold text-stone-300">프리미엄</p>
+                                    <p className="text-[10px] text-stone-500 mt-0.5">자동 복구 ✅</p>
+                                </button>
                             </div>
                         </section>
 

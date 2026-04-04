@@ -10,21 +10,22 @@ import { supabase } from '@/lib/supabaseClient';
 import { issueVoucher } from '@/lib/licenseUtils';
 import type { PlanType } from '@/lib/licenseUtils';
 
-const VALID_PLANS: Record<string, { days: number; amount: number }> = {
-  month:    { days: 30,  amount: 9_900  },
-  '6month': { days: 180, amount: 55_000 },
-  year:     { days: 365, amount: 99_000 },
+const VALID_PLANS: Record<string, { days: number; amount: number; premiumAmount: number }> = {
+  month:    { days: 30,  amount: 9_900,  premiumAmount: 12_900  },
+  '6month': { days: 180, amount: 55_000, premiumAmount: 69_000  },
+  year:     { days: 365, amount: 99_000, premiumAmount: 129_000 },
 };
 
 export async function POST(request: NextRequest) {
-  let body: { paymentId?: string; name?: string; phone?: string; planKey?: string };
+  let body: { paymentId?: string; name?: string; phone?: string; planKey?: string; tier?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: '요청 형식이 잘못되었습니다.' }, { status: 400 });
   }
 
-  const { paymentId, name, phone, planKey } = body;
+  const { paymentId, name, phone, planKey, tier } = body;
+  const resolvedTier = tier === 'premium' ? 'premium' : 'standard';
 
   if (!paymentId || !name || !phone || !planKey) {
     return NextResponse.json({ error: '필수 파라미터가 누락되었습니다.' }, { status: 400 });
@@ -66,8 +67,9 @@ export async function POST(request: NextRequest) {
       }
 
       // 금액 위변조 방지
-      if (payment.amount?.total !== planInfo.amount) {
-        console.error('[payment/complete] 금액 불일치:', payment.amount?.total, '≠', planInfo.amount);
+      const expectedAmount = resolvedTier === 'premium' ? planInfo.premiumAmount : planInfo.amount;
+      if (payment.amount?.total !== expectedAmount) {
+        console.error('[payment/complete] 금액 불일치:', payment.amount?.total, '≠', expectedAmount);
         return NextResponse.json({ error: '결제 금액이 일치하지 않습니다.' }, { status: 400 });
       }
     } catch (e) {
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
     channel: 'direct',
     plan: planKey as PlanType,
     days: planInfo.days,
+    tier: resolvedTier,
     memo: `PortOne:${paymentId}`,
     userName: name,
     userPhone: phone,

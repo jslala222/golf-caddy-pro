@@ -15,6 +15,14 @@ export const PLANS = {
 
 export type PlanType = keyof typeof PLANS;
 
+// ── 티어 정의 ────────────────────────────────────────────────
+export const TIER_PRICES: Record<'standard' | 'premium', Record<PlanType, number>> = {
+    standard: { month: 9_900,  '6month': 55_000, year: 99_000 },
+    premium:  { month: 12_900, '6month': 69_000, year: 129_000 },
+};
+
+export type TierType = 'standard' | 'premium';
+
 // ── 채널(판매 경로) 정의 ────────────────────────────────────────
 export const CHANNELS = {
     smartstore: '네이버 스마트스토어',
@@ -131,6 +139,7 @@ export const issueVoucher = async ({
     userName,
     userPhone,
     issuedBy = 'admin',
+    tier = 'standard',
 }: {
     channel: ChannelType;
     plan: PlanType;
@@ -141,6 +150,7 @@ export const issueVoucher = async ({
     userName?: string;
     userPhone?: string;
     issuedBy?: string;
+    tier?: TierType;
 }): Promise<{ success: boolean; code?: string; error?: string }> => {
     // 채널별 prefix 결정 (딜러 포함 모두 CHANNEL_PREFIX 사용)
     // 딜러 추적은 issued_by 컬럼('dealer_TOKEN')으로 처리
@@ -153,6 +163,7 @@ export const issueVoucher = async ({
         channel,
         plan,
         days,
+        tier,
         is_active: false,
         memo: memo || null,
         golf_course: golfCourse || null,
@@ -173,19 +184,22 @@ export const verifyLicenseAsync = async (inputKey: string): Promise<{
     reason?: string;
     expiresAt?: string;
     daysLeft?: number;
+    tier?: TierType;
 }> => {
     const trimmed = inputKey.trim().toUpperCase();
 
     // 마스터 키 (Supabase 조회 없이 통과)
-    if (trimmed === '0827') return { valid: true };
+    if (trimmed === '0827') return { valid: true, tier: 'premium' };
 
     const { data, error } = await supabase
         .from('aone_pro_caddypro_licenses')
-        .select('code, plan, days, expires_at, first_used_at, is_active')
-        .eq('code', trimmed)
+        .select('code, plan, days, expires_at, first_used_at, is_active, tier')
+        .ilike('code', trimmed)
         .maybeSingle();
 
     if (error || !data) return { valid: false, reason: 'not_found' };
+
+    const tier: TierType = (data.tier === 'premium') ? 'premium' : 'standard';
 
     // 이미 만료일이 있는 경우 → 만료 여부만 체크
     if (data.expires_at) {
@@ -193,7 +207,7 @@ export const verifyLicenseAsync = async (inputKey: string): Promise<{
         const expires = new Date(data.expires_at);
         if (now > expires) return { valid: false, reason: 'expired', expiresAt: data.expires_at };
         const daysLeft = Math.ceil((expires.getTime() - now.getTime()) / 86_400_000);
-        return { valid: true, expiresAt: data.expires_at, daysLeft };
+        return { valid: true, expiresAt: data.expires_at, daysLeft, tier };
     }
 
     // 첫 사용 → 만료일 자동 계산 후 DB 업데이트
@@ -207,11 +221,11 @@ export const verifyLicenseAsync = async (inputKey: string): Promise<{
                 first_used_at: now.toISOString(),
                 expires_at: expiresAt.toISOString(),
             })
-            .eq('code', trimmed);
-        return { valid: true, expiresAt: expiresAt.toISOString(), daysLeft: data.days };
+            .eq('code', data.code);
+        return { valid: true, expiresAt: expiresAt.toISOString(), daysLeft: data.days, tier };
     }
 
-    return { valid: true };
+    return { valid: true, tier };
 };
 
 /**
@@ -323,6 +337,7 @@ export type MemberSearchResult = {
     userName: string | null;
     userPhone: string | null;
     issuedBy: string | null;
+    tier: TierType;
     isExpired: boolean;
     daysLeft?: number;
 };
@@ -337,7 +352,7 @@ export const searchLicenseByNamePhone = async ({
     const now = new Date();
 
     const toResult = (d: {
-        id: string; code: string; plan: string;
+        id: string; code: string; plan: string; tier?: string | null;
         expires_at: string | null; user_name: string | null; user_phone: string | null; issued_by: string | null;
     }): MemberSearchResult => {
         const exp = d.expires_at ? new Date(d.expires_at) : null;
@@ -345,6 +360,7 @@ export const searchLicenseByNamePhone = async ({
             id: d.id, code: d.code, plan: d.plan,
             expiresAt: d.expires_at, userName: d.user_name, userPhone: d.user_phone,
             issuedBy: d.issued_by,
+            tier: (d.tier === 'premium') ? 'premium' : 'standard',
             isExpired: exp ? now > exp : false,
             daysLeft: exp ? Math.ceil((exp.getTime() - now.getTime()) / 86_400_000) : undefined,
         };
@@ -354,8 +370,8 @@ export const searchLicenseByNamePhone = async ({
     if (code && code.trim().replace(/\D/g, '').length === 0 && code.trim().length >= 5) {
         const { data } = await supabase
             .from('aone_pro_caddypro_licenses')
-            .select('id, code, plan, expires_at, user_name, user_phone, issued_by')
-            .eq('code', code.trim().toUpperCase())
+            .select('id, code, plan, tier, expires_at, user_name, user_phone, issued_by')
+            .ilike('code', code.trim())
             .maybeSingle();
         return data ? [toResult(data)] : [];
     }
@@ -370,8 +386,8 @@ export const searchLicenseByNamePhone = async ({
     if (hasCode) {
         const { data } = await supabase
             .from('aone_pro_caddypro_licenses')
-            .select('id, code, plan, expires_at, user_name, user_phone')
-            .eq('code', code!.trim().toUpperCase())
+            .select('id, code, plan, tier, expires_at, user_name, user_phone')
+            .ilike('code', code!.trim())
             .maybeSingle();
         return data ? [toResult(data)] : [];
     }
@@ -380,7 +396,7 @@ export const searchLicenseByNamePhone = async ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query: any = supabase
         .from('aone_pro_caddypro_licenses')
-        .select('id, code, plan, expires_at, user_name, user_phone, issued_by')
+        .select('id, code, plan, tier, expires_at, user_name, user_phone, issued_by')
         .order('expires_at', { ascending: false })
         .limit(20);
 

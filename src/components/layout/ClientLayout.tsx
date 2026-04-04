@@ -6,15 +6,23 @@ import { LicenseGuard } from '@/components/layout/LicenseGuard';
 import { PortGuard } from '@/components/PortGuard';
 import { ExternalLink, X } from 'lucide-react';
 
-/** 하루 1회 R2 자동 백업 (백그라운드, 조용히 실행) */
+/** 티어별 R2 자동 백업 - 프리미엄: 매일, 스탠다드: 7일마다 */
 async function runAutoBackupIfNeeded() {
     try {
         const licenseCode = localStorage.getItem('caddy_license_key');
         if (!licenseCode) return;
 
+        const tier = localStorage.getItem('caddy_tier') ?? 'standard';
         const today = new Date().toISOString().slice(0, 10);
         const lastBackup = localStorage.getItem('caddy_last_auto_backup');
-        if (lastBackup === today) return; // 오늘 이미 백업함
+
+        if (lastBackup) {
+            const daysSince = Math.floor(
+                (new Date(today).getTime() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24)
+            );
+            const interval = tier === 'premium' ? 1 : 7; // 프리미엄: 1일 / 스탠다드: 7일
+            if (daysSince < interval) return;
+        }
 
         const raw = localStorage.getItem('caddy-manager-storage');
         if (!raw) return;

@@ -48,9 +48,23 @@ function ScheduleContent() {
     const [myResult, setMyResult] = useState<any>(null);
     const [isSearching, setIsSearching] = useState(false);
 
+    // 이전 날짜 휴무 차단 알림 모달
+    const [showPastDateAlert, setShowPastDateAlert] = useState(false);
+
     // Helpers
     const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')); // 00 ~ 23
     const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')); // 00 ~ 59
+
+    // dateParam(URL) 변경 시 date 상태 동기화 (소프트 네비게이션 대응)
+    // dateParam 없으면 오늘 날짜로 URL 자동 설정 (내부IP/localhost 공통 동작)
+    useEffect(() => {
+        if (dateParam) {
+            setDate(dateParam);
+        } else {
+            const today = new Date().toISOString().split('T')[0];
+            router.replace(`/schedule?date=${today}`);
+        }
+    }, [dateParam]);
 
     // Filter schedules for the selected/active date
     const activeDateSchedules = useMemo(() => {
@@ -78,8 +92,6 @@ function ScheduleContent() {
 
     useEffect(() => {
         if (dateParam) {
-            setDate(dateParam);
-            // setIsModalOpen(true); // No longer using modal
             setViewMode('list');
             setEditingId(null);
 
@@ -240,6 +252,28 @@ function ScheduleContent() {
 
     return (
         <div className="p-6 pb-24 relative min-h-screen">
+
+            {/* 이전 날짜 휴무 차단 모달 */}
+            {showPastDateAlert && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-6">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl">
+                        <div className="text-center mb-4">
+                            <div className="text-5xl mb-3">🗓️</div>
+                            <p className="font-black text-stone-800 text-lg">날짜 확인</p>
+                        </div>
+                        <p className="text-stone-500 text-center text-sm leading-relaxed mb-6">
+                            휴무는 현재날짜 이전은<br />활성되지 않습니다.
+                        </p>
+                        <button
+                            onClick={() => setShowPastDateAlert(false)}
+                            className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-base active:scale-95 transition"
+                        >
+                            확인
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-stone-900 flex items-center">
                     <CalendarIcon className="mr-2 text-emerald-600" /> 근무 관리
@@ -337,7 +371,7 @@ function ScheduleContent() {
             {/* So I will conditionally render this only if `dateParam` exists (or `date` is set via interaction). */}
             {/* To preserve the "clean calendar" look, I'll only show it when selected. */}
 
-            {(dateParam || viewMode === 'form') && (
+            {(date || viewMode === 'form') && (
                 <div id="daily-schedule-section" className="bg-white rounded-3xl p-6 shadow-sm border border-stone-100 animate-in slide-in-from-top-4">
 
                     {/* Header */}
@@ -384,6 +418,11 @@ function ScheduleContent() {
                                 <button
                                     type="button"
                                     onClick={() => {
+                                        const today = new Date().toISOString().split('T')[0];
+                                        if (date < today) {
+                                            setShowPastDateAlert(true);
+                                            return;
+                                        }
                                         const holidayEntry = activeDateSchedules.find(s => s.type === 'holiday');
                                         if (holidayEntry) {
                                             deleteSchedule(holidayEntry.id);

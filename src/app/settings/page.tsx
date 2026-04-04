@@ -295,57 +295,25 @@ export default function SettingsPage() {
                 </h2>
 
                 <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-sm text-emerald-800">
-                    <p className="font-bold mb-1">📢 필독하세요!</p>
-                    <p>
-                        이 앱은 서버가 없습니다. <strong>폰을 잃어버리면 데이터도 사라집니다.</strong><br />
-                        [백업] 버튼을 누르면 <strong>파일 + 클라우드 동시 저장</strong>됩니다.<br />
-                        매일 앱 실행 시 클라우드에 <strong>자동 백업</strong>도 진행됩니다.
-                    </p>
-                </div>
-
-                {/* 클라우드 상태 메시지 */}
-                {cloudStatus !== 'idle' && (
-                    <div className={`text-sm p-3 rounded-xl font-semibold flex items-center gap-2 ${
-                        cloudStatus === 'error' ? 'bg-red-50 text-red-600 border border-red-200' :
-                        cloudStatus === 'done'  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                        'bg-blue-50 text-blue-600 border border-blue-200'
-                    }`}>
-                        {cloudStatus === 'uploading' && (
-                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        )}
-                        {cloudStatus === 'uploading' ? '클라우드에 백업 중…' : cloudMsg}
-                    </div>
-                )}
-
-                {/* 클라우드 자동 백업 안내 */}
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
-                    <p className="font-bold mb-1">☁️ 클라우드 백업이란?</p>
+                    <p className="font-bold mb-1">📢 백업 안내</p>
                     <p className="leading-relaxed">
-                        데이터를 서버에 안전하게 저장합니다.<br />
-                        <strong>폰 분실·교체·초기화</strong> 시 고객센터에 연락하시면
-                        <strong> 복구 서비스</strong>를 받으실 수 있습니다.
+                        앱을 열 때 <strong>자동으로 클라우드에 저장</strong>됩니다.<br />
+                        <span className="text-emerald-700">• 스탠다드 이용권: 7일마다 자동 백업</span><br />
+                        <span className="text-emerald-700">• 프리미엄 이용권: 매일 자동 백업</span><br />
+                        아래 버튼으로 내 폰에도 따로 저장할 수 있습니다.
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
 
-                    {/* 클라우드 백업 저장만 노출 (복원은 관리자만) */}
                     <button
-                        onClick={handleCloudUpload}
-                        disabled={cloudStatus === 'uploading'}
-                        className="flex items-center justify-center w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition shadow-sm disabled:opacity-50"
+                        onClick={handleExport}
+                        className="flex items-center justify-center w-full py-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-500 transition shadow-sm"
                     >
-                        <Cloud className="mr-2" size={20} /> 백업 (파일 저장 + 클라우드)
+                        <Download className="mr-2" size={20} /> 내 폰에 저장 (파일 내보내기)
                     </button>
 
-                    <div className="border-t border-stone-200 pt-3 space-y-3">
-                        <button
-                            onClick={handleExport}
-                            className="flex items-center justify-center w-full py-4 bg-white border-2 border-emerald-500 text-emerald-600 rounded-xl font-bold hover:bg-emerald-50 transition shadow-sm"
-                        >
-                            <Download className="mr-2" /> 백업 파일 저장 (내보내기)
-                        </button>
-
+                    <div className="border-t border-stone-200 pt-3">
                         <button
                             onClick={() => fileInputRef.current?.click()}
                             className="flex items-center justify-center w-full py-4 bg-stone-100 text-stone-600 rounded-xl font-bold hover:bg-stone-200 transition"

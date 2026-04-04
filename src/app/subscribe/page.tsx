@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle2, Copy, Check, CreditCard, ChevronRight } from 'lucide-react';
-import { requestCaddyPayment, PORTONE_PRODUCTS } from '@/lib/paymentService';
+import { CheckCircle2, Copy, Check, CreditCard, ChevronRight, Shield, Star } from 'lucide-react';
+import { requestCaddyPayment, PORTONE_PRODUCTS, PORTONE_PRODUCTS_PREMIUM } from '@/lib/paymentService';
 import type { PortOneProductKey } from '@/lib/paymentService';
 
 // ── 요금제 카드 레이블 ────────────────────────────────────────
@@ -22,6 +22,7 @@ function SubscribeInner() {
   const searchParams = useSearchParams();
 
   const [selectedPlan, setSelectedPlan] = useState<PortOneProductKey>('month');
+  const [selectedTier, setSelectedTier] = useState<'standard' | 'premium'>('standard');
   const [name, setName]   = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
@@ -37,10 +38,12 @@ function SubscribeInner() {
     const p  = searchParams.get('phone');
     const pl = searchParams.get('plan');
     const r  = searchParams.get('ref');
+    const t  = searchParams.get('tier');
     if (n) setName(n);
     if (p) setPhone(p);
     if (pl && ['month', '6month', 'year'].includes(pl)) setSelectedPlan(pl as PortOneProductKey);
     if (r) setDealerRef(r);
+    if (t === 'premium') setSelectedTier('premium');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -53,14 +56,14 @@ function SubscribeInner() {
     const raw = sessionStorage.getItem('caddy_payment_info');
     if (!raw) return;
 
-    let info: { name: string; phone: string; planKey: PortOneProductKey; paymentId: string };
+    let info: { name: string; phone: string; planKey: PortOneProductKey; paymentId: string; tier?: string };
     try { info = JSON.parse(raw); } catch { return; }
 
     setLoading(true);
     fetch('/api/payment/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentId, name: info.name, phone: info.phone, planKey: info.planKey }),
+      body: JSON.stringify({ paymentId, name: info.name, phone: info.phone, planKey: info.planKey, tier: info.tier ?? 'standard' }),
     })
       .then(r => r.json())
       .then(res => {
@@ -103,7 +106,7 @@ function SubscribeInner() {
     setError('');
     setLoading(true);
 
-    const result = await requestCaddyPayment({ name: name.trim(), phone: phone.trim(), planKey: selectedPlan });
+    const result = await requestCaddyPayment({ name: name.trim(), phone: phone.trim(), planKey: selectedPlan, tier: selectedTier });
 
     if (!result.success) {
       setModalMsg(result.error ?? '결제 처리 중 오류가 발생했습니다.');
@@ -116,7 +119,7 @@ function SubscribeInner() {
       const res = await fetch('/api/payment/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentId: result.paymentId, name: name.trim(), phone: phone.trim(), planKey: selectedPlan }),
+        body: JSON.stringify({ paymentId: result.paymentId, name: name.trim(), phone: phone.trim(), planKey: selectedPlan, tier: selectedTier }),
       });
       const data = await res.json();
       if (data.code) {
@@ -210,10 +213,51 @@ function SubscribeInner() {
 
       <div className="p-6 space-y-6">
 
+        {/* 티어 선택 */}
+        <section className="space-y-3">
+          <h2 className="font-bold text-stone-700 text-sm">이용권 종류</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setSelectedTier('standard')}
+              className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                selectedTier === 'standard'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-stone-200 bg-white hover:border-stone-300'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Shield size={16} className={selectedTier === 'standard' ? 'text-blue-500' : 'text-stone-400'} />
+                <span className="font-black text-sm">스탠다드</span>
+              </div>
+              <p className="text-[10px] text-stone-400 leading-relaxed">자동 백업 O<br />복구 수동</p>
+            </button>
+            <button
+              onClick={() => setSelectedTier('premium')}
+              className={`p-4 rounded-2xl border-2 text-left transition-all relative ${
+                selectedTier === 'premium'
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-stone-200 bg-white hover:border-stone-300'
+              }`}
+            >
+              <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">추천</div>
+              <div className="flex items-center gap-2 mb-2">
+                <Star size={16} className={selectedTier === 'premium' ? 'text-emerald-500' : 'text-stone-400'} />
+                <span className="font-black text-sm">프리미엄</span>
+              </div>
+              <p className="text-[10px] text-stone-400 leading-relaxed">자동 백업 O<br />폰 바꿔도 자동 복구 ✅</p>
+            </button>
+          </div>
+          {selectedTier === 'premium' && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 text-xs text-emerald-700">
+              💡 프리미엄: 폰 분실·기기 변경 시 코드 입력만 하면 <strong>데이터 자동 복구</strong>
+            </div>
+          )}
+        </section>
+
         {/* 요금제 선택 */}
         <section className="space-y-3">
           <h2 className="font-bold text-stone-700 text-sm">요금제 선택</h2>
-          {(Object.entries(PORTONE_PRODUCTS) as [PortOneProductKey, typeof PORTONE_PRODUCTS[PortOneProductKey]][]).map(([key, product]) => {
+          {(Object.entries(selectedTier === 'premium' ? PORTONE_PRODUCTS_PREMIUM : PORTONE_PRODUCTS) as [PortOneProductKey, { name: string; amount: number; days: number }][]).map(([key, product]) => {
             const label = PLAN_LABELS[key];
             const isSelected = selectedPlan === key;
             return (
@@ -242,7 +286,7 @@ function SubscribeInner() {
                     <p className="text-stone-400 text-xs">{product.days}일 이용</p>
                   </div>
                 </div>
-                <span className="font-black text-stone-900 text-lg">{formatKRW(product.amount)}</span>
+                <span className="font-black text-stone-900 text-lg">{(product.amount).toLocaleString('ko-KR')}원</span>
               </button>
             );
           })}
@@ -277,7 +321,7 @@ function SubscribeInner() {
           className="w-full py-4 bg-blue-600 text-white font-black text-lg rounded-2xl hover:bg-blue-500 transition flex items-center justify-center gap-2 disabled:opacity-50"
         >
           <CreditCard size={20} />
-          {formatKRW(PORTONE_PRODUCTS[selectedPlan].amount)} 결제하기
+          {(selectedTier === 'premium' ? PORTONE_PRODUCTS_PREMIUM[selectedPlan].amount : PORTONE_PRODUCTS[selectedPlan].amount).toLocaleString('ko-KR')}원 결제하기
           <ChevronRight size={18} />
         </button>
 

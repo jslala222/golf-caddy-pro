@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { verifyLicense, verifyLicenseAsync } from '@/lib/licenseUtils';
 import { supabase } from '@/lib/supabaseClient';
-import { AlertTriangle, X, RefreshCcw } from 'lucide-react';
+import { AlertTriangle, X, RefreshCcw, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -19,8 +19,11 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
     const [expiredCode, setExpiredCode] = useState<string | null>(null);
     const [expiredAt, setExpiredAt] = useState<string | null>(null);
 
+    // 프리미엄 자동 복구 모달
+    const [showRestoreModal, setShowRestoreModal] = useState(false);
+
     useEffect(() => {
-        const init = () => {
+        const init = async () => {
             try {
                 const storedKey = localStorage.getItem('caddy_license_key');
                 if (storedKey && verifyLicense(storedKey)) {
@@ -39,19 +42,52 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                             setShowExpireBanner(true);
                         }
                     }
-                    // 백그라운드: DB에서 최신 만료일 갱신
+                    // 백그라운드: DB에서 최신 만료일 + tier 갱신
                     (async () => {
                         try {
                             const { data } = await supabase
                                 .from('aone_pro_caddypro_licenses')
-                                .select('expires_at')
-                                .eq('code', storedKey.trim().toUpperCase())
+                                .select('expires_at, tier')
+                                .ilike('code', storedKey.trim())
                                 .maybeSingle();
                             if (data?.expires_at) {
                                 localStorage.setItem('caddy_expires_at', data.expires_at);
                             }
+                            if (data?.tier) {
+                                localStorage.setItem('caddy_tier', data.tier);
+                            }
                         } catch { /* 오프라인 무시 */ }
                     })();
+
+                    // 프리미엄: localStorage 데이터 없으면 R2 자동 복구
+                    const storedTier = localStorage.getItem('caddy_tier');
+                    if (storedTier === 'premium') {
+                        const hasData = localStorage.getItem('app-store-schedules') ||
+                            localStorage.getItem('app-store') ||
+                            localStorage.getItem('caddy_data');
+                        if (!hasData) {
+                            try {
+                                const res = await fetch('/api/backup/download', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ licenseCode: storedKey }),
+                                });
+                                if (res.ok) {
+                                    const json = await res.json();
+                                    if (json.data) {
+                                        // zustand-persist 키들을 복원
+                                        const restored = json.data as Record<string, unknown>;
+                                        Object.entries(restored).forEach(([k, v]) => {
+                                            if (typeof v === 'string') localStorage.setItem(k, v);
+                                            else localStorage.setItem(k, JSON.stringify(v));
+                                        });
+                                        setShowRestoreModal(true);
+                                        setTimeout(() => setShowRestoreModal(false), 3500);
+                                    }
+                                }
+                            } catch { /* 오프라인 or R2 없음 — 무시 */ }
+                        }
+                    }
                 } else {
                     router.replace('/landing');
                     return;
@@ -76,6 +112,7 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                 if (result.valid) {
                     localStorage.setItem('caddy_license_key', pendingCode.trim().toUpperCase());
                     if (result.expiresAt) localStorage.setItem('caddy_expires_at', result.expiresAt);
+                    if (result.tier) localStorage.setItem('caddy_tier', result.tier);
                     setIsActivated(true);
                 } else {
                     router.replace('/landing');
@@ -157,6 +194,17 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                         <button onClick={() => setShowExpireBanner(false)} className="shrink-0 hover:opacity-70">
                             <X size={18} />
                         </button>
+                    </div>
+                )}
+                {showRestoreModal && (
+                    <div className="fixed inset-0 z-[99999] flex items-end justify-center pb-12 pointer-events-none">
+                        <div className="bg-stone-900 text-white rounded-2xl px-6 py-4 flex items-center gap-3 shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
+                            <CheckCircle2 size={22} className="text-emerald-400 shrink-0" />
+                            <div>
+                                <p className="font-black text-sm">클라우드 데이터가 복구되었습니다 ✅</p>
+                                <p className="text-stone-400 text-xs">프리미엄 자동 복구 완료</p>
+                            </div>
+                        </div>
                     </div>
                 )}
                 {children}

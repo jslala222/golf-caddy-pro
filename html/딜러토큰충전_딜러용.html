@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>딜러 크레딧 충전 안내 — Caddy Manager Pro</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111;
+    --bg3: #1a1a1a;
+    --border: #2a2a2a;
+    --text: #e5e5e5;
+    --muted: #6b7280;
+    --emerald: #10b981;
+    --blue: #3b82f6;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --violet: #8b5cf6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 860px; margin: 0 auto; }
+
+  /* 헤더 */
+  .header {
+    background: linear-gradient(135deg, #052e16 0%, #064e3b 50%, #0f172a 100%);
+    border: 1px solid #059669;
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.4);
+    color: #6ee7b7; font-size: .72rem; font-weight: 700;
+    padding: .3rem .9rem; border-radius: 999px; margin-bottom: 1rem;
+    text-transform: uppercase; letter-spacing: .1em;
+  }
+  .header h1 { font-size: 2rem; font-weight: 900; color: #fff; margin-bottom: .5rem; }
+  .header p { color: #6ee7b7; font-size: .9rem; }
+
+  /* 크레딧 개념 카드 */
+  .concept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .concept-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.3rem;
+    text-align: center;
+  }
+  .concept-card .emoji { font-size: 2rem; margin-bottom: .5rem; }
+  .concept-card .title { font-weight: 800; font-size: .95rem; color: #fff; margin-bottom: .3rem; }
+  .concept-card .desc  { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+
+  /* 섹션 */
+  .section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.8rem;
+    margin-bottom: 1.5rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 800; color: #fff;
+    margin-bottom: 1.2rem; display: flex; align-items: center; gap: .5rem;
+  }
+  .section-title .icon { font-size: 1.3rem; }
+
+  /* 테이블 */
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th {
+    background: var(--bg3);
+    color: var(--muted);
+    font-weight: 700;
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: .65rem .9rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: .75rem .9rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* 칩 */
+  .chip {
+    display: inline-block;
+    padding: .2rem .65rem;
+    border-radius: 6px;
+    font-size: .75rem;
+    font-weight: 700;
+  }
+  .chip-green  { background: rgba(16,185,129,.15); color: #34d399; }
+  .chip-blue   { background: rgba(59,130,246,.15); color: #60a5fa; }
+  .chip-violet { background: rgba(139,92,246,.15); color: #a78bfa; }
+  .chip-amber  { background: rgba(245,158,11,.15); color: #fbbf24; }
+  .chip-gray   { background: rgba(107,114,128,.15); color: #9ca3af; }
+
+  /* 스탭 */
+  .steps { display: flex; flex-direction: column; gap: .85rem; }
+  .step { display: flex; gap: 1rem; align-items: flex-start; }
+  .step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #fff; font-size: .85rem; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-body .step-title { font-weight: 800; font-size: .95rem; color: #fff; }
+  .step-body .step-desc  { font-size: .83rem; color: var(--muted); margin-top: .2rem; line-height: 1.5; }
+  .step-body .step-highlight {
+    display: inline-block;
+    margin-top: .4rem;
+    background: rgba(16,185,129,.1);
+    border: 1px solid rgba(16,185,129,.25);
+    border-radius: 8px;
+    padding: .4rem .7rem;
+    font-size: .8rem;
+    color: #6ee7b7;
+    font-weight: 600;
+  }
+
+  /* 알림 박스 */
+  .alert {
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    font-size: .85rem;
+    line-height: 1.6;
+    margin-top: 1rem;
+  }
+  .alert-green  { background: rgba(16,185,129,.1);  border: 1px solid rgba(16,185,129,.3); color: #6ee7b7; }
+  .alert-amber  { background: rgba(245,158,11,.1);  border: 1px solid rgba(245,158,11,.3); color: #fbbf24; }
+  .alert-red    { background: rgba(239,68,68,.1);   border: 1px solid rgba(239,68,68,.3);  color: #fca5a5; }
+  .alert-blue   { background: rgba(59,130,246,.1);  border: 1px solid rgba(59,130,246,.3); color: #93c5fd; }
+  .alert b { font-weight: 800; }
+
+  /* 가격 박스 */
+  .price-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: .8rem;
+  }
+  .price-box {
+    border-radius: 12px;
+    padding: 1.2rem;
+    text-align: center;
+  }
+  .price-box.standard {
+    background: linear-gradient(135deg, #0c1a2e, #1e3a5f);
+    border: 1px solid #2563eb;
+  }
+  .price-box.premium {
+    background: linear-gradient(135deg, #1e1b4b, #2d2a7e);
+    border: 1px solid #7c3aed;
+  }
+  .price-box .tier { font-size: .75rem; font-weight: 700; color: #93c5fd; margin-bottom: .3rem; }
+  .price-box.premium .tier { color: #c4b5fd; }
+  .price-box .period { font-size: .85rem; color: #cbd5e1; margin-bottom: .4rem; }
+  .price-box .price { font-size: 1.5rem; font-weight: 900; color: #fff; }
+  .price-box .original { font-size: .78rem; color: var(--muted); text-decoration: line-through; }
+  .price-box .save {
+    display: inline-block; margin-top: .35rem;
+    background: rgba(16,185,129,.2); color: #34d399;
+    border-radius: 6px; padding: .15rem .5rem;
+    font-size: .73rem; font-weight: 700;
+  }
+
+  /* FAQ */
+  .faq { display: flex; flex-direction: column; gap: .8rem; }
+  .faq-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+  }
+  .faq-q { font-weight: 800; color: #10b981; font-size: .9rem; margin-bottom: .4rem; }
+  .faq-a { font-size: .85rem; color: var(--text); line-height: 1.6; }
+
+  /* 연락처 박스 */
+  .contact-box {
+    background: linear-gradient(135deg, #052e16, #064e3b);
+    border: 1px solid #059669;
+    border-radius: 16px;
+    padding: 1.8rem;
+    text-align: center;
+  }
+  .contact-box h3 { font-size: 1.1rem; font-weight: 900; color: #fff; margin-bottom: .8rem; }
+  .contact-box p { font-size: .88rem; color: #6ee7b7; line-height: 1.8; }
+  .contact-box .highlight {
+    display: inline-block;
+    margin-top: .6rem;
+    background: rgba(16,185,129,.2);
+    border: 1px solid rgba(16,185,129,.4);
+    border-radius: 8px;
+    padding: .5rem 1.2rem;
+    color: #34d399;
+    font-weight: 800;
+    font-size: .95rem;
+  }
+
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: .78rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 헤더 -->
+  <div class="header">
+    <div class="badge">📋 딜러 공식 안내 문서</div>
+    <h1>💳 딜러 크레딧 충전 가이드</h1>
+    <p>Caddy Manager Pro · 이용권 발급 크레딧 구매 방법 및 가격표</p>
+  </div>
+
+  <!-- 크레딧이란? -->
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="emoji">🪙</div>
+      <div class="title">크레딧이란?</div>
+      <div class="desc">이용권을 발급할 수 있는 권리입니다. 1크레딧 = 이용권 1개 발급 가능.</div>
+    </div>
+    <div class="concept-card">
+      <div class="emoji">⚡</div>
+      <div class="title">자유롭게 사용</div>
+      <div class="desc">미리 충전해 두고 고객에게 이용권 발급할 때마다 자동 차감됩니다.</div>
+    </div>
+    <div class="concept-card">
+      <div class="emoji">💸</div>
+      <div class="title">도매가 할인</div>
+      <div class="desc">많이 살수록 단가가 낮아집니다. 정가 대비 최대 53%까지 이익 실현 가능.</div>
+    </div>
+    <div class="concept-card">
+      <div class="emoji">📅</div>
+      <div class="title">유효기간 1년</div>
+      <div class="desc">마지막 충전일 기준 1년. 만료 전 본사에 연장 요청 가능합니다.</div>
+    </div>
+  </div>
+
+  <!-- 충전 방법 -->
+  <div class="section">
+    <div class="section-title"><span class="icon">📥</span> 충전 방법 (Step by Step)</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">원하는 충전량과 이용권 종류 결정</div>
+          <div class="step-desc">아래 가격표를 참고하여 스탠다드/프리미엄, 3개월/6개월 중 선택하세요. 최소 10크레딧부터 가능합니다.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">본사 계좌로 입금</div>
+          <div class="step-desc">계좌이체는 수수료 없이 전액 크레딧으로 전환됩니다.</div>
+          <div class="step-highlight">📌 입금 시 메모란에 <b>딜러 코드 또는 상호명</b> 기재 필수</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">카카오톡으로 입금 내역 전송</div>
+          <div class="step-desc">입금 후 본사 카카오톡 채널로 입금액, 딜러 코드, 원하는 크레딧 내역을 전송해 주세요.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">본사 확인 후 크레딧 지급</div>
+          <div class="step-desc">확인 즉시 딜러 계정에 크레딧이 충전됩니다. 영업일 기준 1~2시간 내 처리.</div>
+          <div class="step-highlight">✅ 카카오톡으로 충전 완료 + 잔액 알림 발송</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">이용권 발급 시 자동 차감</div>
+          <div class="step-desc">딜러 대시보드에서 이용권 발급 → 크레딧 1개 자동 차감. 잔액 부족 시 발급이 차단됩니다.</div>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-amber">
+      <b>💳 카드 결제 원하시는 경우:</b> 별도 문의 시 PG사 결제 링크 발급 가능. 단, 카드 수수료 2~3%는 딜러 부담입니다.
+    </div>
+  </div>
+
+  <!-- 도매가표 -->
+  <div class="section">
+    <div class="section-title"><span class="icon">💰</span> 딜러 도매가표</div>
+    <p style="font-size:.85rem;color:#6b7280;margin-bottom:1.2rem;">
+      충전 크레딧 수량이 많을수록 단가가 낮아집니다. 아래는 1크레딧(이용권 1개)당 딜러 구매가.
+    </p>
+
+    <table style="margin-bottom:1.5rem;">
+      <thead>
+        <tr>
+          <th>충전 수량</th>
+          <th>스탠다드 3개월</th>
+          <th>스탠다드 6개월</th>
+          <th>프리미엄 3개월</th>
+          <th>프리미엄 6개월</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>10~49개</b></td>
+          <td>9,000원<br><span style="font-size:.75rem;color:#6b7280">정가 15,000원</span></td>
+          <td>15,000원<br><span style="font-size:.75rem;color:#6b7280">정가 25,000원</span></td>
+          <td>18,000원<br><span style="font-size:.75rem;color:#6b7280">정가 30,000원</span></td>
+          <td>30,000원<br><span style="font-size:.75rem;color:#6b7280">정가 50,000원</span></td>
+        </tr>
+        <tr>
+          <td><b>50~99개</b></td>
+          <td>8,000원</td>
+          <td>13,500원</td>
+          <td>16,000원</td>
+          <td>27,000원</td>
+        </tr>
+        <tr>
+          <td><b>100~299개</b></td>
+          <td>7,000원</td>
+          <td>12,000원</td>
+          <td>14,000원</td>
+          <td>24,000원</td>
+        </tr>
+        <tr>
+          <td><b>300개+</b></td>
+          <td colspan="4" style="text-align:center;color:#fbbf24;font-weight:700;">
+            별도 협의 — 본사 직접 문의
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 이익 계산 예시 -->
+    <div class="price-grid">
+      <div class="price-box standard">
+        <div class="tier">스탠다드 3개월</div>
+        <div class="period">50개 구매 시</div>
+        <div class="price">개당 8,000원</div>
+        <div class="original">정가 15,000원</div>
+        <div class="save">개당 7,000원 이익 ↑</div>
+      </div>
+      <div class="price-box standard">
+        <div class="tier">스탠다드 6개월</div>
+        <div class="period">100개 구매 시</div>
+        <div class="price">개당 12,000원</div>
+        <div class="original">정가 25,000원</div>
+        <div class="save">개당 13,000원 이익 ↑</div>
+      </div>
+      <div class="price-box premium">
+        <div class="tier">프리미엄 3개월</div>
+        <div class="period">100개 구매 시</div>
+        <div class="price">개당 14,000원</div>
+        <div class="original">정가 30,000원</div>
+        <div class="save">개당 16,000원 이익 ↑</div>
+      </div>
+      <div class="price-box premium">
+        <div class="tier">프리미엄 6개월</div>
+        <div class="period">100개 구매 시</div>
+        <div class="price">개당 24,000원</div>
+        <div class="original">정가 50,000원</div>
+        <div class="save">개당 26,000원 이익 ↑</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 보너스 크레딧 -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🎁</span> 보너스 크레딧 혜택</div>
+    <table>
+      <thead>
+        <tr>
+          <th>조건</th>
+          <th>보너스</th>
+          <th>비고</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>첫 충전 딜러</td>
+          <td><span class="chip chip-green">+5 크레딧</span></td>
+          <td>최초 1회 지급</td>
+        </tr>
+        <tr>
+          <td>50개 이상 충전</td>
+          <td><span class="chip chip-blue">+3 크레딧</span></td>
+          <td>충전 즉시 지급</td>
+        </tr>
+        <tr>
+          <td>100개 이상 충전</td>
+          <td><span class="chip chip-violet">+8 크레딧</span></td>
+          <td>충전 즉시 지급</td>
+        </tr>
+        <tr>
+          <td>200개 이상 충전</td>
+          <td><span class="chip chip-amber">+20 크레딧</span></td>
+          <td>충전 즉시 지급</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="alert alert-green">
+      <b>예시:</b> 100개 충전 시 → 108크레딧 사용 가능 (보너스 8개 포함). 첫 충전이라면 113크레딧!
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="section">
+    <div class="section-title"><span class="icon">❓</span> 자주 묻는 질문 (FAQ)</div>
+    <div class="faq">
+      <div class="faq-item">
+        <div class="faq-q">Q. 크레딧 유효기간이 지나면 어떻게 되나요?</div>
+        <div class="faq-a">마지막 충전일 기준 1년이 지나면 크레딧이 소멸됩니다. 만료 30일 전에 본사에서 알림을 드립니다. 협의 시 연장도 가능합니다.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Q. 크레딧을 환불받을 수 있나요?</div>
+        <div class="faq-a">미사용 크레딧에 한해 전액 환불 가능합니다. 환불 요청 시 처리 수수료는 없습니다. 단, 이미 사용한 크레딧은 환불되지 않습니다.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Q. 스탠다드 크레딧으로 프리미엄 이용권을 발급할 수 있나요?</div>
+        <div class="faq-a">아니요. 크레딧은 이용권 종류와 관계없이 1개 차감되지만, 발급 가능한 이용권 종류는 딜러가 선택합니다. 별도 제한은 없습니다.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Q. 잔액이 부족할 때 어떻게 되나요?</div>
+        <div class="faq-a">크레딧 잔액이 0이 되면 이용권 발급이 자동으로 차단됩니다. 발급 전에 잔액을 확인하거나, 잔액 부족 알림이 뜨면 즉시 충전하세요.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Q. 카드로 결제하면 수수료가 얼마인가요?</div>
+        <div class="faq-a">카드 결제 시 PG사 수수료 2~3%가 딜러 부담으로 추가됩니다. 예: 100,000원 충전 시 카드 수수료 약 2,500원 별도. 계좌이체를 권장합니다.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Q. 충전 후 얼마나 기다려야 크레딧이 들어오나요?</div>
+        <div class="faq-a">입금 확인 후 영업일 기준 1~2시간 내에 처리됩니다. 카카오톡으로 완료 알림을 별도 발송해 드립니다.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Q. 최소 충전 단위는 얼마인가요?</div>
+        <div class="faq-a">최소 10크레딧(이용권 10개)부터 가능합니다. 10개 미만은 본사와 별도 협의가 필요합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 연락처 -->
+  <div class="contact-box">
+    <h3>📞 충전 문의 & 연락처</h3>
+    <p>
+      충전 요청 및 문의는 아래 채널로 연락해 주세요.<br>
+      <b>영업시간:</b> 평일 09:00 ~ 18:00 (공휴일 제외)
+    </p>
+    <div class="highlight">카카오톡 채널: Caddy Manager Pro</div>
+    <div class="alert alert-blue" style="margin-top:1rem;text-align:left;">
+      <b>입금 안내용 문자 템플릿:</b><br>
+      "안녕하세요. 딜러 [상호명/코드] 입니다.<br>
+      [금액]원 입금했습니다. [이용권 종류] [개수]개 크레딧 충전 요청드립니다."
+    </div>
+  </div>
+
+  <div class="footer">
+    Caddy Manager Pro · 딜러 공식 안내 문서 · 2026년 4월 4일<br>
+    본 문서의 가격 및 정책은 사전 고지 없이 변경될 수 있습니다.
+  </div>
+
+</div>
+</body>
+</html>
