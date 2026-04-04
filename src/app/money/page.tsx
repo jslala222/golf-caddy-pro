@@ -413,7 +413,7 @@ export default function MoneyPage() {
             {/* Add Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 z-[60] flex items-end sm:items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-[440px] rounded-3xl p-6 animate-in slide-in-from-bottom-10 shadow-2xl">
+                    <div className="bg-white w-full max-w-[440px] rounded-3xl p-6 animate-in slide-in-from-bottom-10 shadow-2xl overflow-y-auto max-h-[calc(100dvh-64px)]">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold">간편 내역 추가</h2>
                             <button onClick={() => setIsModalOpen(false)} className="bg-stone-100 p-2 rounded-full text-stone-400 hover:text-stone-600">

@@ -70,7 +70,7 @@ export default function HomePage() {
     // 오늘 이미 캐디피 입력 없을 때만 기본값 설정
     const hasFeesToday = alreadyToday.some(t => t.category === 'caddy_fee');
     if (!hasFeesToday && feeSettings) {
-      setQCaddyFee(String(feeSettings.shift1));
+      setQCaddyFee(fmtInput(String(feeSettings.shift1)));
     } else {
       setQCaddyFee('');
     }
@@ -407,7 +407,7 @@ export default function HomePage() {
     {quickOpen && (
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setQuickOpen(false)}>
         <div
-          className="w-full max-w-[480px] bg-white rounded-t-3xl p-6 pb-10 shadow-2xl space-y-4"
+          className="w-full max-w-[480px] bg-white rounded-t-3xl p-6 pb-6 shadow-2xl space-y-4 overflow-y-auto max-h-[calc(100dvh-64px)]"
           onClick={e => e.stopPropagation()}
         >
           {/* 헤더 */}
