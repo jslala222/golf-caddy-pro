@@ -45,6 +45,7 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                             localStorage.removeItem('caddy-manager-storage');
                         }
                         localStorage.setItem('caddy_active_key', storedKey);
+                        localStorage.removeItem('caddy_user_name'); // 이름 캐시 초기화
                         window.location.reload(); // Zustand rehydrate
                         return;
                     }

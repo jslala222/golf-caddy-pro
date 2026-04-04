@@ -11,6 +11,27 @@ export default function HomePage() {
   const store = useAppStore();
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [userName, setUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const cached = localStorage.getItem('caddy_user_name');
+    if (cached) { setUserName(cached); return; }
+    const code = localStorage.getItem('caddy_license_key');
+    if (!code) return;
+    import('@/lib/supabaseClient').then(({ supabase }) => {
+      supabase
+        .from('aone_pro_caddypro_licenses')
+        .select('user_name')
+        .ilike('code', code.trim())
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.user_name) {
+            setUserName(data.user_name);
+            localStorage.setItem('caddy_user_name', data.user_name);
+          }
+        });
+    });
+  }, []);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -87,7 +108,9 @@ export default function HomePage() {
       <header className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-stone-900">캐디 매니저 프로</h1>
-          <p className="text-stone-500 text-sm">오늘도 굿샷 하세요! ⛳️</p>
+          <p className="text-stone-500 text-sm">
+            {userName ? <><span className="font-semibold text-emerald-600">{userName}</span>님 환영합니다! ⛳️</> : '오늘도 굿샷 하세요! ⛳️'}
+          </p>
         </div>
         <Link href="/settings" className="p-2 bg-stone-100 rounded-full text-stone-600 hover:bg-stone-200">
           <ChevronRight size={20} />
