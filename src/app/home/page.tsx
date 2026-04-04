@@ -14,8 +14,6 @@ export default function HomePage() {
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    const cached = localStorage.getItem('caddy_user_name');
-    if (cached) { setUserName(cached); return; }
     const code = localStorage.getItem('caddy_license_key');
     if (!code) return;
     if (code.trim().toUpperCase() === '0827') {
@@ -23,6 +21,8 @@ export default function HomePage() {
       localStorage.setItem('caddy_user_name', '관리자');
       return;
     }
+    const cached = localStorage.getItem('caddy_user_name');
+    if (cached) { setUserName(cached); return; }
     import('@/lib/supabaseClient').then(({ supabase }) => {
       supabase
         .from('aone_pro_caddypro_licenses')
