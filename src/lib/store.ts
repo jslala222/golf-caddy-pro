@@ -290,6 +290,11 @@ export const useAppStore = create<AppState>()(
                             console.error('[SafeGuard] Error checking data integrity', e);
                         }
                         storage.setItem(name, value);
+                        // 코드별 키에도 동기화 저장 (계정 분리)
+                        const activeKey = storage.getItem('caddy_active_key');
+                        if (activeKey) {
+                            storage.setItem(`${name}_${activeKey}`, value);
+                        }
                     },
                     removeItem: (name) => storage.removeItem(name),
                 };

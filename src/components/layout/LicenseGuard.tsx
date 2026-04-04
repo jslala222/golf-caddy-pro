@@ -27,6 +27,28 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
             try {
                 const storedKey = localStorage.getItem('caddy_license_key');
                 if (storedKey && verifyLicense(storedKey)) {
+                    // 계정 전환 감지: 이전 로그인 키와 다르면 스토리지 교체
+                    const activeKey = localStorage.getItem('caddy_active_key');
+                    if (activeKey !== storedKey) {
+                        // 기존 키의 데이터 백업
+                        if (activeKey) {
+                            const currentData = localStorage.getItem('caddy-manager-storage');
+                            if (currentData) {
+                                localStorage.setItem(`caddy-manager-storage_${activeKey}`, currentData);
+                            }
+                        }
+                        // 새 키의 데이터 복원 (없으면 빈 상태)
+                        const newData = localStorage.getItem(`caddy-manager-storage_${storedKey}`);
+                        if (newData) {
+                            localStorage.setItem('caddy-manager-storage', newData);
+                        } else {
+                            localStorage.removeItem('caddy-manager-storage');
+                        }
+                        localStorage.setItem('caddy_active_key', storedKey);
+                        window.location.reload(); // Zustand rehydrate
+                        return;
+                    }
+
                     const expiresAt = localStorage.getItem('caddy_expires_at');
                     if (expiresAt && new Date(expiresAt) < new Date()) {
                         setExpiredCode(storedKey);
