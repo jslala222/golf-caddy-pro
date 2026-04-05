@@ -51,11 +51,13 @@ export async function requestCaddyPayment({
   phone,
   planKey,
   tier = 'standard',
+  payMethod = 'CARD',
 }: {
   name: string;
   phone: string;
   planKey: PortOneProductKey;
   tier?: 'standard' | 'premium';
+  payMethod?: 'CARD' | 'TRANSFER';
 }): Promise<PaymentResult> {
   if (typeof window === 'undefined' || !window.PortOne) {
     return { success: false, error: '결제 모듈을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.' };
@@ -67,7 +69,7 @@ export async function requestCaddyPayment({
   // 모바일 리다이렉트 대비 — 구매자 정보 임시 저장
   sessionStorage.setItem(
     'caddy_payment_info',
-    JSON.stringify({ name, phone, planKey, paymentId, tier }),
+    JSON.stringify({ name, phone, planKey, paymentId, tier, payMethod }),
   );
 
   try {
@@ -78,10 +80,11 @@ export async function requestCaddyPayment({
       orderName:   product.name,
       totalAmount: product.amount,
       currency:    'CURRENCY_KRW',
-      payMethod:   'CARD',
+      payMethod,
       customer: {
         fullName:    name,
         phoneNumber: phone,
+        email:       'test@caddypro.kr', // 이니시스 V2 필수값
       },
       redirectUrl: `${window.location.origin}/subscribe?payment=done&paymentId=${paymentId}`,
     });

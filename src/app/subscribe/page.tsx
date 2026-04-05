@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle2, Copy, Check, CreditCard, ChevronRight, Shield, Star } from 'lucide-react';
+import { CheckCircle2, Copy, Check, CreditCard, ChevronRight, Shield, Star, Banknote } from 'lucide-react';
 import { requestCaddyPayment, PORTONE_PRODUCTS, PORTONE_PRODUCTS_PREMIUM } from '@/lib/paymentService';
 import type { PortOneProductKey } from '@/lib/paymentService';
 
@@ -23,6 +23,7 @@ function SubscribeInner() {
 
   const [selectedPlan, setSelectedPlan] = useState<PortOneProductKey>('month');
   const [selectedTier, setSelectedTier] = useState<'standard' | 'premium'>('standard');
+  const [selectedPayMethod, setSelectedPayMethod] = useState<'CARD' | 'TRANSFER'>('CARD');
   const [name, setName]   = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
@@ -106,7 +107,7 @@ function SubscribeInner() {
     setError('');
     setLoading(true);
 
-    const result = await requestCaddyPayment({ name: name.trim(), phone: phone.trim(), planKey: selectedPlan, tier: selectedTier });
+    const result = await requestCaddyPayment({ name: name.trim(), phone: phone.trim(), planKey: selectedPlan, tier: selectedTier, payMethod: selectedPayMethod });
 
     if (!result.success) {
       setModalMsg(result.error ?? '결제 처리 중 오류가 발생했습니다.');
@@ -292,6 +293,41 @@ function SubscribeInner() {
           })}
         </section>
 
+        {/* 결제수단 선택 */}
+        <section className="space-y-3">
+          <h2 className="font-bold text-stone-700 text-sm">결제수단</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setSelectedPayMethod('CARD')}
+              className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-3 ${
+                selectedPayMethod === 'CARD'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-stone-200 bg-white hover:border-stone-300'
+              }`}
+            >
+              <CreditCard size={18} className={selectedPayMethod === 'CARD' ? 'text-blue-500' : 'text-stone-400'} />
+              <div>
+                <p className="font-black text-sm">카드결제</p>
+                <p className="text-[10px] text-stone-400">신용·체크카드</p>
+              </div>
+            </button>
+            <button
+              onClick={() => setSelectedPayMethod('TRANSFER')}
+              className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-3 ${
+                selectedPayMethod === 'TRANSFER'
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-stone-200 bg-white hover:border-stone-300'
+              }`}
+            >
+              <Banknote size={18} className={selectedPayMethod === 'TRANSFER' ? 'text-emerald-500' : 'text-stone-400'} />
+              <div>
+                <p className="font-black text-sm">실시간이체</p>
+                <p className="text-[10px] text-stone-400">수수료 절감</p>
+              </div>
+            </button>
+          </div>
+        </section>
+
         {/* 구매자 정보 */}
         <section className="space-y-3">
           <h2 className="font-bold text-stone-700 text-sm">구매자 정보</h2>
@@ -327,7 +363,7 @@ function SubscribeInner() {
 
         <p className="text-center text-stone-400 text-xs leading-relaxed">
           결제 즉시 이용권 코드가 발급됩니다.<br />
-          카드 · 간편결제 모두 지원됩니다.
+          카드 · 실시간계좌이체 모두 지원됩니다.
         </p>
       </div>
 

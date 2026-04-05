@@ -1,13 +1,10 @@
 /**
- * POST /api/receipt/upload
- * FormData: file (image), licenseCode (string)
- * → R2에 저장 후 URL 반환
- * → GEMINI_API_KEY 있으면 Gemini Vision으로 금액/상호 OCR
+ * POST /api/receipt/ocr
+ * FormData: file (image)
+ * R2 저장 없이 Gemini Vision OCR만 수행 — 금액/상호명/카테고리 추출
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { uploadReceipt } from '@/lib/r2Client';
 
-// Vercel 함수 최대 실행 시간 60초 (Gemini OCR 타임아웃 방지)
 export const maxDuration = 60;
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
@@ -21,11 +18,8 @@ export async function POST(request: NextRequest) {
   }
 
   const file = formData.get('file') as File | null;
-  const licenseCode = formData.get('licenseCode') as string | null;
-  const skipOcr = formData.get('skipOcr') === 'true';
-
-  if (!file || !licenseCode) {
-    return NextResponse.json({ error: '파일과 이용코드가 필요합니다.' }, { status: 400 });
+  if (!file) {
+    return NextResponse.json({ error: '파일이 필요합니다.' }, { status: 400 });
   }
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: '파일이 너무 큽니다. (최대 10MB)' }, { status: 400 });
@@ -34,21 +28,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '이미지 파일만 업로드 가능합니다.' }, { status: 400 });
   }
 
-  try {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const ext = file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'jpg';
-    const filename = `${Date.now()}.${ext}`;
-    const url = await uploadReceipt(licenseCode.trim().toUpperCase(), filename, buffer, file.type);
+  let ocrAmount: number | null = null;
+  let ocrMemo: string | null = null;
+  let ocrCategory: string | null = null;
 
-    // Gemini Vision OCR (선택적 — API Key 있을 때만)
-    let ocrAmount: number | null = null;
-    let ocrMemo: string | null = null;
-    let ocrCategory: string | null = null;
-
-    const geminiKey = process.env.GEMINI_API_KEY;
-    console.log('[OCR] geminiKey 존재:', !!geminiKey, '| 파일크기:', buffer.length);
-    if (!skipOcr && geminiKey && buffer.length < 4 * 1024 * 1024) {
-      try {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (geminiKey) {
+    try {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      if (buffer.length < 4 * 1024 * 1024) {
         const base64 = buffer.toString('base64');
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
@@ -78,7 +66,6 @@ export async function POST(request: NextRequest) {
         if (res.ok) {
           const data = await res.json();
           const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-          console.log('[OCR] Gemini 응답 원문:', text);
           const match = text.match(/\{[\s\S]*?\}/);
           if (match) {
             const parsed = JSON.parse(match[0]);
@@ -87,26 +74,20 @@ export async function POST(request: NextRequest) {
             } else if (typeof parsed.amount === 'string') {
               const n = parseInt(parsed.amount.replace(/[^0-9]/g, ''), 10);
               ocrAmount = isNaN(n) ? null : n;
-            } else {
-              ocrAmount = null;
             }
             ocrMemo = typeof parsed.merchant === 'string' ? parsed.merchant : null;
-            console.log('[OCR] 파싱 결과:', { ocrAmount, ocrMemo, ocrCategory });
             const validCategories = ['transport', 'meal', 'gear', 'etc_expense', 'personal'];
             ocrCategory = validCategories.includes(parsed.category) ? parsed.category : null;
           }
         } else {
           const errText = await res.text();
-          console.warn('[OCR] Gemini API 오류:', res.status, errText.substring(0, 300));
+          console.warn('[receipt/ocr] Gemini API 오류:', res.status, errText.substring(0, 300));
         }
-      } catch (ocrErr) {
-        console.warn('[receipt/upload] OCR 실패 (무시):', ocrErr);
       }
+    } catch (err) {
+      console.warn('[receipt/ocr] OCR 실패 (무시):', err);
     }
-
-    return NextResponse.json({ success: true, url, ocrAmount, ocrMemo, ocrCategory });
-  } catch (e) {
-    console.error('[receipt/upload] 업로드 오류:', e);
-    return NextResponse.json({ error: '이미지 저장에 실패했습니다.' }, { status: 500 });
   }
+
+  return NextResponse.json({ success: true, ocrAmount, ocrMemo, ocrCategory });
 }

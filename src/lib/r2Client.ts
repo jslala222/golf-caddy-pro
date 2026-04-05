@@ -83,7 +83,7 @@ export async function uploadReceipt(
     ContentType: contentType,
   }));
   // R2 public URL (버킷 공개 설정 시 사용)
-  const publicBase = process.env.R2_PUBLIC_URL;
+  const publicBase = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || process.env.R2_PUBLIC_URL;
   return publicBase ? `${publicBase}/${key}` : key;
 }
 

@@ -142,6 +142,7 @@ export default function MoneyPage() {
             memo?: string;
             isSchedule: boolean;
             category?: string;
+            receiptUrl?: string;
         }
         const history: HistoryItem[] = [];
 
@@ -166,7 +167,8 @@ export default function MoneyPage() {
                 amount: t.amount,
                 memo: t.memo,
                 isSchedule: false,
-                category: t.category
+                category: t.category,
+                receiptUrl: t.receiptUrl,
             });
         });
 
@@ -181,9 +183,13 @@ export default function MoneyPage() {
     const [category, setCategory] = useState<ExpenseCategory>('meal');
     const [memo, setMemo] = useState('');
 
+    // 삭제 확인 모달
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
     // 영수증 사진 업로드
     const receiptRef = useRef<HTMLInputElement>(null);
     const [receiptUploading, setReceiptUploading] = useState(false);
+    const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
     const [ocrError, setOcrError] = useState<string | null>(null);
     const [ocrResult, setOcrResult] = useState<{ amount: number | null; memo: string | null } | null>(null);
@@ -258,15 +264,17 @@ export default function MoneyPage() {
         const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.75));
         const compressed = new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
 
+        // 파일은 State에 보관, 미리보기는 로컬 URL로 설정 (R2 업로드는 등록 버튼 클릭 시)
+        setReceiptFile(compressed);
+        setReceiptUrl(URL.createObjectURL(blob));
+
         setReceiptUploading(true);
         try {
             const fd = new FormData();
             fd.append('file', compressed);
-            fd.append('licenseCode', licenseCode);
-            const res = await fetch('/api/receipt/upload', { method: 'POST', body: fd });
+            const res = await fetch('/api/receipt/ocr', { method: 'POST', body: fd });
             const data = await res.json();
             if (data.success) {
-                setReceiptUrl(data.url);
                 await incrementOcrCount();
                 setOcrResult({ amount: data.ocrAmount ?? null, memo: data.ocrMemo ?? null });
                 if (data.ocrAmount) setAmount(String(data.ocrAmount));
@@ -275,19 +283,41 @@ export default function MoneyPage() {
                 if (data.ocrCategory && validCats.includes(data.ocrCategory)) setCategory(data.ocrCategory as ExpenseCategory);
             }
         } catch (err) {
-            console.warn('영수증 업로드 실패', err);
+            console.warn('OCR 실패', err);
         } finally {
             setReceiptUploading(false);
         }
         e.target.value = '';
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const numAmount = parseInt(amount.replace(/,/g, '') || '0');
         if (!numAmount || numAmount <= 0) {
             document.getElementById('amount-input')?.focus();
             return;
+        }
+
+        // 지출등록 시점에 R2 업로드
+        let finalReceiptUrl: string | undefined = undefined;
+        if (receiptFile) {
+            const licenseCode = typeof window !== 'undefined' ? localStorage.getItem('caddy_license_key') : null;
+            if (licenseCode) {
+                try {
+                    setReceiptUploading(true);
+                    const fd = new FormData();
+                    fd.append('file', receiptFile);
+                    fd.append('licenseCode', licenseCode);
+                    fd.append('skipOcr', 'true');
+                    const res = await fetch('/api/receipt/upload', { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.success) finalReceiptUrl = data.url;
+                } catch (err) {
+                    console.warn('영수증 R2 업로드 실패', err);
+                } finally {
+                    setReceiptUploading(false);
+                }
+            }
         }
 
         addTransaction({
@@ -296,13 +326,14 @@ export default function MoneyPage() {
             amount: numAmount,
             category: type === 'expense' ? category : undefined,
             memo,
-            receiptUrl: receiptUrl ?? undefined,
+            receiptUrl: finalReceiptUrl,
         });
 
         setIsModalOpen(false);
         setAmount('');
         setMemo('');
         setReceiptUrl(null);
+        setReceiptFile(null);
         setOcrResult(null);
     };
 
@@ -460,7 +491,7 @@ export default function MoneyPage() {
                                         {item.type === 'income' ? '+' : '-'}{formatCurrency(item.amount).replace('₩', '')}
                                     </span>
                                     {!item.isSchedule && (
-                                        <button onClick={() => deleteTransaction(item.id)} className="text-stone-300 hover:text-red-400 p1">
+                                        <button onClick={() => setDeleteConfirmId(item.id)} className="text-stone-300 hover:text-red-400 p-1">
                                             <Trash2 size={16} />
                                         </button>
                                     )}
@@ -481,6 +512,31 @@ export default function MoneyPage() {
                     ))
                 )}
             </div>
+
+            {/* 삭제 확인 모달 */}
+            {deleteConfirmId && (
+                <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-6 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-[320px] rounded-3xl p-6 shadow-2xl text-center">
+                        <div className="text-3xl mb-3">🗑️</div>
+                        <h3 className="text-lg font-bold text-stone-800 mb-2">내역을 삭제하시겠습니까?</h3>
+                        <p className="text-sm text-stone-400 mb-6">삭제 후 복구할 수 없습니다.</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="flex-1 py-3 rounded-2xl bg-stone-100 text-stone-600 font-bold text-sm"
+                            >
+                                취소
+                            </button>
+                            <button
+                                onClick={() => { deleteTransaction(deleteConfirmId); setDeleteConfirmId(null); }}
+                                className="flex-1 py-3 rounded-2xl bg-red-500 text-white font-bold text-sm"
+                            >
+                                삭제
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Add Modal */}
             {isModalOpen && (
