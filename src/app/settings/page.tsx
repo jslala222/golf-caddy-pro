@@ -122,8 +122,9 @@ export default function SettingsPage() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         const date = new Date().toISOString().split('T')[0];
+        const shortCode = licenseCode.replace(/[^A-Z0-9-]/gi, '').toUpperCase();
         link.href = url;
-        link.download = `caddy-backup-${date}.json`;
+        link.download = `caddy-backup-${shortCode}-${date}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -148,8 +149,10 @@ export default function SettingsPage() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         const date = new Date().toISOString().split('T')[0];
+        const licenseCode = localStorage.getItem('caddy_license_key') ?? 'unknown';
+        const shortCode = licenseCode.replace(/[^A-Z0-9-]/gi, '').toUpperCase();
         link.href = url;
-        link.download = `caddy-backup-${date}.json`;
+        link.download = `caddy-backup-${shortCode}-${date}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
