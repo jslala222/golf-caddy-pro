@@ -107,7 +107,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [specialNote, setSpecialNote] = useState('');
     const [payMethod, setPayMethod] = useState<'cash' | 'virtual_account' | 'transfer'>('cash');
     const [isIssuing, setIsIssuing] = useState(false);
-    const [issueConfirm, setIssueConfirm] = useState<{ type: 'credit' | 'cash'; creditCol?: string; avail?: number } | null>(null);
+    const [issueConfirm, setIssueConfirm] = useState<{ type: 'credit' | 'cash' | 'extend'; creditCol?: string; avail?: number; newExpiresAt?: string } | null>(null);
     const [issuedCode, setIssuedCode] = useState('');
     const [issuedPlan, setIssuedPlan] = useState('');
     const [issuedDays, setIssuedDays] = useState(0);
@@ -802,11 +802,37 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                     <div className="bg-stone-900 border border-stone-700 rounded-3xl p-7 w-full max-w-sm space-y-5 shadow-2xl"
                         onClick={e => e.stopPropagation()}>
                         <div className="text-center">
-                            <div className="text-4xl mb-2">{issueConfirm.type === 'credit' ? '💳' : '💵'}</div>
-                            <p className="text-white font-black text-lg">발급 전 확인</p>
+                            <div className="text-4xl mb-2">{issueConfirm.type === 'credit' ? '💳' : issueConfirm.type === 'extend' ? '🔄' : '💵'}</div>
+                            <p className="text-white font-black text-lg">{issueConfirm.type === 'extend' ? '기간 연장 확인' : '발급 전 확인'}</p>
                         </div>
                         {/* 발급 정보 */}
                         <div className="bg-stone-800 rounded-2xl p-4 space-y-2 text-sm">
+                            {issueConfirm.type === 'extend' ? (<>
+                                <div className="flex justify-between">
+                                    <span className="text-stone-400">고객</span>
+                                    <span className="font-bold text-white">{renewResult?.userName ?? '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-stone-400">현재 만료일</span>
+                                    <span className="font-bold text-white">{renewResult?.expiresAt ? new Date(renewResult.expiresAt).toLocaleDateString('ko-KR') : '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-stone-400">연장 요금제</span>
+                                    <span className="font-bold text-white">{PLANS[plan].label} ({days}일)</span>
+                                </div>
+                                <div className="flex justify-between pt-1 border-t border-stone-700">
+                                    <span className="text-stone-400">새 만료일</span>
+                                    <span className="font-black text-violet-400">{issueConfirm.newExpiresAt ? new Date(issueConfirm.newExpiresAt).toLocaleDateString('ko-KR') : '-'}</span>
+                                </div>
+                                {issueConfirm.avail !== undefined && (
+                                    <div className="flex justify-between">
+                                        <span className="text-stone-400">크레딧 잔량</span>
+                                        <span className={`font-black ${issueConfirm.avail < 1 ? 'text-red-400' : 'text-amber-400'}`}>
+                                            {issueConfirm.avail}장 → {Math.max(0, issueConfirm.avail - 1)}장
+                                        </span>
+                                    </div>
+                                )}
+                            </>) : (<>
                             <div className="flex justify-between">
                                 <span className="text-stone-400">고객</span>
                                 <span className="font-bold text-white">{customerName} · {customerPhone}</span>
@@ -824,8 +850,6 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                 <span className="font-bold text-white">{issueConfirm.type === 'credit' ? '크레딧 차감' : '현금/계좌이체'}</span>
                             </div>
                             {issueConfirm.type === 'credit' && issueConfirm.avail !== undefined && (() => {
-                                const creditCol = issueConfirm.creditCol!;
-                                // 전체 크레딧 중 해당 플랜만 보여줌 (총 구매분 추적 불가하므로 현재 잔량 기준)
                                 return (
                                     <div className="flex justify-between pt-1 border-t border-stone-700">
                                         <span className="text-stone-400">크레딧 잔량</span>
@@ -833,6 +857,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                     </div>
                                 );
                             })()}
+                            </>)}
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <button onClick={() => setIssueConfirm(null)}
@@ -842,11 +867,12 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                             <button onClick={() => {
                                 const type = issueConfirm.type;
                                 setIssueConfirm(null);
-                                if (type === 'credit') handleCreditIssue();
+                                if (type === 'extend') handleExtend();
+                                else if (type === 'credit') handleCreditIssue();
                                 else handleIssue();
                             }}
-                                className={`py-3.5 rounded-2xl font-black text-white transition ${issueConfirm.type === 'credit' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'}`}>
-                                발급 확정
+                                className={`py-3.5 rounded-2xl font-black text-white transition ${issueConfirm.type === 'extend' ? 'bg-violet-600 hover:bg-violet-500' : issueConfirm.type === 'credit' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'}`}>
+                                {issueConfirm.type === 'extend' ? '연장 확정' : '발급 확정'}
                             </button>
                         </div>
                     </div>
@@ -1296,7 +1322,14 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                             </div>
                                         );
                                     })()}
-                                    <button onClick={handleExtend} disabled={isExtending}
+                                    <button onClick={() => {
+                                            const tier = (renewResult?.tier ?? 'standard') as 'standard' | 'premium';
+                                            const creditCol = CREDIT_COL[tier][plan];
+                                            const avail = dealer ? ((dealer[creditCol as keyof DealerInfo] as number) ?? 0) : 0;
+                                            const base = renewResult?.expiresAt && new Date(renewResult.expiresAt) > new Date() ? new Date(renewResult.expiresAt) : new Date();
+                                            const newExpiresAt = new Date(base.getTime() + days * 86_400_000).toISOString();
+                                            setIssueConfirm({ type: 'extend', creditCol, avail, newExpiresAt });
+                                        }} disabled={isExtending}
                                         className="w-full py-5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition">
                                         {isExtending
                                             ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
