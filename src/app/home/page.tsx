@@ -147,7 +147,7 @@ export default function HomePage() {
 
   return (
     <>
-    <div className="p-6 space-y-8 pb-32" style={{ backgroundColor: 'white', minHeight: '100vh' }}>
+    <div className="px-4 py-5 space-y-5 pb-32" style={{ backgroundColor: 'white', minHeight: '100vh' }}>
       {/* Header */}
       <header className="flex justify-between items-center">
         <div>
@@ -187,7 +187,7 @@ export default function HomePage() {
       </header>
 
       {/* Net Income Card */}
-      <section className="bg-emerald-600 rounded-2xl p-6 text-white shadow-lg shadow-emerald-200 transition-all relative overflow-hidden">
+      <section className="bg-emerald-600 rounded-2xl p-4 text-white shadow-lg shadow-emerald-200 transition-all relative overflow-hidden">
         <div className="absolute right-[-20px] top-[-20px] opacity-10">
           <Wallet size={120} />
         </div>
@@ -203,18 +203,18 @@ export default function HomePage() {
           )}
         </div>
 
-        <div className="text-4xl font-bold mb-5 relative z-10">
-          {formatCurrency(netIncomeRealized).replace('₩', '')}<span className="text-xl font-normal ml-1">원</span>
+        <div className="text-3xl font-bold mb-4 relative z-10 break-all">
+          {formatCurrency(netIncomeRealized).replace('₩', '')}<span className="text-lg font-normal ml-1">원</span>
         </div>
 
-        <div className="flex gap-3 text-xs font-medium relative z-10">
-          <div className="flex items-center bg-red-500/80 px-3 py-1.5 rounded-full backdrop-blur-md text-white shadow-sm">
-            <TrendingUp size={14} className="mr-1 text-red-100" />
-            수입 {formatCurrency(totalIncomeRealized).replace('₩', '')}
+        <div className="flex gap-2 text-xs font-medium relative z-10">
+          <div className="flex items-center flex-1 min-w-0 bg-red-500/80 px-2 py-1.5 rounded-full backdrop-blur-md text-white shadow-sm overflow-hidden">
+            <TrendingUp size={13} className="mr-1 flex-shrink-0 text-red-100" />
+            <span className="truncate">수입 {formatCurrency(totalIncomeRealized).replace('₩', '')}</span>
           </div>
-          <div className="flex items-center bg-blue-500/80 px-3 py-1.5 rounded-full backdrop-blur-md text-white shadow-sm">
-            <TrendingDown size={14} className="mr-1 text-blue-100" />
-            지출 {formatCurrency(totalExpense).replace('₩', '')}
+          <div className="flex items-center flex-1 min-w-0 bg-blue-500/80 px-2 py-1.5 rounded-full backdrop-blur-md text-white shadow-sm overflow-hidden">
+            <TrendingDown size={13} className="mr-1 flex-shrink-0 text-blue-100" />
+            <span className="truncate">지출 {formatCurrency(totalExpense).replace('₩', '')}</span>
           </div>
         </div>
 
@@ -244,12 +244,12 @@ export default function HomePage() {
               </div>
             )}
           </div>
-          <div className="flex gap-2">
-            <div className="text-[10px] bg-white/10 px-2 py-1 rounded text-white font-bold">
-              휴무: {uniqueHolidayDays}일
+          <div className="flex gap-1.5 flex-shrink-0">
+            <div className="text-[9px] bg-white/10 px-1.5 py-1 rounded text-white font-bold whitespace-nowrap">
+              휴무:{uniqueHolidayDays}일
             </div>
-            <div className="text-[10px] bg-white/10 px-2 py-1 rounded text-white font-bold">
-              현재 {roundStats.realized.total}회 / 전체 {roundStats.realized.total + roundStats.expected.total}회
+            <div className="text-[9px] bg-white/10 px-1.5 py-1 rounded text-white font-bold whitespace-nowrap">
+              {roundStats.realized.total}/{roundStats.realized.total + roundStats.expected.total}회
             </div>
           </div>
         </div>
@@ -327,7 +327,7 @@ export default function HomePage() {
               <span className="text-sm font-bold text-stone-300">{year}년 연간 현황</span>
               <Link href="/money" className="text-[11px] text-stone-400 hover:text-emerald-400">전체보기 →</Link>
             </div>
-            <div className="text-3xl font-black mb-1">{yearlyNet.toLocaleString()}<span className="text-sm font-normal text-stone-400 ml-1">원 (순수익)</span></div>
+            <div className="text-2xl font-black mb-1 break-all">{yearlyNet.toLocaleString()}<span className="text-xs font-normal text-stone-400 ml-1">원 (순수익)</span></div>
             <div className="text-xs text-stone-400 mb-4">수입 {(yearlyScheduleIncome + yearlyManualIncome).toLocaleString()} — 지출 {yearlyExpense.toLocaleString()}</div>
             <div className="grid grid-cols-3 divide-x divide-stone-700 bg-stone-700/50 rounded-xl py-3">
               <div className="text-center">

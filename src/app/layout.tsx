@@ -21,9 +21,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  width: "device-width",
+  width: 360,
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 3,
   userScalable: false,
   themeColor: "#EC4899",
 };
@@ -38,7 +38,7 @@ export default function RootLayout({
       <body className={`${notoSansKr.className} bg-stone-100 text-stone-900 overflow-x-hidden`}>
         <Script src="https://cdn.portone.io/v2/browser-sdk.js" strategy="beforeInteractive" />
         <div className="flex justify-center min-h-screen bg-stone-100">
-          <div className="w-full max-w-[480px] bg-white relative flex flex-col min-h-screen shadow-2xl">
+          <div className="w-full max-w-[480px] min-w-[360px] bg-white relative flex flex-col min-h-screen shadow-2xl">
             <main className="flex-1 pb-20">
               <ClientLayout>
                 {children}
