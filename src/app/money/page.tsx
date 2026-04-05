@@ -185,10 +185,38 @@ export default function MoneyPage() {
     const receiptRef = useRef<HTMLInputElement>(null);
     const [receiptUploading, setReceiptUploading] = useState(false);
     const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+    const [ocrError, setOcrError] = useState<string | null>(null);
+
+    // OCR 월별 제한 (plan별: 1개월=5회, 6개월=30회, 1년=무제한)
+    const getOcrLimit = (): number => {
+        const plan = typeof window !== 'undefined' ? localStorage.getItem('caddy_plan') : null;
+        if (plan === 'year') return 999;
+        if (plan === '6month') return 30;
+        return 5; // 1개월 기본
+    };
+    const getOcrCount = (): number => {
+        const key = `caddy_ocr_${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+        return parseInt(typeof window !== 'undefined' ? localStorage.getItem(key) || '0' : '0');
+    };
+    const incrementOcrCount = () => {
+        const key = `caddy_ocr_${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+        localStorage.setItem(key, String(getOcrCount() + 1));
+    };
+    const ocrLimit = getOcrLimit();
+    const ocrUsed = getOcrCount();
+    const ocrRemaining = Math.max(0, ocrLimit - ocrUsed);
 
     const handleReceiptChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // OCR 월별 제한 체크
+        if (ocrLimit < 999 && ocrUsed >= ocrLimit) {
+            setOcrError(`이번 달 OCR 사용 횟수(${ocrLimit}회)를 모두 사용하셨습니다.\n장기 이용권으로 업그레이드 시 더 많이 사용 가능합니다.`);
+            e.target.value = '';
+            return;
+        }
+
         const licenseCode = typeof window !== 'undefined' ? localStorage.getItem('caddy_license_key') : null;
         if (!licenseCode) return;
 
@@ -201,9 +229,10 @@ export default function MoneyPage() {
 
         const canvas = document.createElement('canvas');
         const MAX = 1200;
+        const MIN_W = 400; // 세로로 긴 영수증도 가독성 보장
         const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
+        canvas.width = Math.max(img.width * ratio, MIN_W);
+        canvas.height = img.height * (canvas.width / img.width);
         canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
 
         const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.75));
@@ -218,6 +247,7 @@ export default function MoneyPage() {
             const data = await res.json();
             if (data.success) {
                 setReceiptUrl(data.url);
+                incrementOcrCount();
                 if (data.ocrAmount && !amount) setAmount(String(data.ocrAmount));
                 if (data.ocrMemo && !memo) setMemo(data.ocrMemo);
             }
@@ -503,17 +533,42 @@ export default function MoneyPage() {
                             {/* 영수증 사진 청구 뺄지 (expense일 때만) */}
                             {type === 'expense' && (
                                 <div>
-                                    <label className="block text-sm font-bold text-stone-500 mb-1.5 ml-1">혁신 영수증 찍기 (선택)</label>
+                                    <label className="block text-sm font-bold text-stone-500 mb-1.5 ml-1">
+                                        영수증 합계 부분 찍기 (선택)
+                                        {ocrLimit < 999 && (
+                                            <span className={`ml-2 text-xs font-bold px-2 py-0.5 rounded-full ${ocrRemaining === 0 ? 'bg-red-100 text-red-500' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                이번 달 {ocrRemaining}/{ocrLimit}회 남음
+                                            </span>
+                                        )}
+                                    </label>
                                     <input ref={receiptRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleReceiptChange} />
                                     <button
                                         type="button"
                                         onClick={() => receiptRef.current?.click()}
-                                        disabled={receiptUploading}
-                                        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-stone-200 rounded-2xl py-3 text-sm text-stone-400 hover:border-emerald-300 hover:text-emerald-600 transition"
+                                        disabled={receiptUploading || (ocrLimit < 999 && ocrRemaining === 0)}
+                                        className={`w-full flex items-center justify-center gap-2 border-2 border-dashed rounded-2xl py-3 text-sm transition ${ocrLimit < 999 && ocrRemaining === 0 ? 'border-stone-100 text-stone-300 cursor-not-allowed' : 'border-stone-200 text-stone-400 hover:border-emerald-300 hover:text-emerald-600'}`}
                                     >
-                                        {receiptUploading ? <><Loader2 size={16} className="animate-spin" /> 인식 중...</> : receiptUrl ? '✅ 영수증 등록됨 (재쳄용)' : <><Camera size={16} /> 영수증 사진 / 실시간 OCR</>}
+                                        {receiptUploading ? <><Loader2 size={16} className="animate-spin" /> 인식 중...</> : receiptUrl ? '✅ 영수증 등록됨 (다시 찍기)' : ocrLimit < 999 && ocrRemaining === 0 ? '이번 달 OCR 한도 초과' : <><Camera size={16} /> 합계금액 부분 찍기 / OCR</>}
                                     </button>
-                                    {receiptUrl && <p className="text-[10px] text-stone-400 mt-1 text-center">OCR 자동 인식 완료 — 위에서 금액/메모 확인하세요</p>}
+                                    <p className="text-[11px] text-stone-400 mt-1 text-center">
+                                        💡 긴 영수증은 <span className="font-bold text-stone-500">합계금액이 있는 아랫부분만</span> 찍으면 정확도가 높아요
+                                    </p>
+                                    {receiptUrl && <p className="text-[10px] text-emerald-500 mt-0.5 text-center font-bold">✅ OCR 자동 인식 완료 — 위에서 금액/메모 확인하세요</p>}
+                                    {ocrLimit < 999 && ocrRemaining === 0 && (
+                                        <p className="text-[11px] text-red-400 mt-1 text-center">
+                                            6개월/1년 이용권으로 업그레이드 시 최대 30회/무제한 사용 가능합니다.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* OCR 한도 초과 오류 모달 */}
+                            {ocrError && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+                                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+                                        <p className="font-bold text-stone-800 text-center whitespace-pre-line">{ocrError}</p>
+                                        <button onClick={() => setOcrError(null)} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl">확인</button>
+                                    </div>
                                 </div>
                             )}
 

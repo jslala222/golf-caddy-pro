@@ -190,11 +190,12 @@ export const verifyLicenseAsync = async (inputKey: string): Promise<{
     expiresAt?: string;
     daysLeft?: number;
     tier?: TierType;
+    plan?: PlanType;
 }> => {
     const trimmed = inputKey.trim().toUpperCase();
 
     // 마스터 키 (Supabase 조회 없이 통과)
-    if (trimmed === '0827') return { valid: true, tier: 'premium' };
+    if (trimmed === '0827') return { valid: true, tier: 'premium', plan: 'year' };
 
     const { data, error } = await supabase
         .from('aone_pro_caddypro_licenses')
@@ -205,6 +206,7 @@ export const verifyLicenseAsync = async (inputKey: string): Promise<{
     if (error || !data) return { valid: false, reason: 'not_found' };
 
     const tier: TierType = (data.tier === 'premium') ? 'premium' : 'standard';
+    const plan: PlanType = (data.plan as PlanType) || 'month';
 
     // 이미 만료일이 있는 경우 → 만료 여부만 체크
     if (data.expires_at) {
@@ -212,7 +214,7 @@ export const verifyLicenseAsync = async (inputKey: string): Promise<{
         const expires = new Date(data.expires_at);
         if (now > expires) return { valid: false, reason: 'expired', expiresAt: data.expires_at };
         const daysLeft = Math.ceil((expires.getTime() - now.getTime()) / 86_400_000);
-        return { valid: true, expiresAt: data.expires_at, daysLeft, tier };
+        return { valid: true, expiresAt: data.expires_at, daysLeft, tier, plan };
     }
 
     // 첫 사용 → 만료일 자동 계산 후 DB 업데이트
@@ -227,10 +229,10 @@ export const verifyLicenseAsync = async (inputKey: string): Promise<{
                 expires_at: expiresAt.toISOString(),
             })
             .eq('code', data.code);
-        return { valid: true, expiresAt: expiresAt.toISOString(), daysLeft: data.days, tier };
+        return { valid: true, expiresAt: expiresAt.toISOString(), daysLeft: data.days, tier, plan };
     }
 
-    return { valid: true, tier };
+    return { valid: true, tier, plan };
 };
 
 /**
@@ -421,5 +423,17 @@ export const searchLicenseByNamePhone = async ({
 
     const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return (data || []).map(toResult);
+
+    const results = (data || []).map(toResult);
+
+    // 유효한 코드 우선, 만료된 코드 중에서는 가장 최근 만료 순
+    results.sort((a: MemberSearchResult, b: MemberSearchResult) => {
+        if (!a.isExpired && b.isExpired) return -1;
+        if (a.isExpired && !b.isExpired) return 1;
+        const aDate = a.expiresAt ? new Date(a.expiresAt).getTime() : 0;
+        const bDate = b.expiresAt ? new Date(b.expiresAt).getTime() : 0;
+        return bDate - aDate;
+    });
+
+    return results;
 };

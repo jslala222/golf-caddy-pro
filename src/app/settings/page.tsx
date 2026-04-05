@@ -326,6 +326,29 @@ export default function SettingsPage() {
 
                 <div className="grid grid-cols-1 gap-3">
 
+                    {/* R2 클라우드 직접 저장 버튼 */}
+                    <button
+                        onClick={handleCloudUpload}
+                        disabled={cloudStatus === 'uploading'}
+                        className={`flex items-center justify-center w-full py-4 rounded-xl font-bold transition shadow-sm ${
+                            cloudStatus === 'uploading' ? 'bg-sky-300 text-white cursor-wait' :
+                            cloudStatus === 'done'      ? 'bg-sky-600 text-white' :
+                            cloudStatus === 'error'     ? 'bg-red-500 text-white' :
+                            'bg-sky-500 text-white hover:bg-sky-400'
+                        }`}
+                    >
+                        <Cloud className="mr-2" size={20} />
+                        {cloudStatus === 'uploading' ? '저장 중…' :
+                         cloudStatus === 'done'      ? '✅ 저장 완료!' :
+                         cloudStatus === 'error'     ? '❌ 실패 — 다시 시도' :
+                         'R2 클라우드에 지금 저장'}
+                    </button>
+                    {cloudMsg && (
+                        <p className={`text-xs text-center font-bold px-2 ${cloudStatus === 'error' ? 'text-red-500' : 'text-sky-600'}`}>
+                            {cloudMsg}
+                        </p>
+                    )}
+
                     <button
                         onClick={handleExport}
                         className="flex items-center justify-center w-full py-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-500 transition shadow-sm"

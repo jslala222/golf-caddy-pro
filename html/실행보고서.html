@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
@@ -187,7 +187,7 @@
     <h1>Caddy Manager Pro</h1>
     <p>실행보고서 — 개발 진행 현황 정리</p>
     <div class="meta-grid">
-      <div class="meta-item"><div class="label">작성일</div><div class="value">2026년 4월 4일</div></div>
+      <div class="meta-item"><div class="label">작성일</div><div class="value">2026년 4월 5일</div></div>
       <div class="meta-item"><div class="label">프레임워크</div><div class="value">Next.js 14 + TypeScript</div></div>
       <div class="meta-item"><div class="label">로컬 서버</div><div class="value">http://localhost:4455</div></div>
       <div class="meta-item"><div class="label">데이터베이스</div><div class="value">Supabase</div></div>
@@ -651,6 +651,209 @@ ALTER TABLE aone_pro_caddypro_licenses
       <tr><td><code>caddy_tier</code></td><td>이용권 등급 <span class="tag tag-green">신규</span></td></tr>
       <tr><td><code>app-store-schedules</code></td><td>스케줄 데이터</td></tr>
     </table>
+  </div>
+
+  <!-- 14회차 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num" style="background:var(--cyan);">14</div>
+      테스터 롤백 + 배포 분리 + 계정별 스토리지 완전 분리 + 홈 UX
+      <span class="badge-done">완료</span>
+    </div>
+    <p style="font-size:.78rem; color:var(--muted); margin-bottom:.75rem;">날짜: 2026-04-04 · 커밋: <code>4efc65d → 8039975</code></p>
+    <ul class="checklist">
+      <li><span class="check-icon">✅</span> golf-caddy-pro 롤백: 테스터 50명+ 접속 불가 → aeae778 강제 롤백</li>
+      <li><span class="check-icon">✅</span> 배포 분리 고정: caddy-pink.vercel.app만 신버전 / golf-caddy-pro.git 동결</li>
+      <li><span class="check-icon">✅</span> 이용권 발급 즉시 expires_at 설정 + created_at 컬럼 추가 + DB NULL 일괄 UPDATE</li>
+      <li><span class="check-icon">✅</span> 계정별 localStorage 완전 분리: <code>caddy-manager-storage_{code}</code> 백업 구조</li>
+      <li><span class="check-icon">✅</span> 로그아웃/로그인 시 스토리지 완전 초기화 → 계정 간 데이터 잔존 버그 해결</li>
+      <li><span class="check-icon">✅</span> 홈 UX: 이름 환영 메시지(계정별 캐시) + 마스터키 0827 관리자 표시 + 로그아웃 버튼</li>
+      <li><span class="check-icon">✅</span> 시작하기: 기존 이용코드 캐시 있으면 /home 바로 이동</li>
+      <li><span class="check-icon">✅</span> 랜딩 전화번호 정규화: 하이픈 포함/미포함 양방향 OR 검색</li>
+      <li><span class="check-icon">✅</span> LicenseGuard.tsx 빌드 오류 수정: 중복 닫힘 괄호 제거</li>
+    </ul>
+    <p style="font-size:.82rem; font-weight:700; color:var(--amber); margin:.75rem 0 .5rem;">📋 다음 작업</p>
+    <ul class="checklist">
+      <li><span style="color:var(--amber)">⬜</span> Supabase 정규화 테이블 설계 (schedules, clients, transactions, expenses)</li>
+      <li><span style="color:var(--amber)">⬜</span> 테스터 백업 JSON → Supabase 마이그레이션 스크립트</li>
+      <li><span style="color:var(--amber)">⬜</span> 지출내역 탭 + 영수증 사진 업로드 (브라우저 압축 → R2)</li>
+      <li><span style="color:var(--amber)">⬜</span> OCR 자동 금액 추출 (Gemini Vision API)</li>
+    </ul>
+  </div>
+
+  <!-- 15회차 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num" style="background:var(--blue);">15</div>
+      안 B Phase 1~5: Supabase 동기화 + 수입 입력 + 영수증 OCR + 세금 개선
+      <span class="badge-done">✓ 완료</span>
+    </div>
+    <p style="font-size:.78rem; color:var(--muted); margin-bottom:.75rem;">날짜: 2026-04-04~05 · 커밋: <code>011ff82 → c54656f</code></p>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin-bottom:.5rem;">Phase 1 — Supabase 동기화</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> <code>src/lib/supabaseDB.ts</code> <span class="tag tag-green">신규</span> — silent 패턴 동기화 (실패해도 앱 정상 동작)</li>
+      <li><span class="check-icon">✓</span> <code>src/lib/store.ts</code> — <code>addTransaction / addSchedule</code> 등 Supabase 동기화 추가</li>
+      <li><span class="check-icon">✓</span> <code>supabase_tables.sql</code> — 5개 정규화 테이블 DDL (사용자가 SQL Editor에서 직접 실행 완료)</li>
+      <li><span class="check-icon">✓</span> <code>ExpenseCategory</code>에 <code>'caddy_fee' | 'tip' | 'over_fee'</code> 추가</li>
+    </ul>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin:.75rem 0 .5rem;">Phase 2 — 홈 퀵 수입 입력 모달</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> 캐디피 / 팁·오버피 / 기타수입 / 메모 — 중앙 팝업 모달</li>
+      <li><span class="check-icon">✓</span> 기본값 콤마 포맷 + 연간 수입 카드 + 총 라운드 카운트</li>
+    </ul>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin:.75rem 0 .5rem;">Phase 3 — Supabase 마이그레이션 UI</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> <code>settings/page.tsx</code> — "지금 바로 동기화하기" 버튼 + 상태 표시 (migrating / done / error)</li>
+    </ul>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin:.75rem 0 .5rem;">Phase 4 — 영수증 카메라 + OCR</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> <code>money/page.tsx</code> — 카메라 버튼, Canvas 1200px JPEG 0.75 압축</li>
+      <li><span class="check-icon">✓</span> <code>r2Client.ts</code> — <code>uploadReceipt()</code> 추가 (<code>receipts/{code}/{timestamp}.jpg</code>)</li>
+      <li><span class="check-icon">✓</span> <code>api/receipt/upload/route.ts</code> <span class="tag tag-green">신규</span> — Gemini Vision OCR + R2 저장</li>
+    </ul>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin:.75rem 0 .5rem;">Phase 5 — 세금 화면 개선</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> <code>tax/page.tsx</code> — transactions 기반 수입/경비 자동합산 + "N원으로 로드" 버튼</li>
+    </ul>
+
+    <p style="font-size:.78rem; color:var(--muted); margin:.75rem 0 .4rem;">UI 수정 3건</p>
+    <table>
+      <tr><th>내용</th><th>커밋</th></tr>
+      <tr><td>수입 입력 모달: 바텀시트 → 중앙 팝업</td><td><code>3586d8c</code></td></tr>
+      <tr><td>콤마 포맷 + 바텀 네비 겹침 수정</td><td><code>49d8e09</code></td></tr>
+      <tr><td>팁 라벨: "오버피" → "팁·오버피" / "기타수입"</td><td><code>c54656f</code></td></tr>
+    </table>
+  </div>
+
+  <!-- 16회차 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num" style="background: linear-gradient(135deg,#10b981,#06b6d4);">16</div>
+      OCR 이용권 차별화 + 재구매 UX 보완 + 영수증 품질 개선
+      <span class="badge-done">✓ 완료</span>
+    </div>
+    <p style="font-size:.78rem; color:var(--muted); margin-bottom:.75rem;">날짜: 2026-04-05</p>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin-bottom:.5rem;">R2 요금 확인 (셀링포인트)</p>
+    <table>
+      <tr><th>항목</th><th>무료</th><th>유료 단가</th></tr>
+      <tr><td>저장</td><td>10GB/월</td><td>$0.015/GB-월</td></tr>
+      <tr><td>업로드 (Class A)</td><td>100만 건/월</td><td>$4.50/100만 건</td></tr>
+      <tr><td>다운로드 (Class B)</td><td>1,000만 건/월</td><td>$0.36/100만 건</td></tr>
+      <tr><td><strong>송신료 (Egress)</strong></td><td colspan="2"><span class="tag tag-green">완전 무료 (한도 없음)</span></td></tr>
+    </table>
+    <p style="font-size:.75rem; color:#6ee7b7; margin:.5rem 0;">→ 1만 명 기준 월 $2 미만 · AWS S3 대비 최대 90% 절감</p>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin:.75rem 0 .5rem;">OCR plan별 차별화</p>
+    <table>
+      <tr><th>이용권</th><th>OCR 횟수/월</th><th>영수증 보관</th></tr>
+      <tr><td><span class="tag tag-blue">1개월권</span></td><td><strong>5회</strong></td><td>30일</td></tr>
+      <tr><td><span class="tag tag-green">6개월권</span></td><td><strong>30회</strong></td><td>6개월</td></tr>
+      <tr><td><span class="tag tag-violet">1년권</span></td><td><strong>무제한</strong></td><td>1년</td></tr>
+    </table>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin:.75rem 0 .5rem;">구현 내용</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> <code>licenseUtils.ts</code> — <code>verifyLicenseAsync</code> 반환값에 <code>plan</code> 추가</li>
+      <li><span class="check-icon">✓</span> <code>licenseUtils.ts</code> — <code>searchLicenseByNamePhone</code> 유효 코드 우선 정렬 (만료 중 최근 만료 순)</li>
+      <li><span class="check-icon">✓</span> <code>LicenseGuard.tsx</code> — <code>caddy_plan</code> localStorage 저장 (배경 갱신 + pending_code 처리)</li>
+      <li><span class="check-icon">✓</span> <code>money/page.tsx</code> — OCR 월별 한도 체크 + 잔여 횟수 배지 UI + 한도 초과 오류 모달</li>
+      <li><span class="check-icon">✓</span> <code>money/page.tsx</code> — <code>incrementOcrCount()</code>: <strong>확정 업로드 성공 시점</strong>에만 카운트</li>
+      <li><span class="check-icon">✓</span> <code>money/page.tsx</code> — Canvas 최소폭 400px 보장 (세로 긴 영수증 가독성)</li>
+      <li><span class="check-icon">✓</span> 버튼 라벨: "영수증 합계 부분 찍기 / OCR"</li>
+      <li><span class="check-icon">✓</span> 힌트 문구: 💡 긴 영수증은 합계금액 아랫부분만 찍으면 정확도가 높아요</li>
+    </ul>
+
+    <p style="font-size:.78rem; color:var(--muted); margin:.75rem 0 .4rem;">localStorage 키 현황 (최신)</p>
+    <table>
+      <tr><th>키</th><th>용도</th></tr>
+      <tr><td><code>caddy_license_key</code></td><td>이용권 코드</td></tr>
+      <tr><td><code>caddy_expires_at</code></td><td>만료일</td></tr>
+      <tr><td><code>caddy_tier</code></td><td>standard / premium</td></tr>
+      <tr><td><code>caddy_plan</code></td><td>month / 6month / year <span class="tag tag-green">신규</span></td></tr>
+      <tr><td><code>caddy_ocr_YYYY-MM</code></td><td>월별 OCR 사용 횟수 <span class="tag tag-green">신규</span></td></tr>
+      <tr><td><code>caddy-manager-storage</code></td><td>현재 계정 활성 데이터</td></tr>
+    </table>
+
+    <p style="font-size:.82rem; font-weight:700; color:var(--amber); margin:.75rem 0 .5rem;">📋 다음 작업</p>
+    <ul class="checklist">
+      <li><span style="color:var(--amber)">⬜</span> Vercel 환경변수: <code>GEMINI_API_KEY</code> 등록 → OCR 즉시 활성화</li>
+      <li><span style="color:var(--amber)">⬜</span> 이용권 만료 전 자동 알림</li>
+      <li><span style="color:var(--amber)">⬜</span> 테스터 50명 Supabase 마이그레이션 (설정 → "지금 바로 동기화하기")</li>
+      <li><span style="color:var(--amber)">⬜</span> 이용권 만료 후 90일 R2 데이터 보존 → 재구매 시 자동 연결</li>
+      <li><span style="color:var(--amber)">⬜</span> 딜러 정산 요청 알림 (카카오 알림톡 or 이메일)</li>
+    </ul>
+  </div>
+
+  <!-- 17회차 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num" style="background: linear-gradient(135deg,#ec4899,#f97316);">17</div>
+      PWA 아이콘 교체 + 카톡 브라우저 감지 + 설치 배너
+      <span class="badge-done">✓ 완료</span>
+    </div>
+    <p style="font-size:.78rem; color:var(--muted); margin-bottom:.75rem;">날짜: 2026-04-05</p>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin-bottom:.5rem;">아이콘 교체</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> 원본: <code>pic/20260405_110739.png</code> (골프카트 + 초록 원형, 322×303)</li>
+      <li><span class="check-icon">✓</span> PowerShell .NET <code>System.Drawing</code> 으로 비흰색 픽셀 범위 탐색 → 정사각형 크롭</li>
+      <li><span class="check-icon">✓</span> High-Quality Bicubic 보간으로 <strong>512px / 192px</strong> 리사이즈 저장</li>
+      <li><span class="check-icon">✓</span> <code>public/icon-192.png</code>, <code>public/icon-512.png</code> 교체 완료</li>
+    </ul>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin:.75rem 0 .5rem;">manifest.json 업데이트</p>
+    <table>
+      <tr><th>항목</th><th>변경 전</th><th>변경 후</th></tr>
+      <tr><td>name</td><td>Caddy Manager Pro</td><td><strong>캐디매니저 Pro+</strong></td></tr>
+      <tr><td>short_name</td><td>CaddyPro</td><td><strong>캐디Pro+</strong></td></tr>
+      <tr><td>theme_color</td><td>#059669</td><td><strong>#EC4899</strong></td></tr>
+      <tr><td>아이콘</td><td>icon-512.png × 2</td><td>192 + 512 (maskable)</td></tr>
+    </table>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin:.75rem 0 .5rem;">카톡 인앱브라우저 감지 + PWA 설치 배너</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> KakaoTalk / LINE UA 감지 → <span class="tag tag-green">초록 배너</span> (외부 브라우저 유도)</li>
+      <li><span class="check-icon">✓</span> Android: <code>[⋮] → 다른 브라우저로 열기</code> / iOS: <code>[···] → Safari로 열기</code> 분기</li>
+      <li><span class="check-icon">✓</span> <code>beforeinstallprompt</code> 이벤트 캡처 → Android Chrome <span class="tag tag-violet">핑크 배너</span> + [설치하기] 버튼</li>
+      <li><span class="check-icon">✓</span> iOS Safari 판별 → 공유(🔗) → 홈화면 추가 안내</li>
+      <li><span class="check-icon">✓</span> <code>display-mode: standalone</code> 또는 <code>navigator.standalone</code> → 배너 미표시</li>
+      <li><span class="check-icon">✓</span> 닫기 시 <code>pwa_install_dismissed</code> localStorage 저장 (하루 1회 억제)</li>
+    </ul>
+
+    <p style="font-size:.78rem; color:var(--muted); margin:.75rem 0 .4rem;">배너 정책</p>
+    <table>
+      <tr><th>상황</th><th>배너</th><th>내용</th></tr>
+      <tr><td>카톡 / LINE 인앱</td><td><span class="tag tag-green">초록</span></td><td>외부 브라우저로 열기 안내</td></tr>
+      <tr><td>Android Chrome (미설치)</td><td><span class="tag tag-violet">핑크</span></td><td>[설치하기] 버튼</td></tr>
+      <tr><td>iOS Safari (미설치)</td><td><span class="tag tag-violet">핑크</span></td><td>공유→홈화면 추가 안내</td></tr>
+      <tr><td>이미 설치 / dismissed</td><td>—</td><td>배너 없음</td></tr>
+    </table>
+
+    <p style="font-size:.82rem; font-weight:700; color:#fff; margin:.75rem 0 .5rem;">수정 파일</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> <code>public/icon-192.png</code> (신규 교체)</li>
+      <li><span class="check-icon">✓</span> <code>public/icon-512.png</code> (신규 교체)</li>
+      <li><span class="check-icon">✓</span> <code>public/manifest.json</code></li>
+      <li><span class="check-icon">✓</span> <code>src/components/layout/ClientLayout.tsx</code></li>
+      <li><span class="check-icon">✓</span> <code>PWA_카톡브라우저_패턴.md</code> — 다른 프로젝트 재사용 패턴 문서</li>
+    </ul>
+
+    <div style="background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:.75rem; margin:.75rem 0; font-size:.75rem; color:#6ee7b7;">
+      ✅ TypeScript 오류 0개 확인 (npx tsc --noEmit)
+    </div>
+
+    <p style="font-size:.82rem; font-weight:700; color:var(--amber); margin:.75rem 0 .5rem;">📋 다음 작업</p>
+    <ul class="checklist">
+      <li><span style="color:var(--amber)">⬜</span> Vercel 환경변수: <code>GEMINI_API_KEY</code> 등록 → OCR 즉시 활성화</li>
+      <li><span style="color:var(--amber)">⬜</span> 이용권 만료 전 자동 알림</li>
+      <li><span style="color:var(--amber)">⬜</span> 도메인 구매: caddypro.kr</li>
+    </ul>
   </div>
 
   <div style="text-align:center; color:var(--muted); font-size:.7rem; padding:2rem 0;">

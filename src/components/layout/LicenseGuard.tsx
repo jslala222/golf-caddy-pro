@@ -80,7 +80,7 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                         try {
                             const { data } = await supabase
                                 .from('aone_pro_caddypro_licenses')
-                                .select('expires_at, tier')
+                                .select('expires_at, tier, plan')
                                 .ilike('code', storedKey.trim())
                                 .maybeSingle();
                             if (data?.expires_at) {
@@ -88,6 +88,9 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                             }
                             if (data?.tier) {
                                 localStorage.setItem('caddy_tier', data.tier);
+                            }
+                            if (data?.plan) {
+                                localStorage.setItem('caddy_plan', data.plan);
                             }
                         } catch { /* 오프라인 무시 */ }
                     })();
@@ -146,6 +149,7 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                     localStorage.setItem('caddy_license_key', pendingCode.trim().toUpperCase());
                     if (result.expiresAt) localStorage.setItem('caddy_expires_at', result.expiresAt);
                     if (result.tier) localStorage.setItem('caddy_tier', result.tier);
+                    if (result.plan) localStorage.setItem('caddy_plan', result.plan);
                     setIsActivated(true);
                 } else {
                     router.replace('/landing');

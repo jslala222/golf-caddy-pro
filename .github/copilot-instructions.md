@@ -13,6 +13,11 @@
 ### Git 규칙
 - 사용자가 명시적으로 커밋/푸시를 요청하기 전에는 커밋하지 않는다.
 
+### 배포 규칙
+- **배포는 항상 `https://caddy-pink.vercel.app/` 에만 한다** (특별히 지정하지 않는 한)
+- 배포 레포: `new_origin` = `caddy_pro_enterprise.git` → `git push new_origin master`
+- `golf-caddy-pro.git` (origin)은 기존 테스터용 구버전 — 절대 건드리지 않는다
+
 ## 프로젝트 기본 정보
 
 - **프레임워크**: Next.js 14 + TypeScript + Tailwind
