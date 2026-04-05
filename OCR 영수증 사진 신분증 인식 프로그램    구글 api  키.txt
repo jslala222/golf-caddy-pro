@@ -1,0 +1,17 @@
+OCR 영수증 사진 신분증 인식 프로그램    구글 api  키
+
+
+API 키 세부정보
+
+API 키
+
+AIzaSyA7eVBuEB74Vi7Xm7m9QXKk5hyUv_-r9J0
+
+이름
+Gemini API Key
+
+프로젝트 이름
+projects/196957163332
+
+프로젝트 번호
+196957163332

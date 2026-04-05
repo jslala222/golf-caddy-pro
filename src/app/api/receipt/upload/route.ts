@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
             body: JSON.stringify({
               contents: [{
                 parts: [
-                  { text: `이 영수증 이미지를 분석해주세요. JSON 형식만 출력하세요.
-- amount: 최종 결제 금액 (숫자, 없으면 null)
+                  { text: `이 영수증 이미지를 분석해주세요. JSON 형식만 출력하세요. 다른 텍스트는 절대 포함하지 마세요.
+- amount: 최종 결제 금액 (쉼표 없는 순수 숫자, 없으면 null). 예: 5450
 - merchant: 상호명 (문자열, 없으면 null)
 - category: 아래 중 하나 선택
   * "transport" — 버스/지하철/택시/주유 등 교통비
@@ -76,7 +76,14 @@ export async function POST(request: NextRequest) {
           const match = text.match(/\{[\s\S]*?\}/);
           if (match) {
             const parsed = JSON.parse(match[0]);
-            ocrAmount = typeof parsed.amount === 'number' ? parsed.amount : null;
+            if (typeof parsed.amount === 'number') {
+              ocrAmount = parsed.amount;
+            } else if (typeof parsed.amount === 'string') {
+              const n = parseInt(parsed.amount.replace(/[^0-9]/g, ''), 10);
+              ocrAmount = isNaN(n) ? null : n;
+            } else {
+              ocrAmount = null;
+            }
             ocrMemo = typeof parsed.merchant === 'string' ? parsed.merchant : null;
             const validCategories = ['transport', 'meal', 'gear', 'etc_expense', 'personal'];
             ocrCategory = validCategories.includes(parsed.category) ? parsed.category : null;
