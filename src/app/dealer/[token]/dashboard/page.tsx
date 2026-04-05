@@ -123,7 +123,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [renewPhone, setRenewPhone] = useState('');
     const [renewSearching, setRenewSearching] = useState(false);
     const [renewResult, setRenewResult] = useState<{
-        found: boolean; id?: string; code?: string; plan?: string;
+        found: boolean; id?: string; code?: string; plan?: string; tier?: string;
         expiresAt?: string | null; userName?: string | null;
         daysLeft?: number; isExpired?: boolean;
     } | null>(null);
@@ -131,7 +131,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [extendedResult, setExtendedResult] = useState<{ code: string; newExpiresAt: string } | null>(null);
     const [renewName, setRenewName] = useState('');
     const [renewResults, setRenewResults] = useState<Array<{
-        id: string; code: string; plan: string;
+        id: string; code: string; plan: string; tier: string;
         expiresAt: string | null; userName: string | null;
         userPhone: string | null; isExpired: boolean; daysLeft?: number;
     }>>([]);
@@ -486,20 +486,20 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
             // 끝자리 ilike 검색
             let query = supabase
                 .from('aone_pro_caddypro_licenses')
-                .select('id, code, plan, expires_at, user_name, user_phone')
+                .select('id, code, plan, tier, expires_at, user_name, user_phone')
                 .ilike('user_phone', `%${digits}`);
             if (hasName) query = query.ilike('user_name', `%${renewName.trim()}%`);
             const { data } = await query.order('expires_at', { ascending: false }).limit(20);
             const now = new Date();
-            const results = (data || []).map((d: { id: string; code: string; plan: string; expires_at: string | null; user_name: string | null; user_phone: string | null }) => ({
-                id: d.id, code: d.code, plan: d.plan,
+            const results = (data || []).map((d: { id: string; code: string; plan: string; tier: string; expires_at: string | null; user_name: string | null; user_phone: string | null }) => ({
+                id: d.id, code: d.code, plan: d.plan, tier: d.tier ?? 'standard',
                 expiresAt: d.expires_at, userName: d.user_name, userPhone: d.user_phone,
                 isExpired: d.expires_at ? now > new Date(d.expires_at) : false,
                 daysLeft: d.expires_at ? Math.ceil((new Date(d.expires_at).getTime() - now.getTime()) / 86_400_000) : undefined,
             }));
             if (results.length === 1) {
                 const r = results[0];
-                setRenewResult({ found: true, id: r.id, code: r.code, plan: r.plan, expiresAt: r.expiresAt, userName: r.userName, daysLeft: r.daysLeft, isExpired: r.isExpired });
+                setRenewResult({ found: true, id: r.id, code: r.code, plan: r.plan, tier: r.tier, expiresAt: r.expiresAt, userName: r.userName, daysLeft: r.daysLeft, isExpired: r.isExpired });
             } else if (results.length > 1) {
                 setRenewResults(results);
             } else {
@@ -508,20 +508,20 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         } else {
             const { data } = await supabase
                 .from('aone_pro_caddypro_licenses')
-                .select('id, code, plan, expires_at, user_name, user_phone')
+                .select('id, code, plan, tier, expires_at, user_name, user_phone')
                 .ilike('user_name', `%${renewName.trim()}%`)
                 .order('expires_at', { ascending: false })
                 .limit(20);
             const now = new Date();
-            const results = (data || []).map((d: { id: string; code: string; plan: string; expires_at: string | null; user_name: string | null; user_phone: string | null }) => ({
-                id: d.id, code: d.code, plan: d.plan,
+            const results = (data || []).map((d: { id: string; code: string; plan: string; tier: string; expires_at: string | null; user_name: string | null; user_phone: string | null }) => ({
+                id: d.id, code: d.code, plan: d.plan, tier: d.tier ?? 'standard',
                 expiresAt: d.expires_at, userName: d.user_name, userPhone: d.user_phone,
                 isExpired: d.expires_at ? now > new Date(d.expires_at) : false,
                 daysLeft: d.expires_at ? Math.ceil((new Date(d.expires_at).getTime() - now.getTime()) / 86_400_000) : undefined,
             }));
             if (results.length === 1) {
                 const r = results[0];
-                setRenewResult({ found: true, id: r.id, code: r.code, plan: r.plan, expiresAt: r.expiresAt, userName: r.userName, daysLeft: r.daysLeft, isExpired: r.isExpired });
+                setRenewResult({ found: true, id: r.id, code: r.code, plan: r.plan, tier: r.tier, expiresAt: r.expiresAt, userName: r.userName, daysLeft: r.daysLeft, isExpired: r.isExpired });
             } else if (results.length > 1) {
                 setRenewResults(results);
             } else {
@@ -534,7 +534,25 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     // ── 기간 연장 ──
     const handleExtend = async () => {
         if (!renewResult?.id || !dealer) return;
+        // 크레딧 확인
+        const tier = (renewResult.tier ?? 'standard') as 'standard' | 'premium';
+        const creditCol = CREDIT_COL[tier][plan];
+        const currentCredit = dealer[creditCol as keyof typeof dealer] as number ?? 0;
+        if (currentCredit < 1) {
+            alert(`크레딧이 부족합니다.\n현재 ${tier === 'premium' ? '프리미엄' : '스탠다드'} ${plan === 'month' ? '1개월' : plan === '6month' ? '6개월' : '1년'} 크레딧: 0장\n\n크레딧 구매 탭에서 충전해 주세요.`);
+            return;
+        }
         setIsExtending(true);
+        // 크레딧 1장 차감
+        const { error: creditError } = await supabase
+            .from('aone_pro_caddypro_dealers')
+            .update({ [creditCol]: currentCredit - 1 })
+            .eq('id', dealer.id);
+        if (creditError) {
+            setIsExtending(false);
+            alert('크레딧 차감 중 오류가 발생했습니다. 다시 시도해 주세요.');
+            return;
+        }
         const result = await extendLicense({ licenseId: renewResult.id, plan, days, dealerToken: token });
         setIsExtending(false);
         if (result.success && result.newExpiresAt) {
@@ -542,10 +560,12 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 .from('aone_pro_caddypro_dealers')
                 .update({ total_issued: dealer.total_issued + 1 })
                 .eq('id', dealer.id);
-            setDealer(prev => prev ? { ...prev, total_issued: prev.total_issued + 1 } : prev);
+            setDealer(prev => prev ? { ...prev, total_issued: prev.total_issued + 1, [creditCol]: currentCredit - 1 } : prev);
             setExtendedResult({ code: renewResult.code!, newExpiresAt: result.newExpiresAt });
             setRenewPhone(''); setRenewName(''); setRenewResult(null); setRenewResults([]);
         } else {
+            // 연장 실패 시 크레딧 복구
+            await supabase.from('aone_pro_caddypro_dealers').update({ [creditCol]: currentCredit }).eq('id', dealer.id);
             alert(`연장 실패: ${result.error}`);
         }
     };
@@ -1126,7 +1146,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                             {renewResults.map(r => (
                                                 <button
                                                     key={r.id}
-                                                    onClick={() => { setRenewResult({ found: true, id: r.id, code: r.code, plan: r.plan, expiresAt: r.expiresAt, userName: r.userName, daysLeft: r.daysLeft, isExpired: r.isExpired }); setRenewResults([]); }}
+                                                    onClick={() => { setRenewResult({ found: true, id: r.id, code: r.code, plan: r.plan, tier: r.tier, expiresAt: r.expiresAt, userName: r.userName, daysLeft: r.daysLeft, isExpired: r.isExpired }); setRenewResults([]); }}
                                                     className={`w-full text-left rounded-2xl p-3.5 border transition hover:border-violet-500 ${r.isExpired ? 'bg-red-900/15 border-red-800' : 'bg-stone-800 border-stone-700'}`}
                                                 >
                                                     <div className="flex items-center justify-between">
