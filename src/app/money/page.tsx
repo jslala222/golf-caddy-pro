@@ -186,6 +186,7 @@ export default function MoneyPage() {
     const [receiptUploading, setReceiptUploading] = useState(false);
     const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
     const [ocrError, setOcrError] = useState<string | null>(null);
+    const [ocrResult, setOcrResult] = useState<{ amount: number | null; memo: string | null } | null>(null);
 
     // OCR 월별 제한 (plan별: 1개월=5회, 6개월=30회, 1년=무제한)
     const getOcrLimit = (): number => {
@@ -267,7 +268,8 @@ export default function MoneyPage() {
             if (data.success) {
                 setReceiptUrl(data.url);
                 await incrementOcrCount();
-                if (data.ocrAmount && !amount) setAmount(String(data.ocrAmount));
+                setOcrResult({ amount: data.ocrAmount ?? null, memo: data.ocrMemo ?? null });
+                if (data.ocrAmount) setAmount(String(data.ocrAmount));
                 if (data.ocrMemo && !memo) setMemo(data.ocrMemo);
             }
         } catch (err) {
@@ -294,6 +296,7 @@ export default function MoneyPage() {
         setAmount('');
         setMemo('');
         setReceiptUrl(null);
+        setOcrResult(null);
     };
 
     // Modal defaulting logic adjusted for period
@@ -572,7 +575,13 @@ export default function MoneyPage() {
                                     <p className="text-[11px] text-stone-400 mt-1 text-center">
                                         💡 긴 영수증은 <span className="font-bold text-stone-500">합계금액이 있는 아랫부분만</span> 찍으면 정확도가 높아요
                                     </p>
-                                    {receiptUrl && <p className="text-[10px] text-emerald-500 mt-0.5 text-center font-bold">✅ OCR 자동 인식 완료 — 위에서 금액/메모 확인하세요</p>}
+                                    {receiptUrl && ocrResult && (
+                                        <p className={`text-[10px] mt-0.5 text-center font-bold ${ocrResult.amount ? 'text-emerald-600' : 'text-amber-500'}`}>
+                                            {ocrResult.amount
+                                                ? `✅ OCR 인식 완료 — ${ocrResult.amount.toLocaleString()}원 자동 입력됨`
+                                                : '⚠️ 금액 인식 실패 — 직접 입력해 주세요 (합계 부분만 다시 찍어보세요)'}
+                                        </p>
+                                    )}
                                     {ocrLimit < 999 && ocrRemaining === 0 && (
                                         <p className="text-[11px] text-red-400 mt-1 text-center">
                                             6개월/1년 이용권으로 업그레이드 시 최대 30회/무제한 사용 가능합니다.
