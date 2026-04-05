@@ -485,6 +485,12 @@ function ScheduleContent() {
                                                     {schedule.type === 'work' ? `${schedule.shift || '?'}부 · ${schedule.holes || 18}홀` :
                                                         schedule.type === 'holiday' ? '휴무' : '개인'}
                                                 </span>
+                                                {/* 36홀/54홀 뱃지 */}
+                                                {schedule.type === 'work' && (schedule.holes || 18) >= 36 && (
+                                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0 ${(schedule.holes || 18) >= 54 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
+                                                        {(schedule.holes || 18) >= 54 ? '🔴 54H' : '🟡 36H'}
+                                                    </span>
+                                                )}
                                                 {/* Time */}
                                                 <span className={`text-xl font-black font-mono tracking-tight flex-shrink-0
                                          ${schedule.type === 'work' ? 'text-emerald-700' : 'text-orange-600'}`}>
@@ -807,10 +813,17 @@ function ScheduleContent() {
                                             <p className="mt-2 text-[10px] text-stone-400 ml-1 italic">* 18홀이 아닌 경우(9, 27홀 등)에만 켜주세요.</p>
                                         </div>
                                     ) : (
-                                        <div className="p-4 bg-stone-50 border border-dashed border-stone-200 rounded-2xl text-center">
-                                            <span className="text-stone-400 font-bold text-sm flex items-center justify-center gap-2">
-                                                <span className="text-stone-300">⛳️</span> 기본 18홀 라운딩 설정됨
-                                            </span>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {([18, 36, 54] as const).map(h => (
+                                                <button key={h} type="button"
+                                                    onClick={() => setHoles(h)}
+                                                    className={`py-3 rounded-2xl border-2 text-center font-black transition ${holes === h ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-stone-200 bg-white text-stone-400'}`}>
+                                                    <p className="text-lg">{h}홀</p>
+                                                    <p className="text-[10px] font-normal mt-0.5 text-stone-400">
+                                                        {h === 18 ? '1라운드' : h === 36 ? '2라운드' : '3라운드'}
+                                                    </p>
+                                                </button>
+                                            ))}
                                         </div>
                                     )}
 
