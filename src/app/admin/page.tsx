@@ -861,8 +861,8 @@ export default function AdminPage() {
                                                     </span>
                                                 ))}
                                                 <button onClick={() => { setCreditModalDealer(d); setCreditPlan('month'); setCreditTier('standard'); setCreditQty(1); }}
-                                                    className="flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition">
-                                                    <Plus size={8} /> 충전
+                                                    className="flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full bg-stone-500 text-white hover:bg-stone-600 transition">
+                                                    <Plus size={8} /> 수동충전(비상용)
                                                 </button>
                                             </div>
                                             <div className="flex items-center gap-2 mb-2">
