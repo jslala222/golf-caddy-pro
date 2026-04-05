@@ -42,11 +42,12 @@ export async function POST(request: NextRequest) {
     let ocrCategory: string | null = null;
 
     const geminiKey = process.env.GEMINI_API_KEY;
+    console.log('[OCR] geminiKey 존재:', !!geminiKey, '| 파일크기:', buffer.length);
     if (geminiKey && buffer.length < 4 * 1024 * 1024) {
       try {
         const base64 = buffer.toString('base64');
         const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
         if (res.ok) {
           const data = await res.json();
           const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+          console.log('[OCR] Gemini 응답 원문:', text);
           const match = text.match(/\{[\s\S]*?\}/);
           if (match) {
             const parsed = JSON.parse(match[0]);
@@ -85,9 +87,13 @@ export async function POST(request: NextRequest) {
               ocrAmount = null;
             }
             ocrMemo = typeof parsed.merchant === 'string' ? parsed.merchant : null;
+            console.log('[OCR] 파싱 결과:', { ocrAmount, ocrMemo, ocrCategory });
             const validCategories = ['transport', 'meal', 'gear', 'etc_expense', 'personal'];
             ocrCategory = validCategories.includes(parsed.category) ? parsed.category : null;
           }
+        } else {
+          const errText = await res.text();
+          console.warn('[OCR] Gemini API 오류:', res.status, errText.substring(0, 300));
         }
       } catch (ocrErr) {
         console.warn('[receipt/upload] OCR 실패 (무시):', ocrErr);
