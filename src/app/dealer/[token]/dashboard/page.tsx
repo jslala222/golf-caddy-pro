@@ -146,6 +146,40 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
 
     useEffect(() => { setDays(PLANS[plan].days); }, [plan]);
 
+    // ── 페이지 가시성 변경 시 결제 로딩 해제 (팝업 닫기/리다이렉트 복귀) ──
+    useEffect(() => {
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                setIsBuyingCredit(false);
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => document.removeEventListener('visibilitychange', handleVisibility);
+    }, []);
+
+    // ── 리다이렉트 복귀 후 pending 크레딧 충전 처리 ──
+    useEffect(() => {
+        const raw = sessionStorage.getItem('caddy_credit_purchase');
+        if (!raw) return;
+        let info: { paymentId: string; dealerToken: string; plan: string; tier: string; qty: number };
+        try { info = JSON.parse(raw); } catch { sessionStorage.removeItem('caddy_credit_purchase'); return; }
+        if (info.dealerToken !== token) return;
+
+        sessionStorage.removeItem('caddy_credit_purchase');
+        // 결제 완료 후 돌아온 경우 서버에 충전 요청
+        fetch('/api/dealer/credit/charge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(info),
+        }).then(async (res) => {
+            if (res.ok) {
+                setCreditBuyResult('success');
+                loadDealer();  // 잔량 새로고침
+            }
+        }).catch(() => {/* silent */});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // ── 딜러 로드 ──
     const loadDealer = useCallback(async () => {
         setLoading(true);
@@ -342,6 +376,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 totalAmount,
                 currency: 'KRW',
                 payMethod: creditPayMethod,
+                redirectUrl: `${window.location.origin}/dealer/${token}/dashboard`,
                 customer: {
                     fullName: dealer.name,
                     phoneNumber: dealer.phone,
