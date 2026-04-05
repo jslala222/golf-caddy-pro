@@ -479,9 +479,27 @@ export default function AdminPage() {
     const handleFileRestore = async () => {
         const code = importCode.trim().toUpperCase();
         if (!code || !importFile) return;
-        if (!confirm(`[${code}] 기존 수파베이스 데이터를 모두 삭제하고 파일로 덮어씁니다. 계속할까요?`)) return;
+
+        // 1단계: 이용권 코드 존재 확인
         setImportStatus('running');
-        setImportLog('파일 읽는 중...');
+        setImportLog('이용권 코드 확인 중...');
+        const { data: licenseRow, error: licenseErr } = await supabase
+            .from('aone_pro_caddypro_licenses')
+            .select('id, user_name')
+            .eq('code', code)
+            .maybeSingle();
+        if (licenseErr || !licenseRow) {
+            setImportLog(`❌ 이용권 코드 [${code}] 가 존재하지 않습니다. 코드를 다시 확인해주세요.`);
+            setImportStatus('error');
+            return;
+        }
+
+        if (!confirm(`[${code}] ${licenseRow.user_name ?? ''} — 기존 수파베이스 데이터를 모두 삭제하고 파일로 덮어씁니다. 계속할까요?`)) {
+            setImportStatus('idle');
+            setImportLog('');
+            return;
+        }
+
         try {
             const text = await importFile.text();
             const data = JSON.parse(text);
@@ -495,19 +513,28 @@ export default function AdminPage() {
             await supabase.from('aone_pro_caddypro_clients').delete().eq('license_code', code);
 
             const headers = { 'Content-Type': 'application/json', 'x-license-code': code };
+            let sFail = 0, tFail = 0, cFail = 0;
+
             setImportLog(`스케줄 ${schedules.length}건 저장 중...`);
             for (const s of schedules) {
-                await fetch('/api/db/schedules', { method: 'POST', headers, body: JSON.stringify(s) });
+                const r = await fetch('/api/db/schedules', { method: 'POST', headers, body: JSON.stringify(s) });
+                if (!r.ok && r.status !== 409) sFail++;
             }
             setImportLog(`거래내역 ${transactions.length}건 저장 중...`);
             for (const t of transactions) {
-                await fetch('/api/db/transactions', { method: 'POST', headers, body: JSON.stringify(t) });
+                const r = await fetch('/api/db/transactions', { method: 'POST', headers, body: JSON.stringify(t) });
+                if (!r.ok) tFail++;
             }
             setImportLog(`고객 ${clients.length}건 저장 중...`);
             for (const c of clients) {
-                await fetch('/api/db/clients', { method: 'POST', headers, body: JSON.stringify(c) });
+                const r = await fetch('/api/db/clients', { method: 'POST', headers, body: JSON.stringify(c) });
+                if (!r.ok) cFail++;
             }
-            setImportLog(`✅ 완료! 스케줄 ${schedules.length}건 / 거래 ${transactions.length}건 / 고객 ${clients.length}건`);
+
+            const failMsg = (sFail + tFail + cFail) > 0
+                ? ` (실패: 스케줄 ${sFail}, 거래 ${tFail}, 고객 ${cFail})`
+                : '';
+            setImportLog(`✅ 완료! 스케줄 ${schedules.length - sFail}건 / 거래 ${transactions.length - tFail}건 / 고객 ${clients.length - cFail}건${failMsg}`);
             setImportStatus('done');
         } catch (e: any) {
             setImportLog(`❌ 오류: ${e?.message ?? '알 수 없는 오류'}`);
