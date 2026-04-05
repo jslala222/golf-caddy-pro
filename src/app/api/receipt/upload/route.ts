@@ -7,6 +7,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadReceipt } from '@/lib/r2Client';
 
+// Vercel 함수 최대 실행 시간 60초 (Gemini OCR 타임아웃 방지)
+export const maxDuration = 60;
+
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(request: NextRequest) {

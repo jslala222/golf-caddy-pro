@@ -286,7 +286,7 @@ export default function MoneyPage() {
         e.preventDefault();
         const numAmount = parseInt(amount.replace(/,/g, '') || '0');
         if (!numAmount || numAmount <= 0) {
-            alert('금액을 입력해주세요.');
+            document.getElementById('amount-input')?.focus();
             return;
         }
 
@@ -527,11 +527,12 @@ export default function MoneyPage() {
                                 <label className="block text-sm font-bold text-stone-500 mb-1.5 ml-1">금액</label>
                                 <div className="relative">
                                     <input
+                                        id="amount-input"
                                         type="text"
                                         value={amount ? Number(amount).toLocaleString() : ''}
                                         onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
                                         placeholder="0"
-                                        className="w-full p-4 pl-4 pr-12 bg-stone-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 text-right font-black text-2xl"
+                                        className={`w-full p-4 pl-4 pr-12 bg-stone-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 text-right font-black text-2xl ${!amount ? 'ring-2 ring-red-300' : ''}`}
                                     />
                                     <span className="absolute right-5 top-5 text-stone-400 font-bold">원</span>
                                 </div>
