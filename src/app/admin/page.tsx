@@ -147,6 +147,12 @@ export default function AdminPage() {
         expiresAt: string | null; userName: string | null; isExpired: boolean;
     }[]>([]);
 
+    // 파일 직접 복원
+    const [importCode, setImportCode] = useState('');
+    const [importFile, setImportFile] = useState<File | null>(null);
+    const [importStatus, setImportStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
+    const [importLog, setImportLog] = useState('');
+
     // 요금제 변경 시 일수 자동 세팅
     useEffect(() => {
         setDays(PLANS[plan].days);
@@ -468,6 +474,45 @@ export default function AdminPage() {
         a.download = `caddy-restore-${restoreCode.trim().toUpperCase()}.json`;
         a.click();
         URL.revokeObjectURL(url);
+    };
+
+    const handleFileRestore = async () => {
+        const code = importCode.trim().toUpperCase();
+        if (!code || !importFile) return;
+        if (!confirm(`[${code}] 기존 수파베이스 데이터를 모두 삭제하고 파일로 덮어씁니다. 계속할까요?`)) return;
+        setImportStatus('running');
+        setImportLog('파일 읽는 중...');
+        try {
+            const text = await importFile.text();
+            const data = JSON.parse(text);
+            const schedules = (data.schedules || []).map((s: any) => ({ ...s, holes: s.holes ?? 18 }));
+            const transactions: any[] = data.transactions || [];
+            const clients: any[] = data.clients || [];
+
+            setImportLog('기존 데이터 삭제 중...');
+            await supabase.from('aone_pro_caddypro_schedules').delete().eq('license_code', code);
+            await supabase.from('aone_pro_caddypro_transactions').delete().eq('license_code', code);
+            await supabase.from('aone_pro_caddypro_clients').delete().eq('license_code', code);
+
+            const headers = { 'Content-Type': 'application/json', 'x-license-code': code };
+            setImportLog(`스케줄 ${schedules.length}건 저장 중...`);
+            for (const s of schedules) {
+                await fetch('/api/db/schedules', { method: 'POST', headers, body: JSON.stringify(s) });
+            }
+            setImportLog(`거래내역 ${transactions.length}건 저장 중...`);
+            for (const t of transactions) {
+                await fetch('/api/db/transactions', { method: 'POST', headers, body: JSON.stringify(t) });
+            }
+            setImportLog(`고객 ${clients.length}건 저장 중...`);
+            for (const c of clients) {
+                await fetch('/api/db/clients', { method: 'POST', headers, body: JSON.stringify(c) });
+            }
+            setImportLog(`✅ 완료! 스케줄 ${schedules.length}건 / 거래 ${transactions.length}건 / 고객 ${clients.length}건`);
+            setImportStatus('done');
+        } catch (e: any) {
+            setImportLog(`❌ 오류: ${e?.message ?? '알 수 없는 오류'}`);
+            setImportStatus('error');
+        }
     };
 
     const TABS: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
@@ -1212,6 +1257,44 @@ export default function AdminPage() {
                                 <AlertCircle size={18} /> 조회 중 오류가 발생했습니다. 다시 시도해 주세요.
                             </div>
                         )}
+
+                        {/* ── 파일 직접 복원 ── */}
+                        <div className="border-t border-stone-100 pt-5 space-y-3">
+                            <div className="flex items-center gap-2 text-stone-700 font-bold text-sm">
+                                <FileJson size={16} className="text-violet-600" /> 파일로 직접 복원 (수파베이스 저장)
+                            </div>
+                            <input
+                                type="text"
+                                value={importCode}
+                                onChange={e => { setImportCode(e.target.value); setImportStatus('idle'); setImportLog(''); }}
+                                placeholder="이용권 코드 (예: DC-AWA-S72)"
+                                className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300 font-mono"
+                            />
+                            <label className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-stone-300 rounded-xl py-4 cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition">
+                                <FileJson size={18} className="text-stone-400" />
+                                <span className="text-sm text-stone-500">
+                                    {importFile ? importFile.name : 'JSON 파일 선택'}
+                                </span>
+                                <input type="file" accept=".json" className="hidden"
+                                    onChange={e => { setImportFile(e.target.files?.[0] ?? null); setImportStatus('idle'); setImportLog(''); }} />
+                            </label>
+                            <button
+                                onClick={handleFileRestore}
+                                disabled={!importCode.trim() || !importFile || importStatus === 'running'}
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 disabled:opacity-40 transition text-sm"
+                            >
+                                {importStatus === 'running'
+                                    ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> 복원 중...</>
+                                    : <><HardDriveDownload size={16} /> 수파베이스로 복원</>}
+                            </button>
+                            {importLog && (
+                                <div className={`p-3 rounded-xl text-xs font-mono border ${
+                                    importStatus === 'done' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                    importStatus === 'error' ? 'bg-red-50 border-red-200 text-red-600' :
+                                    'bg-stone-50 border-stone-200 text-stone-600'
+                                }`}>{importLog}</div>
+                            )}
+                        </div>
                     </section>
                 )}
 
