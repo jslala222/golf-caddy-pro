@@ -44,6 +44,7 @@ export interface Transaction {
     amount: number;
     category?: ExpenseCategory;
     memo?: string;
+    receiptUrl?: string;
     createdAt?: string;
 }
 

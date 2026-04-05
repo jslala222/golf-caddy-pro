@@ -295,7 +295,8 @@ export default function MoneyPage() {
             type,
             amount: numAmount,
             category: type === 'expense' ? category : undefined,
-            memo
+            memo,
+            receiptUrl: receiptUrl ?? undefined,
         });
 
         setIsModalOpen(false);
@@ -440,29 +441,42 @@ export default function MoneyPage() {
                     </div>
                 ) : (
                     combinedHistory.map((item, index) => (
-                        <div key={`${item.id}-${index}`} className="bg-white p-4 rounded-xl border border-stone-100 flex justify-between items-center shadow-sm">
-                            <div className="flex items-center">
-                                <div className={`p-2.5 rounded-full mr-3 ${item.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'}`}>
-                                    {item.type === 'income' ? <ArrowUp size={20} /> : <ArrowDown size={20} />}
-                                </div>
-                                <div>
-                                    <div className="text-xs text-stone-400 mb-0.5">{formatDate(item.date)}</div>
-                                    <div className="font-bold text-stone-800 text-sm">
-                                        {item.memo || (item.type === 'income' ? '수입' : '지출')}
-                                        {item.isSchedule && <span className="ml-2 text-[10px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded">자동</span>}
+                        <div key={`${item.id}-${index}`} className="bg-white rounded-xl border border-stone-100 shadow-sm overflow-hidden">
+                            <div className="p-4 flex justify-between items-center">
+                                <div className="flex items-center">
+                                    <div className={`p-2.5 rounded-full mr-3 ${item.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'}`}>
+                                        {item.type === 'income' ? <ArrowUp size={20} /> : <ArrowDown size={20} />}
+                                    </div>
+                                    <div>
+                                        <div className="text-xs text-stone-400 mb-0.5">{formatDate(item.date)}</div>
+                                        <div className="font-bold text-stone-800 text-sm">
+                                            {item.memo || (item.type === 'income' ? '수입' : '지출')}
+                                            {item.isSchedule && <span className="ml-2 text-[10px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded">자동</span>}
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="flex items-center">
+                                    <span className={`font-bold mr-3 text-lg ${item.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
+                                        {item.type === 'income' ? '+' : '-'}{formatCurrency(item.amount).replace('₩', '')}
+                                    </span>
+                                    {!item.isSchedule && (
+                                        <button onClick={() => deleteTransaction(item.id)} className="text-stone-300 hover:text-red-400 p1">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex items-center">
-                                <span className={`font-bold mr-3 text-lg ${item.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
-                                    {item.type === 'income' ? '+' : '-'}{formatCurrency(item.amount).replace('₩', '')}
-                                </span>
-                                {!item.isSchedule && (
-                                    <button onClick={() => deleteTransaction(item.id)} className="text-stone-300 hover:text-red-400 p-1">
-                                        <Trash2 size={16} />
-                                    </button>
-                                )}
-                            </div>
+                            {item.receiptUrl && (
+                                <a href={item.receiptUrl} target="_blank" rel="noopener noreferrer" className="block border-t border-stone-100">
+                                    <img
+                                        src={item.receiptUrl}
+                                        alt="영수증"
+                                        className="w-full max-h-48 object-cover object-top"
+                                        loading="lazy"
+                                    />
+                                    <div className="text-[10px] text-stone-400 text-center py-1 bg-stone-50">🧾 영수증 보기 (탭하면 원본)</div>
+                                </a>
+                            )}
                         </div>
                     ))
                 )}

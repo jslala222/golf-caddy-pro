@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
     amount: r.amount,
     category: r.category ?? undefined,
     memo: r.memo ?? '',
+    receiptUrl: r.receipt_url ?? undefined,
     createdAt: r.created_at,
   }));
 
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
     amount: t.amount,
     category: t.category ?? null,
     memo: t.memo ?? null,
+    receipt_url: t.receiptUrl ?? null,
     created_at: t.createdAt ?? new Date().toISOString(),
   }, { onConflict: 'id' });
 
