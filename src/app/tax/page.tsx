@@ -43,12 +43,23 @@ export default function TaxPage() {
             .reduce((acc, t) => acc + t.amount, 0);
     }, [transactions, selectedYear]);
 
-    // 3. 업무 경비 (지출 기록)
-    const yearlyExpense = useMemo(() => {
+    // 3. 경비 인정 지출 (세금 감면 가능)
+    const DEDUCTIBLE_CATS = ['transport', 'meal', 'gear', 'etc_expense'];
+    const yearlyDeductibleExpense = useMemo(() => {
         return transactions
-            .filter(t => t.type === 'expense' && t.date.startsWith(yearStr))
+            .filter(t => t.type === 'expense' && t.date.startsWith(yearStr) && DEDUCTIBLE_CATS.includes(t.category || ''))
             .reduce((acc, t) => acc + t.amount, 0);
     }, [transactions, selectedYear]);
+
+    // 3-2. 개인지출 (세금 감면 안 됨)
+    const yearlyPersonalExpense = useMemo(() => {
+        return transactions
+            .filter(t => t.type === 'expense' && t.date.startsWith(yearStr) && t.category === 'personal')
+            .reduce((acc, t) => acc + t.amount, 0);
+    }, [transactions, selectedYear]);
+
+    // 하위 호환: 전체 지출 (기존 코드 참조용)
+    const yearlyExpense = yearlyDeductibleExpense;
 
     // 합산 수입 (schedule + tx 중 큰 값)
     const yearlyRevenue = Math.max(yearlyScheduleIncome, yearlyTxIncome);
@@ -139,9 +150,15 @@ export default function TaxPage() {
                             <span className="font-bold text-stone-800">{yearlyTxIncome.toLocaleString()}원</span>
                         </div>
                         <div className="flex justify-between text-xs border-t border-emerald-200 pt-2">
-                            <span className="text-stone-500">업무경비 (지출 기록)</span>
-                            <span className="font-bold text-red-600">-{yearlyExpense.toLocaleString()}원</span>
+                            <span className="text-stone-500">✅ 경비 인정 지출</span>
+                            <span className="font-bold text-red-600">-{yearlyDeductibleExpense.toLocaleString()}원</span>
                         </div>
+                        {yearlyPersonalExpense > 0 && (
+                            <div className="flex justify-between text-xs">
+                                <span className="text-amber-500">⚠️ 개인지출 (경비 불인정)</span>
+                                <span className="font-bold text-amber-500">{yearlyPersonalExpense.toLocaleString()}원</span>
+                            </div>
+                        )}
                         <button
                             onClick={handleLoadRevenue}
                             className="w-full mt-1 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1"

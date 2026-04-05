@@ -178,7 +178,7 @@ export default function MoneyPage() {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [type, setType] = useState<TransactionType>('expense');
     const [amount, setAmount] = useState('');
-    const [category, setCategory] = useState<ExpenseCategory>('food');
+    const [category, setCategory] = useState<ExpenseCategory>('meal');
     const [memo, setMemo] = useState('');
 
     // 영수증 사진 업로드
@@ -271,6 +271,8 @@ export default function MoneyPage() {
                 setOcrResult({ amount: data.ocrAmount ?? null, memo: data.ocrMemo ?? null });
                 if (data.ocrAmount) setAmount(String(data.ocrAmount));
                 if (data.ocrMemo && !memo) setMemo(data.ocrMemo);
+                const validCats = ['transport','meal','gear','etc_expense','personal'];
+                if (data.ocrCategory && validCats.includes(data.ocrCategory)) setCategory(data.ocrCategory as ExpenseCategory);
             }
         } catch (err) {
             console.warn('영수증 업로드 실패', err);
@@ -282,12 +284,16 @@ export default function MoneyPage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!amount) return;
+        const numAmount = parseInt(amount.replace(/,/g, '') || '0');
+        if (!numAmount || numAmount <= 0) {
+            alert('금액을 입력해주세요.');
+            return;
+        }
 
         addTransaction({
             date,
             type,
-            amount: parseInt(amount.replace(/,/g, '')),
+            amount: numAmount,
             category: type === 'expense' ? category : undefined,
             memo
         });
@@ -512,7 +518,6 @@ export default function MoneyPage() {
                                         onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
                                         placeholder="0"
                                         className="w-full p-4 pl-4 pr-12 bg-stone-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 text-right font-black text-2xl"
-                                        required
                                     />
                                     <span className="absolute right-5 top-5 text-stone-400 font-bold">원</span>
                                 </div>
@@ -520,21 +525,40 @@ export default function MoneyPage() {
 
                             {type === 'expense' && (
                                 <div>
-                                    <label className="block text-sm font-bold text-stone-500 mb-1.5 ml-1">카테고리</label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <label className="block text-sm font-bold text-stone-500 mb-1.5 ml-1">
+                                        카테고리
+                                        <span className="ml-2 text-[10px] font-normal text-stone-400">(세무 경비 구분)</span>
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2 mb-2">
                                         {[
-                                            { id: 'food', label: '🍚 식비' },
-                                            { id: 'transport', label: '🚕 교통' },
-                                            { id: 'gear', label: '⛳️ 용품' },
-                                            { id: 'other', label: '🎸 기타' }
+                                            { id: 'transport', label: '🚌 교통비', sub: '✅ 경비 인정' },
+                                            { id: 'meal', label: '🍱 업무식비', sub: '✅ 경비 인정' },
+                                            { id: 'gear', label: '👔 업무용품', sub: '✅ 경비 인정' },
                                         ].map(cat => (
                                             <button
                                                 key={cat.id}
                                                 type="button"
                                                 onClick={() => setCategory(cat.id as ExpenseCategory)}
-                                                className={`py-2.5 rounded-xl text-xs font-bold border transition ${category === cat.id ? 'bg-stone-800 text-white border-stone-800' : 'bg-white text-stone-400 border-stone-200 hover:border-stone-300'}`}
+                                                className={`py-2.5 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-0.5 ${category === cat.id ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-white text-stone-400 border-stone-200 hover:border-emerald-300'}`}
                                             >
-                                                {cat.label}
+                                                <span>{cat.label}</span>
+                                                <span className={`text-[9px] ${category === cat.id ? 'text-emerald-200' : 'text-emerald-400'}`}>{cat.sub}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { id: 'etc_expense', label: '📱 기타경비', sub: '✅ 경비 인정' },
+                                            { id: 'personal', label: '⚠️ 개인지출', sub: '❌ 경비 불인정' },
+                                        ].map(cat => (
+                                            <button
+                                                key={cat.id}
+                                                type="button"
+                                                onClick={() => setCategory(cat.id as ExpenseCategory)}
+                                                className={`py-2.5 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-0.5 ${category === cat.id ? (cat.id === 'personal' ? 'bg-amber-500 text-white border-amber-500' : 'bg-emerald-700 text-white border-emerald-700') : 'bg-white text-stone-400 border-stone-200 hover:border-stone-300'}`}
+                                            >
+                                                <span>{cat.label}</span>
+                                                <span className={`text-[9px] ${category === cat.id ? 'text-white/80' : cat.id === 'personal' ? 'text-amber-400' : 'text-emerald-400'}`}>{cat.sub}</span>
                                             </button>
                                         ))}
                                     </div>

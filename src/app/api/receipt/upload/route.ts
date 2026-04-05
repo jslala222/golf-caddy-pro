@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     // Gemini Vision OCR (선택적 — API Key 있을 때만)
     let ocrAmount: number | null = null;
     let ocrMemo: string | null = null;
+    let ocrCategory: string | null = null;
 
     const geminiKey = process.env.GEMINI_API_KEY;
     if (geminiKey && buffer.length < 4 * 1024 * 1024) {
@@ -52,7 +53,17 @@ export async function POST(request: NextRequest) {
             body: JSON.stringify({
               contents: [{
                 parts: [
-                  { text: '이 영수증 이미지에서 결제 금액(숫자만)과 상호명을 추출해주세요. JSON 형식으로 {"amount": 숫자, "merchant": "상호명"} 만 출력하세요. 금액을 찾을 수 없으면 {"amount": null, "merchant": null}.' },
+                  { text: `이 영수증 이미지를 분석해주세요. JSON 형식만 출력하세요.
+- amount: 최종 결제 금액 (숫자, 없으면 null)
+- merchant: 상호명 (문자열, 없으면 null)
+- category: 아래 중 하나 선택
+  * "transport" — 버스/지하철/택시/주유 등 교통비
+  * "meal" — 식당/카페/편의점 식품 등 식비
+  * "gear" — 골프용품/스포츠용품/업무 장비/의류
+  * "etc_expense" — 통신비/의료비/교육비/소모품
+  * "personal" — 마트 생활용품/개인 쇼핑 등 개인지출
+
+출력 예시: {"amount": 5450, "merchant": "진로식자재마트", "category": "personal"}` },
                   { inline_data: { mime_type: file.type, data: base64 } }
                 ]
               }]
@@ -67,6 +78,8 @@ export async function POST(request: NextRequest) {
             const parsed = JSON.parse(match[0]);
             ocrAmount = typeof parsed.amount === 'number' ? parsed.amount : null;
             ocrMemo = typeof parsed.merchant === 'string' ? parsed.merchant : null;
+            const validCategories = ['transport', 'meal', 'gear', 'etc_expense', 'personal'];
+            ocrCategory = validCategories.includes(parsed.category) ? parsed.category : null;
           }
         }
       } catch (ocrErr) {
@@ -74,7 +87,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, url, ocrAmount, ocrMemo });
+    return NextResponse.json({ success: true, url, ocrAmount, ocrMemo, ocrCategory });
   } catch (e) {
     console.error('[receipt/upload] 업로드 오류:', e);
     return NextResponse.json({ error: '이미지 저장에 실패했습니다.' }, { status: 500 });

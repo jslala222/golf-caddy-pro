@@ -6,7 +6,7 @@
 
 export type ScheduleType = 'work' | 'personal' | 'holiday';
 export type TransactionType = 'income' | 'expense';
-export type ExpenseCategory = 'food' | 'transport' | 'gear' | 'other' | 'caddy_fee' | 'tip' | 'over_fee';
+export type ExpenseCategory = 'transport' | 'gear' | 'meal' | 'etc_expense' | 'personal' | 'caddy_fee' | 'tip' | 'over_fee';
 export type ClientGrade = 'vip' | 'gn' | 'normal';
 
 export interface Schedule {
