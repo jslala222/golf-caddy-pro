@@ -494,7 +494,7 @@ export default function AdminPage() {
             return;
         }
 
-        if (!confirm(`[${code}] ${licenseRow.user_name ?? ''} — 기존 수파베이스 데이터를 모두 삭제하고 파일로 덮어씁니다. 계속할까요?`)) {
+        if (!confirm(`[${code}] ${licenseRow.user_name ?? ''} — 백업 파일 데이터를 수파베이스에 추가합니다 (기존 데이터 유지). 계속할까요?`)) {
             setImportStatus('idle');
             setImportLog('');
             return;
@@ -507,14 +507,10 @@ export default function AdminPage() {
             const transactions: any[] = data.transactions || [];
             const clients: any[] = data.clients || [];
 
-            setImportLog('기존 데이터 삭제 중...');
-            await supabase.from('aone_pro_caddypro_schedules').delete().eq('license_code', code);
-            await supabase.from('aone_pro_caddypro_transactions').delete().eq('license_code', code);
-            await supabase.from('aone_pro_caddypro_clients').delete().eq('license_code', code);
-
             const headers = { 'Content-Type': 'application/json', 'x-license-code': code };
             let sFail = 0, tFail = 0, cFail = 0;
 
+            // DELETE 없이 upsert
             setImportLog(`스케줄 ${schedules.length}건 저장 중...`);
             for (const s of schedules) {
                 const r = await fetch('/api/db/schedules', { method: 'POST', headers, body: JSON.stringify(s) });
