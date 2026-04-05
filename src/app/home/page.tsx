@@ -160,16 +160,19 @@ export default function HomePage() {
           <button
             onClick={() => {
               if (!confirm('로그아웃 하시겠습니까?')) return;
-              // 현재 데이터를 계정별 키에 백업 후 메인 스토리지 초기화
+              // Zustand store 메모리 초기화 (다음 사용자 데이터 노출 방지)
+              useAppStore.setState({
+                schedules: [], clients: [], transactions: [],
+                feeSettings: { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
+                _initialized: false,
+              });
+              // localStorage 정리
               const activeKey = localStorage.getItem('caddy_active_key');
-              const currentData = localStorage.getItem('caddy-manager-storage');
-              if (activeKey && currentData) {
-                localStorage.setItem(`caddy-manager-storage_${activeKey}`, currentData);
-              }
               localStorage.removeItem('caddy-manager-storage');
               localStorage.removeItem('caddy_license_key');
               localStorage.removeItem('caddy_expires_at');
               localStorage.removeItem('caddy_tier');
+              localStorage.removeItem('caddy_plan');
               localStorage.removeItem('caddy_active_key');
               if (activeKey) localStorage.removeItem(`caddy_user_name_${activeKey}`);
               localStorage.removeItem('caddy_user_name');
