@@ -145,7 +145,8 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [creditBuyResult, setCreditBuyResult] = useState<'success' | 'fail' | null>(null);
     const [cart, setCart] = useState<CartItem[]>([]);
 
-    // 내 고객    const [licenses, setLicenses] = useState<License[]>([]);
+    // 내 고객
+    const [licenses, setLicenses] = useState<License[]>([]);
     const [licensesLoading, setLicensesLoading] = useState(false);
     const [expandedLicense, setExpandedLicense] = useState<string | null>(null);
 
