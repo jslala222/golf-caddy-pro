@@ -57,7 +57,11 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                         const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000);
                         if (days <= 7 && days > 0) {
                             setDaysLeft(days);
-                            setShowExpireBanner(true);
+                            // 오늘 이미 닫은 경우 배너 미표시
+                            const dismissed = localStorage.getItem('caddy_expire_banner_dismissed');
+                            if (dismissed !== new Date().toDateString()) {
+                                setShowExpireBanner(true);
+                            }
                         }
                     }
 
@@ -163,14 +167,23 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
         return (
             <>
                 {showExpireBanner && daysLeft !== null && (
-                    <div className="sticky top-0 left-0 right-0 bg-amber-500 text-white px-4 py-3 z-[9998] flex items-center gap-3 shadow-lg">
-                        <AlertTriangle size={18} className="shrink-0" />
-                        <p className="text-sm font-bold flex-1">
-                            이용권이 <span className="underline">{daysLeft}일 후</span> 만료됩니다. 미리 갱신해 주세요.
-                        </p>
-                        <button onClick={() => setShowExpireBanner(false)} className="shrink-0 hover:opacity-70">
-                            <X size={18} />
-                        </button>
+                    <div className="sticky top-0 left-0 right-0 bg-amber-500 text-white px-4 py-3 z-[9998] shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <AlertTriangle size={18} className="shrink-0" />
+                            <p className="text-sm font-bold flex-1">
+                                이용권이 <span className="underline">{daysLeft}일 후</span> 만료됩니다.
+                            </p>
+                            <Link href="/subscribe?plan=6month"
+                                className="shrink-0 bg-white text-amber-600 text-xs font-black px-3 py-1.5 rounded-full hover:bg-amber-50 active:scale-95 transition">
+                                갱신하기
+                            </Link>
+                            <button onClick={() => {
+                                setShowExpireBanner(false);
+                                localStorage.setItem('caddy_expire_banner_dismissed', new Date().toDateString());
+                            }} className="shrink-0 hover:opacity-70 ml-1">
+                                <X size={18} />
+                            </button>
+                        </div>
                     </div>
                 )}
                 {showRestoreModal && (
