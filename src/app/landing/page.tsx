@@ -184,12 +184,20 @@ export default function LandingPage() {
                     <p className="text-emerald-400 text-[10px] font-black tracking-widest uppercase">캐디PRO</p>
                     <h1 className="text-white font-black text-lg leading-tight">Caddy Manager Pro</h1>
                 </div>
-                <button
-                    onClick={() => openSheet('code')}
-                    className="text-xs font-bold text-stone-400 border border-stone-700 px-3 py-1.5 rounded-full hover:border-stone-500 transition"
-                >
-                    코드 입력
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => { window.location.href = '/dealer-login'; }}
+                        className="text-xs font-bold text-amber-400 border border-amber-700/60 px-3 py-1.5 rounded-full hover:border-amber-500 transition"
+                    >
+                        딜러 입력
+                    </button>
+                    <button
+                        onClick={() => openSheet('code')}
+                        className="text-xs font-bold text-stone-400 border border-stone-700 px-3 py-1.5 rounded-full hover:border-stone-500 transition"
+                    >
+                        코드 입력
+                    </button>
+                </div>
             </div>
 
             {/* 헤더 */}
