@@ -18,6 +18,15 @@ const DEALER_SUPPLY_PRICE = {
     premium:  { month: 10_000, '6month': 50_000, year: 100_000 },
 } as const;
 
+// 소비자가 (랜딩/결제 페이지 기준)
+const CONSUMER_PRICE = {
+    standard: { month: 9_900, '6month': 55_000, year: 99_000 },
+    premium:  { month: 12_900, '6month': 69_000, year: 129_000 },
+} as const;
+
+// 장바구니 아이템 타입
+type CartItem = { tier: 'standard' | 'premium'; plan: PlanType; qty: number };
+
 // 크레딧 컬럼 매핑
 const CREDIT_COL: Record<'standard' | 'premium', Record<PlanType, string>> = {
     standard: { month: 'credits_month', '6month': 'credits_6month', year: 'credits_year' },
@@ -134,6 +143,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [creditPayMethod, setCreditPayMethod] = useState<'CARD' | 'TRANSFER'>('TRANSFER');
     const [isBuyingCredit, setIsBuyingCredit] = useState(false);
     const [creditBuyResult, setCreditBuyResult] = useState<'success' | 'fail' | null>(null);
+    const [cart, setCart] = useState<CartItem[]>([]);
 
     // 내 고객    const [licenses, setLicenses] = useState<License[]>([]);
     const [licensesLoading, setLicensesLoading] = useState(false);
@@ -161,12 +171,11 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     useEffect(() => {
         const raw = sessionStorage.getItem('caddy_credit_purchase');
         if (!raw) return;
-        let info: { paymentId: string; dealerToken: string; plan: string; tier: string; qty: number };
+        let info: { paymentId: string; dealerToken: string; cartItems?: CartItem[]; plan?: string; tier?: string; qty?: number };
         try { info = JSON.parse(raw); } catch { sessionStorage.removeItem('caddy_credit_purchase'); return; }
         if (info.dealerToken !== token) return;
 
         sessionStorage.removeItem('caddy_credit_purchase');
-        // 결제 완료 후 돌아온 경우 서버에 충전 요청
         fetch('/api/dealer/credit/charge', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -174,7 +183,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         }).then(async (res) => {
             if (res.ok) {
                 setCreditBuyResult('success');
-                loadDealer();  // 잔량 새로고침
+                loadDealer();
             }
         }).catch(() => {/* silent */});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -343,9 +352,26 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         setCustomerName(''); setCustomerPhone(''); setGolfCourse(''); setSpecialNote('');
     };
 
-    // ── 크레딧 구매 결제 ──
+    // ── 장바구니 담기 / 제거 ──
+    const handleAddToCart = () => {
+        setCart(prev => {
+            const idx = prev.findIndex(i => i.tier === creditBuyTier && i.plan === creditBuyPlan);
+            if (idx >= 0) {
+                const updated = [...prev];
+                updated[idx] = { ...updated[idx], qty: Math.min(50, updated[idx].qty + creditBuyQty) };
+                return updated;
+            }
+            return [...prev, { tier: creditBuyTier, plan: creditBuyPlan, qty: creditBuyQty }];
+        });
+        setCreditBuyQty(1);
+    };
+    const handleRemoveFromCart = (tier: 'standard' | 'premium', plan: PlanType) => {
+        setCart(prev => prev.filter(i => !(i.tier === tier && i.plan === plan)));
+    };
+
+    // ── 크레딧 구매 결제 (장바구니 전체) ──
     const handleBuyCredits = async () => {
-        if (!dealer) return;
+        if (!dealer || cart.length === 0) return;
         if (typeof window === 'undefined' || !window.PortOne) {
             alert('결제 모듈을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.');
             return;
@@ -353,18 +379,13 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         setIsBuyingCredit(true);
         setCreditBuyResult(null);
 
-        const SUPPLY_PRICE = {
-            standard: { month: 7_000, '6month': 40_000, year: 70_000 },
-            premium:  { month: 10_000, '6month': 50_000, year: 100_000 },
-        };
         const PLAN_LABEL: Record<PlanType, string> = { month: '1개월', '6month': '6개월', year: '1년' };
-        const unitPrice = SUPPLY_PRICE[creditBuyTier][creditBuyPlan];
-        const totalAmount = unitPrice * creditBuyQty;
+        const totalAmount = cart.reduce((sum, item) => sum + DEALER_SUPPLY_PRICE[item.tier][item.plan] * item.qty, 0);
         const paymentId = `DCREDIT-${Date.now()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
-        const orderName = `[딜러] ${PLAN_LABEL[creditBuyPlan]} ${creditBuyTier === 'premium' ? '프리미엄' : '스탠다드'} 크레딧 ${creditBuyQty}장`;
+        const orderName = `[딜러] ${cart.map(i => `${PLAN_LABEL[i.plan]} ${i.tier === 'premium' ? '프리미엄' : '스탠다드'} ×${i.qty}`).join(', ')} 크레딧`;
 
         sessionStorage.setItem('caddy_credit_purchase', JSON.stringify({
-            paymentId, dealerToken: token, plan: creditBuyPlan, tier: creditBuyTier, qty: creditBuyQty,
+            paymentId, dealerToken: token, cartItems: cart,
         }));
 
         try {
@@ -390,18 +411,16 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 return;
             }
 
-            // 서버 검증 + 크레딧 충전
             const res = await fetch('/api/dealer/credit/charge', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ paymentId, dealerToken: token, plan: creditBuyPlan, tier: creditBuyTier, qty: creditBuyQty }),
+                body: JSON.stringify({ paymentId, dealerToken: token, cartItems: cart }),
             });
 
             if (res.ok) {
                 setCreditBuyResult('success');
-                // 딜러 정보 새로고침
-                const col = ({ standard: { month: 'credits_month', '6month': 'credits_6month', year: 'credits_year' }, premium: { month: 'credits_month_premium', '6month': 'credits_6month_premium', year: 'credits_year_premium' } } as Record<string, Record<string, string>>)[creditBuyTier][creditBuyPlan];
-                setDealer(prev => prev ? { ...prev, [col]: ((prev[col as keyof DealerInfo] as number) ?? 0) + creditBuyQty } : prev);
+                setCart([]);
+                loadDealer();
             } else {
                 setCreditBuyResult('fail');
             }
@@ -1240,7 +1259,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                         {/* 구매 폼 */}
                         <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
                             <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-                                <CreditCard size={16} /> 크레딧 구매
+                                <CreditCard size={16} /> 크레딧 선택
                             </div>
 
                             {/* 티어 */}
@@ -1256,17 +1275,26 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                 </div>
                             </div>
 
-                            {/* 플랜 */}
+                            {/* 기간 — 소비자가(취소선) + 공급가 + 할인율 */}
                             <div>
                                 <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2 block">기간</label>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {([['month','1개월',7000,10000], ['6month','6개월',40000,50000], ['year','1년',70000,100000]] as [PlanType, string, number, number][]).map(([key, label, stdPrice, premPrice]) => (
-                                        <button key={key} onClick={() => setCreditBuyPlan(key)}
-                                            className={`p-3 rounded-2xl border-2 text-center transition ${creditBuyPlan === key ? 'border-blue-500 bg-blue-900/30' : 'border-stone-700 bg-stone-800'}`}>
-                                            <p className="text-xs font-bold text-stone-300">{label}</p>
-                                            <p className="text-[10px] text-stone-500 mt-0.5">₩{(creditBuyTier === 'premium' ? premPrice : stdPrice).toLocaleString()}/장</p>
-                                        </button>
-                                    ))}
+                                    {(['month', '6month', 'year'] as PlanType[]).map(key => {
+                                        const label = key === 'month' ? '1개월' : key === '6month' ? '6개월' : '1년';
+                                        const consumerP = CONSUMER_PRICE[creditBuyTier][key];
+                                        const supplyP = DEALER_SUPPLY_PRICE[creditBuyTier][key];
+                                        const discountPct = Math.round((1 - supplyP / consumerP) * 100);
+                                        const isSelected = creditBuyPlan === key;
+                                        return (
+                                            <button key={key} onClick={() => setCreditBuyPlan(key)}
+                                                className={`p-2.5 rounded-2xl border-2 text-center transition ${isSelected ? 'border-blue-500 bg-blue-900/30' : 'border-stone-700 bg-stone-800'}`}>
+                                                <p className={`text-xs font-black ${isSelected ? 'text-white' : 'text-stone-300'}`}>{label}</p>
+                                                <p className="text-stone-500 text-[9px] line-through mt-0.5">₩{consumerP.toLocaleString()}</p>
+                                                <p className="text-emerald-400 text-[10px] font-bold">₩{supplyP.toLocaleString()}</p>
+                                                <span className="inline-block mt-0.5 bg-red-600/80 text-white text-[8px] font-black px-1 py-0.5 rounded-full">{discountPct}% 할인</span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -1288,62 +1316,122 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                 </div>
                             </div>
 
-                            {/* 합계 */}
+                            {/* 담기 버튼 */}
                             {(() => {
-                                const SUPPLY = { standard: { month: 7000, '6month': 40000, year: 70000 }, premium: { month: 10000, '6month': 50000, year: 100000 } };
-                                const total = SUPPLY[creditBuyTier][creditBuyPlan] * creditBuyQty;
+                                const supplyP = DEALER_SUPPLY_PRICE[creditBuyTier][creditBuyPlan];
+                                const consumerP = CONSUMER_PRICE[creditBuyTier][creditBuyPlan];
+                                const label = creditBuyPlan === 'month' ? '1개월' : creditBuyPlan === '6month' ? '6개월' : '1년';
+                                const tierLabel = creditBuyTier === 'premium' ? '프리미엄' : '스탠다드';
                                 return (
-                                    <div className="bg-stone-800 rounded-2xl p-4 text-center">
-                                        <p className="text-stone-400 text-xs">결제 금액</p>
-                                        <p className="text-3xl font-black text-white mt-1">₩{total.toLocaleString()}</p>
-                                        <p className="text-stone-500 text-[10px] mt-1">장당 ₩{(total / creditBuyQty).toLocaleString()} × {creditBuyQty}장</p>
-                                    </div>
+                                    <button onClick={handleAddToCart}
+                                        className="w-full py-3.5 bg-amber-600 hover:bg-amber-500 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition">
+                                        🛒 {label} {tierLabel} {creditBuyQty}장 담기
+                                        <span className="text-amber-200 text-sm">₩{(supplyP * creditBuyQty).toLocaleString()}</span>
+                                        <span className="text-amber-300 text-xs">(소비자가 ₩{(consumerP * creditBuyQty).toLocaleString()})</span>
+                                    </button>
                                 );
                             })()}
-
-                            {/* 결제수단 */}
-                            <div>
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2 block">결제수단</label>
-                                <div className="space-y-2">
-                                    <button onClick={() => setCreditPayMethod('TRANSFER')}
-                                        className={`w-full p-3.5 rounded-2xl border text-left transition ${creditPayMethod === 'TRANSFER' ? 'border-emerald-500 bg-emerald-900/20' : 'border-stone-700 bg-stone-800'}`}>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xl">📲</span>
-                                            <div>
-                                                <p className="text-sm font-bold text-white flex items-center gap-2">
-                                                    실시간계좌이체
-                                                    <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-full font-black">추천</span>
-                                                </p>
-                                                <p className="text-[10px] text-emerald-400">수수료 없음 · 즉시 충전</p>
-                                            </div>
-                                        </div>
-                                    </button>
-                                    <button onClick={() => setCreditPayMethod('CARD')}
-                                        className={`w-full p-3.5 rounded-2xl border text-left transition ${creditPayMethod === 'CARD' ? 'border-blue-500 bg-blue-900/20' : 'border-stone-700 bg-stone-800'}`}>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xl">💳</span>
-                                            <div>
-                                                <p className="text-sm font-bold text-white">카드결제</p>
-                                                <p className="text-[10px] text-amber-400">⚠ 카드 수수료 발생 · 실시간이체를 권장합니다</p>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <button onClick={handleBuyCredits} disabled={isBuyingCredit}
-                                className="w-full py-5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition">
-                                {isBuyingCredit ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Coins size={24} />}
-                                {isBuyingCredit ? '결제 중...' : '크레딧 구매하기'}
-                            </button>
-
-                            <div className="bg-stone-800/50 rounded-2xl p-4 text-xs text-stone-400 leading-relaxed space-y-1">
-                                <p className="font-bold text-stone-300">💡 크레딧 구매 안내</p>
-                                <p>• 크레딧 구매 후 고객에게 현장에서 즉시 이용권 발급</p>
-                                <p>• 딜러가 고객에게 직접 현금/이체 수금 후 이익 취득</p>
-                                <p>• 소비자가와 공급가 차액이 딜러 수익</p>
-                            </div>
                         </section>
+
+                        {/* 장바구니 */}
+                        {cart.length > 0 && (() => {
+                            const totalConsumer = cart.reduce((s, i) => s + CONSUMER_PRICE[i.tier][i.plan] * i.qty, 0);
+                            const totalSupply   = cart.reduce((s, i) => s + DEALER_SUPPLY_PRICE[i.tier][i.plan] * i.qty, 0);
+                            const totalSaving   = totalConsumer - totalSupply;
+                            const totalDiscount = Math.round((1 - totalSupply / totalConsumer) * 100);
+                            const PLAN_LABEL: Record<PlanType, string> = { month: '1개월', '6month': '6개월', year: '1년' };
+                            return (
+                                <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-amber-400 font-bold text-sm flex items-center gap-2">🛒 장바구니 <span className="bg-amber-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{cart.reduce((s,i)=>s+i.qty,0)}장</span></span>
+                                        <button onClick={() => setCart([])} className="text-stone-500 hover:text-red-400 text-xs transition">전체 비우기</button>
+                                    </div>
+
+                                    {/* 아이템 목록 */}
+                                    <div className="space-y-2">
+                                        {cart.map(item => {
+                                            const consumerP = CONSUMER_PRICE[item.tier][item.plan];
+                                            const supplyP   = DEALER_SUPPLY_PRICE[item.tier][item.plan];
+                                            const saving    = (consumerP - supplyP) * item.qty;
+                                            const tierLabel = item.tier === 'premium' ? '⭐프리미엄' : '스탠다드';
+                                            return (
+                                                <div key={`${item.tier}-${item.plan}`} className="bg-stone-800 rounded-2xl p-3 flex items-center justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-white text-sm font-bold">{PLAN_LABEL[item.plan]} {tierLabel} × {item.qty}장</p>
+                                                        <p className="text-stone-400 text-[10px]">
+                                                            <span className="line-through text-stone-600">₩{(consumerP * item.qty).toLocaleString()}</span>
+                                                            {' → '}
+                                                            <span className="text-white font-bold">₩{(supplyP * item.qty).toLocaleString()}</span>
+                                                            <span className="text-emerald-400 ml-1">({saving.toLocaleString()}원 절약)</span>
+                                                        </p>
+                                                    </div>
+                                                    <button onClick={() => handleRemoveFromCart(item.tier, item.plan)}
+                                                        className="text-stone-600 hover:text-red-400 text-lg leading-none transition">✕</button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* 합계 */}
+                                    <div className="bg-stone-800/60 rounded-2xl p-4 space-y-2">
+                                        <div className="flex justify-between text-sm text-stone-400">
+                                            <span>소비자가 합계</span>
+                                            <span className="line-through">₩{totalConsumer.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-stone-300">내 구매가</span>
+                                            <span className="text-white font-bold text-base">₩{totalSupply.toLocaleString()}</span>
+                                        </div>
+                                        <div className="border-t border-stone-700 pt-2 flex justify-between">
+                                            <span className="text-emerald-400 font-bold text-sm">절약 금액 🎉</span>
+                                            <span className="text-emerald-400 font-black">₩{totalSaving.toLocaleString()} <span className="text-xs">({totalDiscount}% 할인)</span></span>
+                                        </div>
+                                    </div>
+
+                                    {/* 결제수단 */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">결제수단</label>
+                                        <button onClick={() => setCreditPayMethod('TRANSFER')}
+                                            className={`w-full p-3.5 rounded-2xl border text-left transition ${creditPayMethod === 'TRANSFER' ? 'border-emerald-500 bg-emerald-900/20' : 'border-stone-700 bg-stone-800'}`}>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xl">📲</span>
+                                                <div>
+                                                    <p className="text-sm font-bold text-white flex items-center gap-2">
+                                                        실시간계좌이체
+                                                        <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-full font-black">추천</span>
+                                                    </p>
+                                                    <p className="text-[10px] text-emerald-400">수수료 없음 · 즉시 충전</p>
+                                                </div>
+                                            </div>
+                                        </button>
+                                        <button onClick={() => setCreditPayMethod('CARD')}
+                                            className={`w-full p-3.5 rounded-2xl border text-left transition ${creditPayMethod === 'CARD' ? 'border-blue-500 bg-blue-900/20' : 'border-stone-700 bg-stone-800'}`}>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xl">💳</span>
+                                                <div>
+                                                    <p className="text-sm font-bold text-white">카드결제</p>
+                                                    <p className="text-[10px] text-amber-400">⚠ 카드 수수료 발생 · 실시간이체를 권장합니다</p>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+
+                                    <button onClick={handleBuyCredits} disabled={isBuyingCredit}
+                                        className="w-full py-5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition">
+                                        {isBuyingCredit ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Coins size={24} />}
+                                        {isBuyingCredit ? '결제 중...' : `₩${totalSupply.toLocaleString()} 결제하기`}
+                                    </button>
+                                </section>
+                            );
+                        })()}
+
+                        <div className="bg-stone-900/50 rounded-2xl p-4 text-xs text-stone-400 leading-relaxed space-y-1">
+                            <p className="font-bold text-stone-300">💡 크레딧 구매 안내</p>
+                            <p>• 여러 종류 담기 → 한 번에 결제</p>
+                            <p>• 크레딧 구매 후 고객에게 현장에서 즉시 이용권 발급</p>
+                            <p>• 딜러가 고객에게 직접 현금/이체 수금 후 이익 취득</p>
+                            <p>• <span className="text-emerald-400 font-bold">소비자가와 공급가 차액이 딜러 수익</span></p>
+                        </div>
                     </div>
                 )}
 
