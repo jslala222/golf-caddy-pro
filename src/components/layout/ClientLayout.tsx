@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { LicenseGuard } from '@/components/layout/LicenseGuard';
+import { BottomNav } from '@/components/layout/BottomNav';
 import { PortGuard } from '@/components/PortGuard';
 import { ExternalLink, X, Download, Share2 } from 'lucide-react';
 
@@ -147,10 +148,10 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <PortGuard>
-            {/* ── 로컬 개발 환경 표시 배지 ────────────────────── */}
+            {/* ── 로컬 개발 환경 표시줄 (배포와 색 구분) ──────── */}
             {isLocal && (
-                <div className="fixed bottom-4 right-4 z-[10002] bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg pointer-events-none select-none">
-                    🛠 LOCAL
+                <div className="sticky top-0 left-0 right-0 z-[10002] bg-blue-600 text-white text-xs font-bold text-center py-1 tracking-widest select-none pointer-events-none">
+                    🛠 LOCAL DEV — localhost:4455
                 </div>
             )}
 
@@ -209,9 +210,16 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
             {isAdminPage || isDealerPage || isSubscribePage || isLandingPage || isDealerLoginPage ? (
                 children
             ) : (
-                <LicenseGuard>
-                    {children}
-                </LicenseGuard>
+                <div className="flex justify-center min-h-screen bg-stone-100">
+                    <div className="w-full max-w-[480px] bg-white relative flex flex-col min-h-screen shadow-2xl">
+                        <main className="flex-1 pb-20">
+                            <LicenseGuard>
+                                {children}
+                            </LicenseGuard>
+                        </main>
+                        <BottomNav />
+                    </div>
+                </div>
             )}
         </PortGuard>
     );

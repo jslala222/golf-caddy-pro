@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-import { BottomNav } from "@/components/layout/BottomNav";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 
 const notoSansKr = Noto_Sans_KR({
@@ -21,9 +20,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  width: 360,
+  width: "device-width",
   initialScale: 1,
-  maximumScale: 3,
+  maximumScale: 1,
   userScalable: false,
   themeColor: "#EC4899",
 };
@@ -37,15 +36,10 @@ export default function RootLayout({
     <html lang="ko">
       <body className={`${notoSansKr.className} bg-stone-100 text-stone-900 overflow-x-hidden`}>
         <Script src="https://cdn.portone.io/v2/browser-sdk.js" strategy="beforeInteractive" />
-        <div className="flex justify-center min-h-screen bg-stone-100">
-          <div className="w-full max-w-[480px] min-w-[360px] bg-white relative flex flex-col min-h-screen shadow-2xl">
-            <main className="flex-1 pb-20">
-              <ClientLayout>
-                {children}
-              </ClientLayout>
-            </main>
-            <BottomNav />
-          </div>
+        <div className="min-h-screen bg-stone-100">
+          <ClientLayout>
+            {children}
+          </ClientLayout>
         </div>
       </body>
     </html>

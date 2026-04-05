@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { verifyLicense, verifyLicenseAsync } from '@/lib/licenseUtils';
 import { supabase } from '@/lib/supabaseClient';
+import { initializeStore } from '@/lib/store';
 import { AlertTriangle, X, RefreshCcw, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -27,38 +28,8 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
             try {
                 const storedKey = localStorage.getItem('caddy_license_key');
                 if (storedKey && verifyLicense(storedKey)) {
-                    // 계정 전환 감지: 이전 로그인 키와 다르고, 이전 키가 실제로 존재할 때만 교체
-                    const activeKey = localStorage.getItem('caddy_active_key');
-                    if (activeKey && activeKey !== storedKey) {
-                        // 기존 키의 데이터 백업
-                        const currentData = localStorage.getItem('caddy-manager-storage');
-                        if (currentData) {
-                            localStorage.setItem(`caddy-manager-storage_${activeKey}`, currentData);
-                        }
-                        // 새 키의 데이터 복원 (없으면 기존 데이터 유지 — 삭제 금지)
-                        const newData = localStorage.getItem(`caddy-manager-storage_${storedKey}`);
-                        if (newData) {
-                            localStorage.setItem('caddy-manager-storage', newData);
-                        }
-                        // else: 새 계정 첫 사용 → 빈 화면으로 시작 (기존 데이터 삭제 안 함)
-                        localStorage.setItem('caddy_active_key', storedKey);
-                        localStorage.removeItem(`caddy_user_name_${storedKey}`); // 이름 캐시 초기화
-                        window.location.reload(); // Zustand rehydrate
-                        return;
-                    }
-                    // activeKey 없으면: 최초 진입 OR 로그아웃 후 재로그인
-                    if (!activeKey) {
-                        // 메인 스토리지 완전 초기화 후 해당 계정 백업 복원
-                        localStorage.removeItem('caddy-manager-storage');
-                        const savedData = localStorage.getItem(`caddy-manager-storage_${storedKey}`);
-                        if (savedData) {
-                            localStorage.setItem('caddy-manager-storage', savedData);
-                        }
-                        localStorage.setItem('caddy_active_key', storedKey);
-                        localStorage.removeItem(`caddy_user_name`);
-                        window.location.reload();
-                        return;
-                    }
+                    // 계정 전환 감지 — Supabase 방식에서는 단순히 activeKey만 기록
+                    localStorage.setItem('caddy_active_key', storedKey);
 
                     const expiresAt = localStorage.getItem('caddy_expires_at');
                     if (expiresAt && new Date(expiresAt) < new Date()) {
@@ -67,14 +38,7 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                         setIsActivated(false);
                         return;
                     }
-                    setIsActivated(true);
-                    if (expiresAt) {
-                        const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000);
-                        if (days <= 7 && days > 0) {
-                            setDaysLeft(days);
-                            setShowExpireBanner(true);
-                        }
-                    }
+
                     // 백그라운드: DB에서 최신 만료일 + tier 갱신
                     (async () => {
                         try {
@@ -83,47 +47,23 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                                 .select('expires_at, tier, plan')
                                 .ilike('code', storedKey.trim())
                                 .maybeSingle();
-                            if (data?.expires_at) {
-                                localStorage.setItem('caddy_expires_at', data.expires_at);
-                            }
-                            if (data?.tier) {
-                                localStorage.setItem('caddy_tier', data.tier);
-                            }
-                            if (data?.plan) {
-                                localStorage.setItem('caddy_plan', data.plan);
-                            }
+                            if (data?.expires_at) localStorage.setItem('caddy_expires_at', data.expires_at);
+                            if (data?.tier) localStorage.setItem('caddy_tier', data.tier);
+                            if (data?.plan) localStorage.setItem('caddy_plan', data.plan);
                         } catch { /* 오프라인 무시 */ }
                     })();
 
-                    // 프리미엄: localStorage 데이터 없으면 R2 자동 복구
-                    const storedTier = localStorage.getItem('caddy_tier');
-                    if (storedTier === 'premium') {
-                        const hasData = localStorage.getItem('app-store-schedules') ||
-                            localStorage.getItem('app-store') ||
-                            localStorage.getItem('caddy_data');
-                        if (!hasData) {
-                            try {
-                                const res = await fetch('/api/backup/download', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ licenseCode: storedKey }),
-                                });
-                                if (res.ok) {
-                                    const json = await res.json();
-                                    if (json.data) {
-                                        // zustand-persist 키들을 복원
-                                        const restored = json.data as Record<string, unknown>;
-                                        Object.entries(restored).forEach(([k, v]) => {
-                                            if (typeof v === 'string') localStorage.setItem(k, v);
-                                            else localStorage.setItem(k, JSON.stringify(v));
-                                        });
-                                        setShowRestoreModal(true);
-                                        setTimeout(() => setShowRestoreModal(false), 3500);
-                                    }
-                                }
-                            } catch { /* 오프라인 or R2 없음 — 무시 */ }
+                    if (expiresAt) {
+                        const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000);
+                        if (days <= 7 && days > 0) {
+                            setDaysLeft(days);
+                            setShowExpireBanner(true);
                         }
                     }
+
+                    // Supabase에서 데이터 초기화
+                    await initializeStore(storedKey);
+                    setIsActivated(true);
                 } else {
                     router.replace('/landing');
                     return;
@@ -167,8 +107,8 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
         return (
             <div style={{ position: 'fixed', inset: 0, backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
                 <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-                <p style={{ marginTop: '1rem', color: '#444', fontWeight: 'bold' }}>안전하게 진입 중입니다...</p>
-                <p style={{ fontSize: '10px', color: '#888', marginTop: '0.5rem' }}>Ver 1.5.21 • Stability Mode</p>
+                <p style={{ marginTop: '1rem', color: '#444', fontWeight: 'bold' }}>데이터 불러오는 중...</p>
+                <p style={{ fontSize: '10px', color: '#888', marginTop: '0.5rem' }}>서버에서 안전하게 로딩 중입니다</p>
             </div>
         );
     }

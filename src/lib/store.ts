@@ -1,6 +1,4 @@
-
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+﻿import { create } from 'zustand';
 
 // ----------------------
 // Types
@@ -13,24 +11,24 @@ export type ClientGrade = 'vip' | 'gn' | 'normal';
 
 export interface Schedule {
     id: string;
-    date: string; // YYYY-MM-DD
-    time: string; // HH:MM
+    date: string;
+    time: string;
     title: string;
     type: ScheduleType;
-    shift?: '1' | '2' | '3'; // 1st, 2nd, 3rd part
+    shift?: '1' | '2' | '3';
     memo?: string;
-    caddyFee?: number; // 캐디피
-    overFee?: number;  // 오버피
-    isRain?: boolean;  // 우천/홀별 정산 여부
-    holes?: 18 | 9 | number; // 라운딩 홀수 (18, 9, 또는 홀별 정산 시 직접 입력)
-    createdAt?: string; // 생성일시 (타임머신 기능용)
+    caddyFee?: number;
+    overFee?: number;
+    isRain?: boolean;
+    holes?: 18 | 9 | number;
+    createdAt?: string;
 }
 
 export interface Client {
     id: string;
     name: string;
-    contact?: string; // 000-0000-0000
-    carInfo?: string; // 차량 정보
+    contact?: string;
+    carInfo?: string;
     birthDate?: string;
     memo?: string;
     grade: ClientGrade;
@@ -41,20 +39,26 @@ export interface Client {
 
 export interface Transaction {
     id: string;
-    date: string; // YYYY-MM-DD
+    date: string;
     type: TransactionType;
     amount: number;
-    category?: ExpenseCategory; // Only for expense
+    category?: ExpenseCategory;
     memo?: string;
-    createdAt?: string; // 생성일시
+    createdAt?: string;
 }
 
 interface AppState {
     schedules: Schedule[];
     clients: Client[];
     transactions: Transaction[];
+    feeSettings: {
+        shift1: number;
+        shift2: number;
+        shift3: number;
+        useShift3: boolean;
+    };
+    _initialized: boolean;
 
-    // Actions
     addSchedule: (schedule: Omit<Schedule, 'id' | 'createdAt'>) => void;
     updateSchedule: (id: string, updates: Partial<Schedule>) => void;
     deleteSchedule: (id: string) => void;
@@ -67,240 +71,182 @@ interface AppState {
     addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
     deleteTransaction: (id: string) => void;
 
-    // Fee Settings
-    feeSettings: {
-        shift1: number;
-        shift2: number;
-        shift3: number;
-        useShift3: boolean; // 3부 사용 여부
-    };
     updateFeeSettings: (settings: { shift1: number; shift2: number; shift3: number; useShift3: boolean }) => void;
 
-    // Data management
-    importData: (data: string) => boolean; // Returns success
-    exportData: () => string; // Returns JSON string
+    exportData: () => string;
+    importData: (data: string) => boolean;
     resetData: () => void;
     deleteDataBefore: (date: string) => void;
 }
 
-// ----------------------
-// Store Implementation
-// ----------------------
+function getCode(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('caddy_license_key')?.trim().toUpperCase() ?? null;
+}
 
-export const useAppStore = create<AppState>()(
-    persist(
-        (set, get) => ({
-            schedules: [],
-            clients: [],
-            transactions: [],
-            feeSettings: {
-                shift1: 150000,
-                shift2: 150000,
-                shift3: 160000,
-                useShift3: true,
-            },
+function apiHeaders(): HeadersInit {
+    const code = getCode();
+    return {
+        'Content-Type': 'application/json',
+        ...(code ? { 'x-license-code': code } : {}),
+    };
+}
 
-            addSchedule: (schedule) => {
-                set((state) => {
-                    // Check if shift is already taken for that day
-                    if (schedule.type === 'work' && schedule.shift) {
-                        const existingShift = state.schedules.find(s =>
-                            s.date === schedule.date &&
-                            s.type === 'work' &&
-                            s.shift === schedule.shift
-                        );
-                        if (existingShift) {
-                            if (typeof window !== 'undefined') alert(`이미 ${schedule.shift}부 근무가 등록되어 있습니다!`);
-                            return { schedules: state.schedules };
-                        }
-                    }
-                    const dateSchedules = state.schedules.filter(s => s.date === schedule.date && s.type === 'work');
-                    if (schedule.type === 'work' && dateSchedules.length >= 3) {
-                        if (typeof window !== 'undefined') alert('하루에 최대 3번까지만 근무를 등록할 수 있습니다!');
-                        return { schedules: state.schedules };
-                    }
-                    const newSchedule: Schedule = { ...schedule, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-                    if (typeof window !== 'undefined') {
-                        import('./supabaseDB').then(({ syncAddSchedule }) => syncAddSchedule(newSchedule));
-                    }
-                    return { schedules: [...state.schedules, newSchedule] };
-                });
-            },
+function bgFetch(url: string, options: RequestInit) {
+    fetch(url, options).catch(e => console.warn('[store]', url, e));
+}
 
-            updateSchedule: (id, updates) => {
-                set((state) => ({
-                    schedules: state.schedules.map((s) => s.id === id ? { ...s, ...updates } : s),
-                }));
-                if (typeof window !== 'undefined') {
-                    import('./supabaseDB').then(({ syncUpdateSchedule }) => syncUpdateSchedule(id, updates));
-                }
-            },
+export const useAppStore = create<AppState>()((set, get) => ({
+    schedules: [],
+    clients: [],
+    transactions: [],
+    feeSettings: { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
+    _initialized: false,
 
-            deleteSchedule: (id) => {
-                set((state) => ({ schedules: state.schedules.filter((s) => s.id !== id) }));
-                if (typeof window !== 'undefined') {
-                    import('./supabaseDB').then(({ syncDeleteSchedule }) => syncDeleteSchedule(id));
-                }
-            },
-
-            deleteSchedulesByDate: (date) =>
-                set((state) => ({
-                    schedules: state.schedules.filter((s) => s.date !== date),
-                })),
-
-            addClient: (client) =>
-                set((state) => ({
-                    clients: [
-                        ...state.clients,
-                        { ...client, id: crypto.randomUUID(), createdAt: new Date().toISOString(), visitCount: 0 },
-                    ],
-                })),
-
-            updateClient: (id, updates) =>
-                set((state) => ({
-                    clients: state.clients.map((c) =>
-                        c.id === id ? { ...c, ...updates } : c
-                    ),
-                })),
-
-            deleteClient: (id) =>
-                set((state) => ({
-                    clients: state.clients.filter((c) => c.id !== id),
-                })),
-
-            addTransaction: (transaction) => {
-                const newTx: Transaction = { ...transaction, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-                set((state) => ({ transactions: [...state.transactions, newTx] }));
-                if (typeof window !== 'undefined') {
-                    import('./supabaseDB').then(({ syncAddTransaction }) => syncAddTransaction(newTx));
-                }
-            },
-
-            deleteTransaction: (id) => {
-                set((state) => ({ transactions: state.transactions.filter((t) => t.id !== id) }));
-                if (typeof window !== 'undefined') {
-                    import('./supabaseDB').then(({ syncDeleteTransaction }) => syncDeleteTransaction(id));
-                }
-            },
-
-            updateFeeSettings: (newSettings) =>
-                set(() => ({
-                    feeSettings: newSettings,
-                })),
-
-            exportData: () => {
-                const state = get();
-                const data = {
-                    schedules: state.schedules,
-                    clients: state.clients,
-                    transactions: state.transactions,
-                    feeSettings: state.feeSettings,
-                    version: 1,
-                    exportedAt: new Date().toISOString(),
-                };
-                return JSON.stringify(data, null, 2);
-            },
-
-            importData: (jsonString) => {
-                try {
-                    const data = JSON.parse(jsonString);
-                    // Handle legacy data (customers -> clients)
-                    const importedCustomers = (data.customers || []).map((c: any) => ({
-                        ...c,
-                        id: c.id,
-                        name: c.name,
-                        contact: c.contact,
-                        grade: c.type === 'good' ? 'vip' : c.type === 'bad' ? 'gn' : 'normal',
-                        visitCount: 0,
-                        createdAt: c.createdAt,
-                    }));
-                    const clients = [...(data.clients || []), ...importedCustomers];
-
-                    if (!Array.isArray(data.schedules) || !Array.isArray(clients)) {
-                        throw new Error('Invalid data format');
-                    }
-
-                    set((state) => {
-                        const mergeArrays = <T extends { id: string }>(current: T[], incoming: T[]) => {
-                            const currentIds = new Set(current.map(item => item.id));
-                            const newItems = incoming.filter(item => !currentIds.has(item.id));
-                            return [...current, ...newItems];
-                        };
-
-                        return {
-                            schedules: mergeArrays(state.schedules, (data.schedules || []).map((s: any) => ({
-                                ...s,
-                                holes: s.holes || 18 // Default to 18 holes for legacy data
-                            }))),
-                            clients: mergeArrays(state.clients, clients),
-                            transactions: mergeArrays(state.transactions, data.transactions || []),
-                            feeSettings: data.feeSettings || state.feeSettings,
-                        };
-                    });
-                    return true;
-                } catch (error) {
-                    console.error('Import failed:', error);
-                    return false;
-                }
-            },
-
-            resetData: () => set({ schedules: [], clients: [], transactions: [] }),
-
-            deleteDataBefore: (date: string) => {
-                set((state) => ({
-                    schedules: state.schedules.filter(s => s.createdAt && s.createdAt >= date),
-                    clients: state.clients.filter(c => c.createdAt && c.createdAt >= date),
-                    transactions: state.transactions.filter(t => t.createdAt && t.createdAt >= date),
-                }));
-            },
-        }),
-        {
-            name: 'caddy-manager-storage',
-            storage: createJSONStorage(() => {
-                // Server-side: return dummy storage
-                if (typeof window === 'undefined') {
-                    return {
-                        getItem: () => null,
-                        setItem: () => { },
-                        removeItem: () => { },
-                    };
-                }
-                // Client-side: use localStorage with safe-save guard
-                const storage = localStorage;
-                return {
-                    getItem: (name) => storage.getItem(name),
-                    setItem: (name, value) => {
-                        try {
-                            const existing = storage.getItem(name);
-                            if (existing && existing.length > 100) {
-                                const parsedNew = JSON.parse(value);
-                                const parsedOld = JSON.parse(existing);
-
-                                // CRITICAL: Prevent overwriting data with empty state
-                                // If old state had schedules/clients/transactions but new state has NONE of them
-                                const oldHasData = (parsedOld.state.schedules?.length > 0 || parsedOld.state.clients?.length > 0 || parsedOld.state.transactions?.length > 0);
-                                const newIsEmpty = (parsedNew.state.schedules?.length === 0 && parsedNew.state.clients?.length === 0 && parsedNew.state.transactions?.length === 0);
-
-                                if (oldHasData && newIsEmpty) {
-                                    // Verify if it's an intentional reset (we need a way to flag this, or just block implicit overwrites)
-                                    // For now, we block it to be safe. "Reset" button in settings will clear storage first correctly.
-                                    console.error('[SafeGuard] Prevented empty state overwrite!');
-                                    return;
-                                }
-                            }
-                        } catch (e) {
-                            console.error('[SafeGuard] Error checking data integrity', e);
-                        }
-                        storage.setItem(name, value);
-                        // 코드별 키에도 동기화 저장 (계정 분리)
-                        const activeKey = storage.getItem('caddy_active_key');
-                        if (activeKey) {
-                            storage.setItem(`${name}_${activeKey}`, value);
-                        }
-                    },
-                    removeItem: (name) => storage.removeItem(name),
-                };
-            }),
+    addSchedule: (schedule) => {
+        const state = get();
+        if (schedule.type === 'work' && schedule.shift) {
+            const dup = state.schedules.find(s =>
+                s.date === schedule.date && s.type === 'work' && s.shift === schedule.shift
+            );
+            if (dup) {
+                if (typeof window !== 'undefined') alert(`이미 ${schedule.shift}부 근무가 등록되어 있습니다!`);
+                return;
+            }
         }
-    )
-);
+        const dateWork = state.schedules.filter(s => s.date === schedule.date && s.type === 'work');
+        if (schedule.type === 'work' && dateWork.length >= 3) {
+            if (typeof window !== 'undefined') alert('하루에 최대 3번까지만 근무를 등록할 수 있습니다!');
+            return;
+        }
+        const newSchedule: Schedule = { ...schedule, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+        set(s => ({ schedules: [...s.schedules, newSchedule] }));
+        bgFetch('/api/db/schedules', { method: 'POST', headers: apiHeaders(), body: JSON.stringify(newSchedule) });
+    },
+
+    updateSchedule: (id, updates) => {
+        set(s => ({ schedules: s.schedules.map(sc => sc.id === id ? { ...sc, ...updates } : sc) }));
+        bgFetch(`/api/db/schedules/${id}`, { method: 'PUT', headers: apiHeaders(), body: JSON.stringify(updates) });
+    },
+
+    deleteSchedule: (id) => {
+        set(s => ({ schedules: s.schedules.filter(sc => sc.id !== id) }));
+        bgFetch(`/api/db/schedules/${id}`, { method: 'DELETE', headers: apiHeaders() });
+    },
+
+    deleteSchedulesByDate: (date) => {
+        const ids = get().schedules.filter(s => s.date === date).map(s => s.id);
+        set(s => ({ schedules: s.schedules.filter(sc => sc.date !== date) }));
+        ids.forEach(id => bgFetch(`/api/db/schedules/${id}`, { method: 'DELETE', headers: apiHeaders() }));
+    },
+
+    addClient: (client) => {
+        const newClient: Client = { ...client, id: crypto.randomUUID(), createdAt: new Date().toISOString(), visitCount: 0 };
+        set(s => ({ clients: [...s.clients, newClient] }));
+        bgFetch('/api/db/clients', { method: 'POST', headers: apiHeaders(), body: JSON.stringify(newClient) });
+    },
+
+    updateClient: (id, updates) => {
+        set(s => ({ clients: s.clients.map(c => c.id === id ? { ...c, ...updates } : c) }));
+        bgFetch(`/api/db/clients/${id}`, { method: 'PUT', headers: apiHeaders(), body: JSON.stringify(updates) });
+    },
+
+    deleteClient: (id) => {
+        set(s => ({ clients: s.clients.filter(c => c.id !== id) }));
+        bgFetch(`/api/db/clients/${id}`, { method: 'DELETE', headers: apiHeaders() });
+    },
+
+    addTransaction: (transaction) => {
+        const newTx: Transaction = { ...transaction, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+        set(s => ({ transactions: [...s.transactions, newTx] }));
+        bgFetch('/api/db/transactions', { method: 'POST', headers: apiHeaders(), body: JSON.stringify(newTx) });
+    },
+
+    deleteTransaction: (id) => {
+        set(s => ({ transactions: s.transactions.filter(t => t.id !== id) }));
+        bgFetch(`/api/db/transactions/${id}`, { method: 'DELETE', headers: apiHeaders() });
+    },
+
+    updateFeeSettings: (newSettings) => {
+        set(() => ({ feeSettings: newSettings }));
+        bgFetch('/api/db/fee-settings', { method: 'PUT', headers: apiHeaders(), body: JSON.stringify(newSettings) });
+    },
+
+    exportData: () => {
+        const state = get();
+        return JSON.stringify({
+            schedules: state.schedules,
+            clients: state.clients,
+            transactions: state.transactions,
+            feeSettings: state.feeSettings,
+            version: 2,
+            exportedAt: new Date().toISOString(),
+        }, null, 2);
+    },
+
+    importData: (jsonString) => {
+        try {
+            const data = JSON.parse(jsonString);
+            const importedCustomers = (data.customers || []).map((c: any) => ({
+                ...c,
+                grade: c.type === 'good' ? 'vip' : c.type === 'bad' ? 'gn' : 'normal',
+                visitCount: 0,
+            }));
+            const clients = [...(data.clients || []), ...importedCustomers];
+            if (!Array.isArray(data.schedules) || !Array.isArray(clients)) throw new Error('Invalid data format');
+            set(() => ({
+                schedules: (data.schedules || []).map((s: any) => ({ ...s, holes: s.holes || 18 })),
+                clients,
+                transactions: data.transactions || [],
+                feeSettings: data.feeSettings || get().feeSettings,
+            }));
+            return true;
+        } catch (e) {
+            console.error('Import failed:', e);
+            return false;
+        }
+    },
+
+    resetData: () => set({ schedules: [], clients: [], transactions: [] }),
+
+    deleteDataBefore: (date: string) => {
+        set(s => ({
+            schedules: s.schedules.filter(sc => sc.createdAt && sc.createdAt >= date),
+            clients: s.clients.filter(c => c.createdAt && c.createdAt >= date),
+            transactions: s.transactions.filter(t => t.createdAt && t.createdAt >= date),
+        }));
+    },
+}));
+
+// ─────────────────────────────────────────────────────────
+// 앱 초기화: LicenseGuard 인증 후 호출
+// Supabase에서 전체 데이터를 로드해 store에 세팅
+// ─────────────────────────────────────────────────────────
+export async function initializeStore(licenseCode: string): Promise<void> {
+    const code = licenseCode.trim().toUpperCase();
+    const headers = { 'x-license-code': code };
+    try {
+        const [schedRes, clientRes, txRes, feeRes] = await Promise.all([
+            fetch('/api/db/schedules', { headers }),
+            fetch('/api/db/clients', { headers }),
+            fetch('/api/db/transactions', { headers }),
+            fetch('/api/db/fee-settings', { headers }),
+        ]);
+        const [schedData, clientData, txData, feeData] = await Promise.all([
+            schedRes.json(),
+            clientRes.json(),
+            txRes.json(),
+            feeRes.json(),
+        ]);
+        useAppStore.setState({
+            schedules: schedData.schedules ?? [],
+            clients: clientData.clients ?? [],
+            transactions: txData.transactions ?? [],
+            feeSettings: feeData.feeSettings ?? { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
+            _initialized: true,
+        });
+    } catch (e) {
+        console.error('[initializeStore] 서버 초기화 실패:', e);
+        useAppStore.setState({ _initialized: true });
+    }
+}

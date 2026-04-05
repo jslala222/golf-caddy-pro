@@ -32,10 +32,24 @@ export default function SettingsPage() {
     const [migrateMsg, setMigrateMsg] = useState('');
 
     const handleMigrate = async () => {
-        const { schedules, transactions, clients, feeSettings } = useAppStore.getState();
+        // localStorage의 caddy-manager-storage에서 직접 읽기 (배포 전 마이그레이션용)
+        const raw = localStorage.getItem('caddy-manager-storage');
+        let migrateData: any = null;
+        if (raw) {
+            try {
+                const parsed = JSON.parse(raw);
+                // zustand persist 구조: { state: { schedules, ... } } or 직접 { schedules, ... }
+                migrateData = parsed.state ?? parsed;
+            } catch { /* 파싱 실패 시 store에서 가져오기 */ }
+        }
+        if (!migrateData || (!migrateData.schedules?.length && !migrateData.clients?.length && !migrateData.transactions?.length)) {
+            // localStorage에 없으면 현재 store에서 가져오기
+            const state = useAppStore.getState();
+            migrateData = { schedules: state.schedules, transactions: state.transactions, clients: state.clients, feeSettings: state.feeSettings };
+        }
         setMigrateStatus('migrating');
         setMigrateMsg('');
-        const result = await migrateLocalDataToSupabase({ schedules, transactions, clients, feeSettings });
+        const result = await migrateLocalDataToSupabase(migrateData);
         if (result.ok) {
             setMigrateStatus('done');
             setMigrateMsg(result.message);
@@ -43,7 +57,7 @@ export default function SettingsPage() {
             setMigrateStatus('error');
             setMigrateMsg(result.message);
         }
-        setTimeout(() => setMigrateStatus('idle'), 6000);
+        setTimeout(() => setMigrateStatus('idle'), 8000);
     };
 
     // Local state for fee settings
