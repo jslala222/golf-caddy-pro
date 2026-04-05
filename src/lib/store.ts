@@ -227,12 +227,26 @@ export const useAppStore = create<AppState>()((set, get) => ({
             }));
             const clients = [...(data.clients || []), ...importedCustomers];
             if (!Array.isArray(data.schedules) || !Array.isArray(clients)) throw new Error('Invalid data format');
-            set(() => ({
-                schedules: (data.schedules || []).map((s: any) => ({ ...s, holes: s.holes || 18 })),
-                clients,
-                transactions: data.transactions || [],
-                feeSettings: data.feeSettings || get().feeSettings,
-            }));
+            const schedules = (data.schedules || []).map((s: any) => ({ ...s, holes: s.holes || 18 }));
+            const transactions = data.transactions || [];
+            const feeSettings = data.feeSettings || get().feeSettings;
+            set(() => ({ schedules, clients, transactions, feeSettings }));
+
+            // Supabase에도 동기화 (복원 데이터가 새로고침 후에도 유지되도록)
+            const code = getCode();
+            if (code) {
+                const headers = { 'Content-Type': 'application/json', 'x-license-code': code };
+                schedules.forEach((s: any) =>
+                    bgFetch('/api/db/schedules', { method: 'POST', headers, body: JSON.stringify(s) })
+                );
+                transactions.forEach((t: any) =>
+                    bgFetch('/api/db/transactions', { method: 'POST', headers, body: JSON.stringify(t) })
+                );
+                clients.forEach((c: any) =>
+                    bgFetch('/api/db/clients', { method: 'POST', headers, body: JSON.stringify(c) })
+                );
+                bgFetch('/api/db/fee-settings', { method: 'PUT', headers, body: JSON.stringify(feeSettings) });
+            }
             return true;
         } catch (e) {
             console.error('Import failed:', e);
