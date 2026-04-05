@@ -709,6 +709,50 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     // ── 메인 대시보드 ──
     return (
         <div className="min-h-screen bg-stone-950 text-white pb-28">
+            {/* ── 결제 결과 팝업 모달 ── */}
+            {creditBuyResult === 'fail' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-6"
+                    style={{ background: 'rgba(0,0,0,0.75)' }}
+                    onClick={() => setCreditBuyResult(null)}>
+                    <div className="bg-stone-900 border border-red-700 rounded-3xl p-8 w-full max-w-sm text-center space-y-5 shadow-2xl"
+                        onClick={e => e.stopPropagation()}>
+                        <div className="text-5xl">❌</div>
+                        <div>
+                            <p className="text-red-300 font-black text-xl mb-2">결제 취소됨</p>
+                            <p className="text-stone-400 text-sm leading-relaxed">
+                                결제가 취소되었거나 처리 중 오류가 발생했습니다.<br />
+                                다시 시도해주세요.
+                            </p>
+                        </div>
+                        <button onClick={() => setCreditBuyResult(null)}
+                            className="w-full py-3.5 bg-stone-700 hover:bg-stone-600 rounded-2xl font-bold text-white transition">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            )}
+            {creditBuyResult === 'success' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-6"
+                    style={{ background: 'rgba(0,0,0,0.75)' }}
+                    onClick={() => setCreditBuyResult(null)}>
+                    <div className="bg-stone-900 border border-emerald-600 rounded-3xl p-8 w-full max-w-sm text-center space-y-5 shadow-2xl"
+                        onClick={e => e.stopPropagation()}>
+                        <div className="text-5xl">✅</div>
+                        <div>
+                            <p className="text-emerald-300 font-black text-xl mb-2">충전 완료!</p>
+                            <p className="text-stone-400 text-sm leading-relaxed">
+                                크레딧이 즉시 충전되었습니다.<br />
+                                코드발급 탭에서 바로 사용하세요.
+                            </p>
+                        </div>
+                        <button onClick={() => setCreditBuyResult(null)}
+                            className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-600 rounded-2xl font-bold text-white transition">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* 헤더 */}
             <div className="bg-blue-700 px-6 pt-12 pb-5">
                 <p className="text-blue-300 text-xs font-bold uppercase tracking-widest mb-1">Caddy Manager Pro</p>
@@ -1193,21 +1237,6 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                         </section>
 
                         {/* 결제 완료 / 실패 알림 */}
-                        {creditBuyResult === 'success' && (
-                            <div className="bg-emerald-900/30 border border-emerald-600 rounded-2xl p-4 text-center space-y-2">
-                                <p className="text-emerald-300 font-black text-lg">💳 충전 완료!</p>
-                                <p className="text-emerald-400 text-sm">크레딧이 즉시 충전되었습니다.</p>
-                                <button onClick={() => setCreditBuyResult(null)} className="text-stone-400 text-xs">닫기</button>
-                            </div>
-                        )}
-                        {creditBuyResult === 'fail' && (
-                            <div className="bg-red-900/30 border border-red-700 rounded-2xl p-4 text-center space-y-2">
-                                <p className="text-red-300 font-black">결제 실패 또는 취소</p>
-                                <p className="text-red-400 text-xs">다시 시도해주세요.</p>
-                                <button onClick={() => setCreditBuyResult(null)} className="text-stone-400 text-xs">닫기</button>
-                            </div>
-                        )}
-
                         {/* 구매 폼 */}
                         <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
                             <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
