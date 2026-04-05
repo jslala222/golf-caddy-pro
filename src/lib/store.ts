@@ -270,7 +270,17 @@ if (typeof window !== 'undefined') {
 export async function initializeStore(licenseCode: string): Promise<void> {
     const code = licenseCode.trim().toUpperCase();
 
-    // 1단계: 로컈 코드별 캐시 우선 로드 (즉시 표시)
+    // 0단계: 이전 유저 데이터 즉시 제거 + autoSave 차단
+    // (_initialized: false → subscriber의 if (!state._initialized) return; 로 autoSave 막힘)
+    useAppStore.setState({
+        schedules: [],
+        clients: [],
+        transactions: [],
+        feeSettings: { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
+        _initialized: false,
+    });
+
+    // 1단계: 로컬 코드별 캐시 우선 로드 (즉시 표시)
     const local = loadLocalCache(code);
     if (local) {
         useAppStore.setState({
