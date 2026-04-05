@@ -180,6 +180,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
             clients: state.clients,
             transactions: state.transactions,
             feeSettings: state.feeSettings,
+            licenseCode: localStorage.getItem('caddy_license_key')?.trim().toUpperCase() ?? undefined,
             version: 2,
             exportedAt: new Date().toISOString(),
         }, null, 2);

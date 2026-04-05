@@ -167,6 +167,18 @@ export default function SettingsPage() {
         reader.onload = (event) => {
             const content = event.target?.result as string;
             if (content) {
+                // 이용코드 검증 — 다른 사람 백업 복구 차단
+                try {
+                    const parsed = JSON.parse(content);
+                    const backupCode = parsed?.licenseCode as string | undefined;
+                    const currentCode = localStorage.getItem('caddy_license_key')?.trim().toUpperCase();
+                    if (backupCode && currentCode && backupCode !== currentCode) {
+                        alert(`본인의 백업 파일이 아닙니다.\n현재 이용코드: ${currentCode}\n백업 이용코드: ${backupCode}`);
+                        return;
+                    }
+                } catch {
+                    // JSON 파싱 실패는 importData가 처리
+                }
                 const success = importData(content);
                 if (success) {
                     alert('데이터 복구가 완료되었습니다!');
