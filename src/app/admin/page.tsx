@@ -8,7 +8,7 @@ import {
     ShieldCheck, Key, RefreshCcw, Copy, Check, ChevronLeft,
     CalendarX, Users2, GripVertical, UserPlus, Link2, Plus, Minus,
     Search, Receipt, BadgeCheck, Clock, AlertCircle, ChevronDown, ChevronUp,
-    HardDriveDownload, FileJson, CloudOff
+    HardDriveDownload, FileJson, CloudOff, Coins, X
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -19,6 +19,16 @@ function makeDealerToken(): string {
     for (let i = 0; i < 8; i++) t += DEALER_CHARS[Math.floor(Math.random() * DEALER_CHARS.length)];
     return t;
 }
+
+// ── 딜러 크레딧 상수 ──────────────────────────────────────────
+const CREDIT_COL_ADMIN: Record<'standard' | 'premium', Record<PlanType, string>> = {
+    standard: { month: 'credits_month', '6month': 'credits_6month', year: 'credits_year' },
+    premium:  { month: 'credits_month_premium', '6month': 'credits_6month_premium', year: 'credits_year_premium' },
+};
+const CREDIT_PRICE: Record<'standard' | 'premium', Record<PlanType, number>> = {
+    standard: { month: 7_000, '6month': 40_000, year: 70_000 },
+    premium:  { month: 10_000, '6month': 50_000, year: 100_000 },
+};
 
 type AdminTab = 'issue' | 'licenses' | 'dealers' | 'settlements' | 'caddy' | 'restore';
 
@@ -31,6 +41,12 @@ interface Dealer {
     is_active: boolean;
     total_issued: number;
     pin: string | null;
+    credits_month: number;
+    credits_6month: number;
+    credits_year: number;
+    credits_month_premium: number;
+    credits_6month_premium: number;
+    credits_year_premium: number;
 }
 
 interface License {
@@ -94,6 +110,13 @@ export default function AdminPage() {
     const [isAddingDealer, setIsAddingDealer] = useState(false);
     const [copiedToken, setCopiedToken] = useState('');
 
+    // 크레딧 충전 모달 상태
+    const [creditModalDealer, setCreditModalDealer] = useState<Dealer | null>(null);
+    const [creditPlan, setCreditPlan] = useState<PlanType>('month');
+    const [creditTier, setCreditTier] = useState<'standard' | 'premium'>('standard');
+    const [creditQty, setCreditQty] = useState(1);
+    const [isChargingCredit, setIsChargingCredit] = useState(false);
+
     // 이용권 내역 상태
     const [licenseSearch, setLicenseSearch] = useState('');
     const [licenses, setLicenses] = useState<License[]>([]);
@@ -139,7 +162,7 @@ export default function AdminPage() {
     const loadDealers = useCallback(async () => {
         const { data } = await supabase
             .from('aone_pro_caddypro_dealers')
-            .select('id, name, phone, email, token, is_active, total_issued, pin')
+            .select('id, name, phone, email, token, is_active, total_issued, pin, credits_month, credits_6month, credits_year, credits_month_premium, credits_6month_premium, credits_year_premium')
             .order('created_at', { ascending: false });
         if (data) setDealers(data as Dealer[]);
     }, []);
@@ -292,6 +315,30 @@ export default function AdminPage() {
         loadSettlements();
     };
 
+    // ── 크레딧 충전 ──
+    const handleChargeCredit = async () => {
+        if (!creditModalDealer || creditQty < 1) return;
+        setIsChargingCredit(true);
+        const col = CREDIT_COL_ADMIN[creditTier][creditPlan];
+        const current = (creditModalDealer[col as keyof Dealer] as number) ?? 0;
+        const { error } = await supabase
+            .from('aone_pro_caddypro_dealers')
+            .update({ [col]: current + creditQty })
+            .eq('id', creditModalDealer.id);
+        if (error) { alert(`충전 실패: ${error.message}`); setIsChargingCredit(false); return; }
+        await supabase.from('aone_pro_caddypro_dealer_credit_history').insert({
+            dealer_id: creditModalDealer.id,
+            type: 'charge',
+            plan: creditPlan,
+            tier: creditTier,
+            qty: creditQty,
+            memo: `관리자 충전`,
+        });
+        setIsChargingCredit(false);
+        setCreditModalDealer(null);
+        loadDealers();
+    };
+
     const handleLicenseSearchKey = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') searchLicenses(licenseSearch);
     };
@@ -432,7 +479,72 @@ export default function AdminPage() {
 
     return (
         <div className="bg-stone-50 min-h-screen pb-24">
-            {/* 헤더 */}
+            {/* ── 크레딧 충전 모달 ── */}
+            {creditModalDealer && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4" onClick={() => setCreditModalDealer(null)}>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 font-bold text-stone-900">
+                                <Coins size={18} className="text-blue-600" /> 크레딧 충전
+                            </div>
+                            <button onClick={() => setCreditModalDealer(null)} className="text-stone-400 hover:text-stone-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <p className="text-stone-600 text-sm font-bold">{creditModalDealer.name}</p>
+
+                        {/* 티어 선택 */}
+                        <div className="grid grid-cols-2 gap-2">
+                            {(['standard', 'premium'] as const).map(t => (
+                                <button key={t} onClick={() => setCreditTier(t)}
+                                    className={`py-2.5 rounded-xl text-sm font-bold border-2 transition ${creditTier === t ? (t === 'premium' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-blue-500 bg-blue-50 text-blue-700') : 'border-stone-200 text-stone-500'}`}>
+                                    {t === 'premium' ? '⭐ 프리미엄' : '스탠다드'}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 플랜 선택 */}
+                        <div className="grid grid-cols-3 gap-2">
+                            {([['month','1개월'], ['6month','6개월'], ['year','1년']] as [PlanType, string][]).map(([key, label]) => (
+                                <button key={key} onClick={() => setCreditPlan(key)}
+                                    className={`py-2.5 rounded-xl text-sm font-bold border-2 transition ${creditPlan === key ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-stone-200 text-stone-500'}`}>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 공급가 표시 */}
+                        <div className="bg-stone-50 rounded-2xl p-3 text-center">
+                            <p className="text-xs text-stone-500">공급가 (장당)</p>
+                            <p className="text-xl font-black text-stone-900">
+                                ₩{(CREDIT_PRICE[creditTier][creditPlan]).toLocaleString()}
+                            </p>
+                        </div>
+
+                        {/* 수량 */}
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => setCreditQty(q => Math.max(1, q - 1))}
+                                className="w-11 h-11 bg-stone-100 hover:bg-stone-200 rounded-full flex items-center justify-center">
+                                <Minus size={18} />
+                            </button>
+                            <div className="flex-1 text-center">
+                                <p className="text-3xl font-black text-stone-900">{creditQty}장</p>
+                                <p className="text-xs text-stone-500">합계 ₩{(CREDIT_PRICE[creditTier][creditPlan] * creditQty).toLocaleString()}</p>
+                            </div>
+                            <button onClick={() => setCreditQty(q => Math.min(100, q + 1))}
+                                className="w-11 h-11 bg-stone-100 hover:bg-stone-200 rounded-full flex items-center justify-center">
+                                <Plus size={18} />
+                            </button>
+                        </div>
+
+                        <button onClick={handleChargeCredit} disabled={isChargingCredit}
+                            className="w-full py-4 bg-blue-600 text-white font-black text-lg rounded-2xl hover:bg-blue-700 disabled:opacity-60 transition flex items-center justify-center gap-2">
+                            {isChargingCredit ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Coins size={20} />}
+                            {isChargingCredit ? '충전 중...' : `${creditQty}장 충전하기`}
+                        </button>
+                    </div>
+                </div>
+            )}
             <header className="bg-white border-b border-stone-100 px-6 pt-12 pb-4 sticky top-0 z-10">
                 <div className="flex items-center justify-between mb-3">
                     <div>
@@ -732,6 +844,25 @@ export default function AdminPage() {
                                                 <button onClick={() => handleToggleDealer(d.id, d.is_active)}
                                                     className={`text-[10px] font-bold px-2 py-1 rounded-full ${d.is_active ? 'bg-blue-100 text-blue-700' : 'bg-stone-200 text-stone-700'}`}>
                                                     {d.is_active ? '활성' : '비활성'}
+                                                </button>
+                                            </div>
+                                            {/* 크레딧 현황 */}
+                                            <div className="mb-2 flex flex-wrap gap-1">
+                                                {[
+                                                    { label: '1개월', col: 'credits_month', val: d.credits_month },
+                                                    { label: '6개월', col: 'credits_6month', val: d.credits_6month },
+                                                    { label: '1년',   col: 'credits_year',   val: d.credits_year },
+                                                    { label: '1개월P', col: 'credits_month_premium', val: d.credits_month_premium },
+                                                    { label: '6개월P', col: 'credits_6month_premium', val: d.credits_6month_premium },
+                                                    { label: '1년P',   col: 'credits_year_premium',   val: d.credits_year_premium },
+                                                ].map(item => (
+                                                    <span key={item.col} className={`flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${item.val > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-400'}`}>
+                                                        <Coins size={8} /> {item.label} {item.val}
+                                                    </span>
+                                                ))}
+                                                <button onClick={() => { setCreditModalDealer(d); setCreditPlan('month'); setCreditTier('standard'); setCreditQty(1); }}
+                                                    className="flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition">
+                                                    <Plus size={8} /> 충전
                                                 </button>
                                             </div>
                                             <div className="flex items-center gap-2 mb-2">

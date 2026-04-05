@@ -8,10 +8,22 @@ import {
     ShieldAlert, User, Check, Copy, Plus, Minus, Tag, CheckCircle2,
     Key, TrendingUp, Users, Receipt, Lock, Eye, EyeOff, RefreshCcw,
     ChevronDown, ChevronUp, BadgeCheck, Clock, AlertCircle, Share2, ExternalLink,
-    Search, RotateCcw,
+    Search, RotateCcw, Coins,
 } from 'lucide-react';
 
 // ── 타입 ──────────────────────────────────────────────────────────
+// 공급가 (딜러 크레딧 충전 시 기준)
+const DEALER_SUPPLY_PRICE = {
+    standard: { month: 7_000, '6month': 40_000, year: 70_000 },
+    premium:  { month: 10_000, '6month': 50_000, year: 100_000 },
+} as const;
+
+// 크레딧 컬럼 매핑
+const CREDIT_COL: Record<'standard' | 'premium', Record<PlanType, string>> = {
+    standard: { month: 'credits_month', '6month': 'credits_6month', year: 'credits_year' },
+    premium:  { month: 'credits_month_premium', '6month': 'credits_6month_premium', year: 'credits_year_premium' },
+};
+
 interface DealerInfo {
     id: string;
     name: string;
@@ -20,6 +32,12 @@ interface DealerInfo {
     is_active: boolean;
     total_issued: number;
     pin: string | null;
+    credits_month: number;
+    credits_6month: number;
+    credits_year: number;
+    credits_month_premium: number;
+    credits_6month_premium: number;
+    credits_year_premium: number;
 }
 
 interface License {
@@ -126,7 +144,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         setLoading(true);
         const { data } = await supabase
             .from('aone_pro_caddypro_dealers')
-            .select('id, name, phone, token, is_active, total_issued, pin')
+            .select('id, name, phone, token, is_active, total_issued, pin, credits_month, credits_6month, credits_year, credits_month_premium, credits_6month_premium, credits_year_premium')
             .eq('token', token)
             .maybeSingle();
         setLoading(false);
@@ -232,6 +250,56 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         } else {
             alert(`발급 실패: ${result.error}`);
         }
+    };
+
+    // ── 크레딧 발급 ──
+    const handleCreditIssue = async () => {
+        if (!customerName.trim()) { setIssueError('고객 이름을 입력해주세요.'); return; }
+        const phoneDigits = customerPhone.replace(/\D/g, '');
+        if (!phoneDigits || phoneDigits.length < 10) { setIssueError('고객 전화번호를 입력해주세요.'); return; }
+        if (!dealer) return;
+        const creditCol = CREDIT_COL[issueTier][plan];
+        const currentCredits = (dealer[creditCol as keyof DealerInfo] as number) ?? 0;
+        if (currentCredits <= 0) { setIssueError('이 플랜의 크레딧이 없습니다.\n관리자에게 충전을 요청하세요.'); return; }
+        setIsIssuing(true);
+        const result = await issueVoucher({
+            channel: 'dealer',
+            plan,
+            days,
+            tier: issueTier,
+            memo: specialNote || undefined,
+            golfCourse: golfCourse || undefined,
+            payMethod: 'credit',
+            userName: customerName.trim(),
+            userPhone: customerPhone.trim(),
+            issuedBy: `dealer_${token}`,
+        });
+        if (!result.success || !result.code) {
+            setIsIssuing(false);
+            alert(`발급 실패: ${result.error}`);
+            return;
+        }
+        // 크레딧 차감
+        await supabase
+            .from('aone_pro_caddypro_dealers')
+            .update({ [creditCol]: currentCredits - 1, total_issued: dealer.total_issued + 1 })
+            .eq('id', dealer.id);
+        // 사용 이력 기록
+        await supabase.from('aone_pro_caddypro_dealer_credit_history').insert({
+            dealer_id: dealer.id,
+            type: 'use',
+            plan,
+            tier: issueTier,
+            qty: 1,
+            memo: `${customerName.trim()} 발급 (${result.code})`,
+        });
+        setDealer(prev => prev ? { ...prev, [creditCol]: currentCredits - 1, total_issued: prev.total_issued + 1 } : prev);
+        setIsIssuing(false);
+        setIssuedCode(result.code);
+        setIssuedPlan(PLANS[plan].label);
+        setIssuedDays(days);
+        setCopied(false);
+        setCustomerName(''); setCustomerPhone(''); setGolfCourse(''); setSpecialNote('');
     };
 
     const handleGenerateLink = () => {
@@ -536,6 +604,35 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 <p className="text-blue-200 text-sm mt-1">
                     {dealer?.name} 님 · 총 {dealer?.total_issued ?? 0}건 발급
                 </p>
+                {/* 크레딧 잔량 요약 */}
+                {(() => {
+                    const d = dealer;
+                    if (!d) return null;
+                    const items = [
+                        { label: '1개월', credits: d.credits_month, premiumCredits: d.credits_month_premium },
+                        { label: '6개월', credits: d.credits_6month, premiumCredits: d.credits_6month_premium },
+                        { label: '1년',   credits: d.credits_year,   premiumCredits: d.credits_year_premium },
+                    ].filter(i => i.credits > 0 || i.premiumCredits > 0);
+                    if (items.length === 0) return null;
+                    return (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                            {items.map(i => (
+                                <React.Fragment key={i.label}>
+                                    {i.credits > 0 && (
+                                        <span className="flex items-center gap-1 bg-blue-600/60 text-blue-100 text-[10px] font-bold px-2 py-1 rounded-full">
+                                            <Coins size={10} /> {i.label} {i.credits}장
+                                        </span>
+                                    )}
+                                    {i.premiumCredits > 0 && (
+                                        <span className="flex items-center gap-1 bg-emerald-600/60 text-emerald-100 text-[10px] font-bold px-2 py-1 rounded-full">
+                                            <Coins size={10} /> {i.label}프리미엄 {i.premiumCredits}장
+                                        </span>
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* 탭 바 */}
@@ -734,11 +831,26 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
 
                         {/* 안A: 현금발급 버튼 */}
                         {(payMethod === 'cash') && (
+                        <>
+                        {/* 크레딧 발급 버튼 (크레딧 있을 때만 표시) */}
+                        {(() => {
+                            const creditCol = CREDIT_COL[issueTier][plan];
+                            const avail = dealer ? ((dealer[creditCol as keyof DealerInfo] as number) ?? 0) : 0;
+                            if (avail <= 0) return null;
+                            return (
+                                <button onClick={handleCreditIssue} disabled={isIssuing || !customerName.trim() || !customerPhone.trim()}
+                                    className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition border-2 border-emerald-400">
+                                    {isIssuing ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Coins size={24} />}
+                                    {isIssuing ? '발급 중...' : `💳 크레딧 발급 (잔량 ${avail}장)`}
+                                </button>
+                            );
+                        })()}
                         <button onClick={handleIssue} disabled={isIssuing || !customerName.trim() || !customerPhone.trim()}
                             className="w-full py-5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition">
                             {isIssuing ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Key size={24} />}
                             {isIssuing ? '발급 중...' : '💵 현금 수금 후 즉시 발급'}
                         </button>
+                        </>
                         )}
 
                         {/* 결제 링크 발송 (안B) */}
@@ -1132,7 +1244,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                                     <p>상품: <span className="text-blue-300 font-bold">{lic.plan} · {lic.days}일권</span></p>
                                                     {lic.golf_course && <p>골프장: <span className="text-emerald-300">{lic.golf_course}</span></p>}
                                                     {lic.memo && <p>특이사항: <span className="text-stone-300">{lic.memo}</span></p>}
-                                                    <p>수금방식: <span className="text-amber-300">{lic.pay_method === 'cash' ? '💵 현금/계좌이체' : lic.pay_method === 'virtual_account' ? '🏦 가상계좌' : lic.pay_method === 'transfer' ? '📲 실시간이체' : '카드'}</span></p>
+                                                    <p>수금방식: <span className="text-amber-300">{lic.pay_method === 'cash' ? '💵 현금/계좌이체' : lic.pay_method === 'virtual_account' ? '🏦 가상계좌' : lic.pay_method === 'transfer' ? '📲 실시간이체' : lic.pay_method === 'credit' ? '💳 크레딧 발급' : '카드'}</span></p>
                                                     {lic.first_used_at && <p>최초사용: <span className="text-stone-300">{lic.first_used_at.slice(0, 10)}</span></p>}
                                                     {lic.expires_at && <p>만료일: <span className={isExpired ? 'text-red-400' : 'text-stone-300'}>{lic.expires_at.slice(0, 10)}</span></p>}
                                                 </div>
