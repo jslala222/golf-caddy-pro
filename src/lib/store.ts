@@ -309,6 +309,11 @@ export async function initializeStore(licenseCode: string): Promise<void> {
     // 2단계: Supabase에서 최신 데이터 동기화 (신뢰할 수 있는 원본)
     const headers = { 'x-license-code': code };
     try {
+        // 각 API를 개별적으로 처리 — 하나가 실패해도 나머지는 정상 로드
+        const safeJson = async (res: Response, fallback: any) => {
+            if (!res.ok) return fallback;
+            try { return await res.json(); } catch { return fallback; }
+        };
         const [schedRes, clientRes, txRes, feeRes] = await Promise.all([
             fetch('/api/db/schedules', { headers }),
             fetch('/api/db/clients', { headers }),
@@ -316,10 +321,10 @@ export async function initializeStore(licenseCode: string): Promise<void> {
             fetch('/api/db/fee-settings', { headers }),
         ]);
         const [schedData, clientData, txData, feeData] = await Promise.all([
-            schedRes.json(),
-            clientRes.json(),
-            txRes.json(),
-            feeRes.json(),
+            safeJson(schedRes, { schedules: [] }),
+            safeJson(clientRes, { clients: [] }),
+            safeJson(txRes, { transactions: [] }),
+            safeJson(feeRes, { feeSettings: null }),
         ]);
         const freshState = {
             schedules: schedData.schedules ?? [],
