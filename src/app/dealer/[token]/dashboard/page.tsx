@@ -897,6 +897,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                         className={`p-3 rounded-2xl border text-center transition ${plan === key ? 'border-blue-500 bg-blue-900/30' : 'border-stone-700 bg-stone-800'}`}>
                                         <p className="text-xs font-bold text-stone-300">{p.label}</p>
                                         <p className="text-[10px] text-stone-500 mt-0.5">{p.days}일</p>
+                                        <p className="text-[11px] font-bold text-emerald-400 mt-1">₩{CONSUMER_PRICE[issueTier][key].toLocaleString()}</p>
                                     </button>
                                 ))}
                             </div>
@@ -912,12 +913,14 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                     className={`p-3 rounded-2xl border text-center transition ${issueTier === 'standard' ? 'border-blue-500 bg-blue-900/30' : 'border-stone-700 bg-stone-800'}`}>
                                     <p className="text-xs font-bold text-stone-300">스탠다드</p>
                                     <p className="text-[10px] text-stone-500 mt-0.5">수동 복구</p>
+                                    <p className="text-[11px] font-bold text-emerald-400 mt-1">₩{CONSUMER_PRICE.standard[plan].toLocaleString()}</p>
                                 </button>
                                 <button onClick={() => setIssueTier('premium')}
                                     className={`p-3 rounded-2xl border text-center transition relative ${issueTier === 'premium' ? 'border-emerald-500 bg-emerald-900/30' : 'border-stone-700 bg-stone-800'}`}>
                                     <div className="absolute top-1.5 right-1.5 bg-emerald-500 text-white text-[8px] font-black px-1 py-0.5 rounded-full">추천</div>
                                     <p className="text-xs font-bold text-stone-300">프리미엄</p>
                                     <p className="text-[10px] text-stone-500 mt-0.5">자동 복구 ✅</p>
+                                    <p className="text-[11px] font-bold text-purple-400 mt-1">₩{CONSUMER_PRICE.premium[plan].toLocaleString()}</p>
                                 </button>
                             </div>
                         </section>

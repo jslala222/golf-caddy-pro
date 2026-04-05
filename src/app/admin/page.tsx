@@ -122,6 +122,8 @@ export default function AdminPage() {
     const [licenses, setLicenses] = useState<License[]>([]);
     const [licenseLoading, setLicenseLoading] = useState(false);
     const [expandedLicense, setExpandedLicense] = useState<string | null>(null);
+    const [bonusDays, setBonusDays] = useState<Record<string, number>>({});
+    const [bonusLoading, setBonusLoading] = useState<string | null>(null);
 
     // 정산 관리 상태
     const [settlements, setSettlements] = useState<Settlement[]>([]);
@@ -761,6 +763,58 @@ export default function AdminPage() {
                                                 className="flex items-center gap-1 text-[10px] bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl font-bold text-stone-600 transition">
                                                 <Copy size={11} /> 코드 복사 (기기변경 복원용)
                                             </button>
+
+                                            {/* 보너스 일수 부여 */}
+                                            <div className="flex items-center gap-2 pt-1">
+                                                <span className="text-[10px] text-stone-500 font-bold whitespace-nowrap">🎁 보너스</span>
+                                                {[7, 14, 30, 60, 90].map(d => (
+                                                    <button key={d}
+                                                        onClick={async () => {
+                                                            if (!confirm(`${lic.user_name || '이 고객'}에게 ${d}일 보너스를 추가하시겠습니까?`)) return;
+                                                            setBonusLoading(lic.id);
+                                                            const cur = await supabase.from('aone_pro_caddypro_licenses').select('expires_at').eq('id', lic.id).maybeSingle();
+                                                            const base = cur.data?.expires_at && new Date(cur.data.expires_at) > new Date() ? new Date(cur.data.expires_at) : new Date();
+                                                            const newExp = new Date(base.getTime() + d * 86_400_000);
+                                                            await supabase.from('aone_pro_caddypro_licenses').update({ expires_at: newExp.toISOString(), is_active: true }).eq('id', lic.id);
+                                                            setBonusLoading(null);
+                                                            alert(`✅ ${d}일 추가 완료!\n새 만료일: ${newExp.toLocaleDateString('ko-KR')}`);
+                                                            searchLicenses(licenseSearch);
+                                                        }}
+                                                        disabled={bonusLoading === lic.id}
+                                                        className="text-[10px] font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-2 py-1 rounded-lg transition disabled:opacity-40">
+                                                        +{d}일
+                                                    </button>
+                                                ))}
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="number" min={1} max={365}
+                                                        value={bonusDays[lic.id] ?? ''}
+                                                        onChange={e => setBonusDays(prev => ({ ...prev, [lic.id]: Number(e.target.value) }))}
+                                                        placeholder="직접"
+                                                        className="w-14 text-[10px] border border-stone-200 rounded-lg px-1.5 py-1 text-center focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                                    />
+                                                    <button
+                                                        onClick={async () => {
+                                                            const d = bonusDays[lic.id];
+                                                            if (!d || d < 1) return;
+                                                            if (!confirm(`${lic.user_name || '이 고객'}에게 ${d}일 보너스를 추가하시겠습니까?`)) return;
+                                                            setBonusLoading(lic.id);
+                                                            const cur = await supabase.from('aone_pro_caddypro_licenses').select('expires_at').eq('id', lic.id).maybeSingle();
+                                                            const base = cur.data?.expires_at && new Date(cur.data.expires_at) > new Date() ? new Date(cur.data.expires_at) : new Date();
+                                                            const newExp = new Date(base.getTime() + d * 86_400_000);
+                                                            await supabase.from('aone_pro_caddypro_licenses').update({ expires_at: newExp.toISOString(), is_active: true }).eq('id', lic.id);
+                                                            setBonusLoading(null);
+                                                            alert(`✅ ${d}일 추가 완료!\n새 만료일: ${newExp.toLocaleDateString('ko-KR')}`);
+                                                            setBonusDays(prev => ({ ...prev, [lic.id]: 0 }));
+                                                            searchLicenses(licenseSearch);
+                                                        }}
+                                                        disabled={!bonusDays[lic.id] || bonusLoading === lic.id}
+                                                        className="text-[10px] font-bold bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded-lg transition disabled:opacity-40">
+                                                        추가
+                                                    </button>
+                                                </div>
+                                                {bonusLoading === lic.id && <span className="text-[10px] text-emerald-600 animate-pulse">처리 중...</span>}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
