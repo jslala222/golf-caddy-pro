@@ -303,12 +303,40 @@ export async function initializeStore(licenseCode: string): Promise<void> {
             transactions: txData.transactions ?? [],
             feeSettings: feeData.feeSettings ?? { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
         };
+
+        // 구버전 caddy-manager-storage에 데이터가 있고 Supabase가 비어있으면 자동 이전
+        const oldRaw = typeof window !== 'undefined' ? localStorage.getItem('caddy-manager-storage') : null;
+        if (oldRaw && freshState.schedules.length === 0 && freshState.transactions.length === 0) {
+            try {
+                const oldParsed = JSON.parse(oldRaw);
+                const oldData = oldParsed.state ?? oldParsed;
+                if (oldData.schedules?.length || oldData.transactions?.length || oldData.clients?.length) {
+                    // 백그라운드에서 자동 마이그레이션
+                    import('@/lib/supabaseDB').then(({ migrateLocalDataToSupabase }) => {
+                        migrateLocalDataToSupabase(oldData).then(() => {
+                            localStorage.removeItem('caddy-manager-storage');
+                        }).catch(() => {});
+                    });
+                    // 로컬 데이터를 즉시 store에 반영
+                    const merged = {
+                        schedules: (oldData.schedules ?? []).map((s: any) => ({ ...s, holes: s.holes || 18 })),
+                        clients: oldData.clients ?? [],
+                        transactions: oldData.transactions ?? [],
+                        feeSettings: oldData.feeSettings ?? freshState.feeSettings,
+                    };
+                    useAppStore.setState({ ...merged, _initialized: true });
+                    saveLocalCache(code, merged);
+                    return;
+                }
+            } catch { /* 파싱 실패 무시 */ }
+        }
+
         useAppStore.setState({ ...freshState, _initialized: true });
-        // Supabase 데이터로 로컈 캐시 갱신
+        // Supabase 데이터로 로컬 캐시 갱신
         saveLocalCache(code, freshState);
     } catch (e) {
-        console.error('[initializeStore] 서버 동기화 실패, 로컈 캐시 사용:', e);
-        // 로컈 캐시로 동작 지속
+        console.error('[initializeStore] 서버 동기화 실패, 로컬 캐시 사용:', e);
+        // 로컬 캐시로 동작 지속
         useAppStore.setState({ _initialized: true });
     }
 }

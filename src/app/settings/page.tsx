@@ -522,22 +522,10 @@ export default function SettingsPage() {
                     <p className="font-bold mb-1">☁️ 다기기 동기화</p>
                     <p className="leading-relaxed text-xs">현재 폰의 데이터를 클라우드 DB에 동기화합니다. 폰을 바꿔도 같은 이용코드로 로그인하면 데이터가 유지됩니다.</p>
                 </div>
-                <button
-                    onClick={handleMigrate}
-                    disabled={migrateStatus === 'migrating'}
-                    className={`w-full py-4 font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 ${
-                        migrateStatus === 'migrating' ? 'bg-stone-300 text-stone-500 cursor-not-allowed' :
-                        migrateStatus === 'done' ? 'bg-emerald-600 text-white' :
-                        migrateStatus === 'error' ? 'bg-red-500 text-white' :
-                        'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                >
-                    <RefreshCw size={18} className={migrateStatus === 'migrating' ? 'animate-spin' : ''} />
-                    {migrateStatus === 'migrating' ? '동기화 중...' :
-                     migrateStatus === 'done' ? '✅ 동기화 완료!' :
-                     migrateStatus === 'error' ? '❌ 실패 — 다시 시도' :
-                     '지금 바로 동기화하기'}
-                </button>
+                <div className="w-full py-4 px-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                    <p className="text-emerald-700 font-bold text-sm">✅ 자동 동기화 활성화됨</p>
+                    <p className="text-emerald-600 text-xs mt-1">로그인 시 자동으로 동기화됩니다.</p>
+                </div>
                 {migrateMsg && (
                     <p className={`text-xs text-center font-bold ${ migrateStatus === 'done' ? 'text-emerald-600' : 'text-red-500'}`}>{migrateMsg}</p>
                 )}
