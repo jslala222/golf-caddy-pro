@@ -151,7 +151,7 @@ export default function HomePage() {
       {/* Header */}
       <header className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900">캐디 매니저 프로</h1>
+          <h1 className="text-2xl font-bold text-stone-900 whitespace-nowrap">캐디 매니저 프로</h1>
           <p className="text-stone-500 text-sm">
             {userName ? <><span className="font-semibold text-emerald-600">{userName}</span>님 환영합니다! ⛳️</> : '오늘도 굿샷 하세요! ⛳️'}
           </p>
