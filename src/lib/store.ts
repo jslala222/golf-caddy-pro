@@ -97,6 +97,37 @@ function bgFetch(url: string, options: RequestInit) {
     fetch(url, options).catch(e => console.warn('[store]', url, e));
 }
 
+// ─────────────────────────────────────────────────────────
+// 이용코드별 로컬 캐시 (localStorage에 코드별로 격리 저장)
+// ─────────────────────────────────────────────────────────
+const LOCAL_KEY = (code: string) => `caddy-data-${code.toUpperCase()}`;
+
+function saveLocalCache(code: string, state: Pick<AppState, 'schedules' | 'clients' | 'transactions' | 'feeSettings'>) {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(LOCAL_KEY(code), JSON.stringify({
+            schedules: state.schedules,
+            clients: state.clients,
+            transactions: state.transactions,
+            feeSettings: state.feeSettings,
+        }));
+    } catch { /* 스토리지 가득 참 등 무시 */ }
+}
+
+function loadLocalCache(code: string) {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = localStorage.getItem(LOCAL_KEY(code));
+        if (!raw) return null;
+        return JSON.parse(raw) as {
+            schedules: AppState['schedules'];
+            clients: AppState['clients'];
+            transactions: AppState['transactions'];
+            feeSettings: AppState['feeSettings'];
+        };
+    } catch { return null; }
+}
+
 export const useAppStore = create<AppState>()((set, get) => ({
     schedules: [],
     clients: [],
@@ -220,12 +251,38 @@ export const useAppStore = create<AppState>()((set, get) => ({
     },
 }));
 
+// 자동 저장: 상태 변경 시 해당 코드의 localStorage 캐시 업데이트 (디바운스 300ms)
+if (typeof window !== 'undefined') {
+    let _saveTimer: ReturnType<typeof setTimeout> | null = null;
+    useAppStore.subscribe((state) => {
+        if (!state._initialized) return;
+        const code = getCode();
+        if (!code) return;
+        if (_saveTimer) clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(() => saveLocalCache(code, state), 300);
+    });
+}
+
 // ─────────────────────────────────────────────────────────
 // 앱 초기화: LicenseGuard 인증 후 호출
 // Supabase에서 전체 데이터를 로드해 store에 세팅
 // ─────────────────────────────────────────────────────────
 export async function initializeStore(licenseCode: string): Promise<void> {
     const code = licenseCode.trim().toUpperCase();
+
+    // 1단계: 로컈 코드별 캐시 우선 로드 (즉시 표시)
+    const local = loadLocalCache(code);
+    if (local) {
+        useAppStore.setState({
+            schedules: local.schedules ?? [],
+            clients: local.clients ?? [],
+            transactions: local.transactions ?? [],
+            feeSettings: local.feeSettings ?? { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
+            _initialized: true,
+        });
+    }
+
+    // 2단계: Supabase에서 최신 데이터 동기화 (신뢰할 수 있는 원본)
     const headers = { 'x-license-code': code };
     try {
         const [schedRes, clientRes, txRes, feeRes] = await Promise.all([
@@ -240,15 +297,18 @@ export async function initializeStore(licenseCode: string): Promise<void> {
             txRes.json(),
             feeRes.json(),
         ]);
-        useAppStore.setState({
+        const freshState = {
             schedules: schedData.schedules ?? [],
             clients: clientData.clients ?? [],
             transactions: txData.transactions ?? [],
             feeSettings: feeData.feeSettings ?? { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
-            _initialized: true,
-        });
+        };
+        useAppStore.setState({ ...freshState, _initialized: true });
+        // Supabase 데이터로 로컈 캐시 갱신
+        saveLocalCache(code, freshState);
     } catch (e) {
-        console.error('[initializeStore] 서버 초기화 실패:', e);
+        console.error('[initializeStore] 서버 동기화 실패, 로컈 캐시 사용:', e);
+        // 로컈 캐시로 동작 지속
         useAppStore.setState({ _initialized: true });
     }
 }
