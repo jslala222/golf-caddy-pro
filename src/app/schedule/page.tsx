@@ -377,9 +377,14 @@ function ScheduleContent() {
                     {/* Header */}
                     <div className="flex justify-between items-center mb-6 border-b border-stone-100 pb-4">
                         {viewMode === 'form' ? (
-                            <button onClick={() => setViewMode('list')} className="text-stone-500 flex items-center font-bold">
-                                <ArrowLeft size={24} className="mr-1" /> 목록으로
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setViewMode('list')} className="text-stone-500 flex items-center font-bold">
+                                    <ArrowLeft size={24} className="mr-1" /> 목록으로
+                                </button>
+                                <span className="text-lg font-black text-stone-800">
+                                    {date.split('-')[1]}월 {date.split('-')[2]}일
+                                </span>
+                            </div>
                         ) : (
                             <h2 className="text-2xl font-black text-stone-800">
                                 {date.split('-')[1]}월 {date.split('-')[2]}일
