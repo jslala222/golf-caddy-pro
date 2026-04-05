@@ -47,6 +47,22 @@ export async function POST(req: NextRequest) {
   const s = await req.json();
   const db = createServerClient();
 
+  // work 타입이고 shift가 있으면 같은 날 같은 부 중복 체크
+  if (s.type === 'work' && s.shift) {
+    const { data: existing } = await db
+      .from('aone_pro_caddypro_schedules')
+      .select('id')
+      .eq('license_code', code)
+      .eq('date', s.date)
+      .eq('type', 'work')
+      .eq('shift', s.shift)
+      .neq('id', s.id) // 본인 id는 제외 (수정 허용)
+      .maybeSingle();
+    if (existing) {
+      return NextResponse.json({ error: `이미 ${s.shift}부 근무가 등록되어 있습니다.` }, { status: 409 });
+    }
+  }
+
   const { error } = await db.from('aone_pro_caddypro_schedules').upsert({
     id: s.id,
     license_code: code,
