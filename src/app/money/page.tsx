@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppStore, type TransactionType, type ExpenseCategory } from '@/lib/store';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { Wallet, Plus, X, ArrowUp, ArrowDown, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Loader2 } from 'lucide-react';
@@ -194,17 +194,36 @@ export default function MoneyPage() {
         if (plan === '6month') return 30;
         return 5; // 1개월 기본
     };
-    const getOcrCount = (): number => {
-        const key = `caddy_ocr_${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-        return parseInt(typeof window !== 'undefined' ? localStorage.getItem(key) || '0' : '0');
-    };
-    const incrementOcrCount = () => {
-        const key = `caddy_ocr_${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-        localStorage.setItem(key, String(getOcrCount() + 1));
-    };
+
+    const [ocrUsed, setOcrUsed] = useState(0);
     const ocrLimit = getOcrLimit();
-    const ocrUsed = getOcrCount();
     const ocrRemaining = Math.max(0, ocrLimit - ocrUsed);
+
+    // 마운트 시 Supabase에서 이번 달 OCR 사용 횟수 조회
+    useEffect(() => {
+        const licenseCode = localStorage.getItem('caddy_license_key');
+        if (!licenseCode) return;
+        const ym = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+        fetch(`/api/db/ocr-usage?ym=${ym}`, {
+            headers: { 'x-license-code': licenseCode }
+        })
+            .then(r => r.json())
+            .then(d => { if (typeof d.count === 'number') setOcrUsed(d.count); })
+            .catch(() => {});
+    }, []);
+
+    const incrementOcrCount = async () => {
+        const licenseCode = localStorage.getItem('caddy_license_key');
+        if (!licenseCode) return;
+        try {
+            const res = await fetch('/api/db/ocr-usage', {
+                method: 'POST',
+                headers: { 'x-license-code': licenseCode }
+            });
+            const d = await res.json();
+            if (typeof d.count === 'number') setOcrUsed(d.count);
+        } catch {}
+    };
 
     const handleReceiptChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -247,7 +266,7 @@ export default function MoneyPage() {
             const data = await res.json();
             if (data.success) {
                 setReceiptUrl(data.url);
-                incrementOcrCount();
+                await incrementOcrCount();
                 if (data.ocrAmount && !amount) setAmount(String(data.ocrAmount));
                 if (data.ocrMemo && !memo) setMemo(data.ocrMemo);
             }
