@@ -296,6 +296,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
             schedules: state.schedules,
             clients: state.clients,
             transactions: state.transactions,
+            caddies: state.caddies,
             feeSettings: state.feeSettings,
             licenseCode: typeof window !== 'undefined' ? (localStorage.getItem('caddy_license_key')?.trim().toUpperCase() ?? undefined) : undefined,
             ownerName: ownerName || undefined,
@@ -316,8 +317,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
             if (!Array.isArray(data.schedules) || !Array.isArray(clients)) throw new Error('Invalid data format');
             const schedules = (data.schedules || []).map((s: any) => ({ ...s, holes: s.holes || 18 }));
             const transactions = data.transactions || [];
+            const caddies = data.caddies || [];
             const feeSettings = data.feeSettings || get().feeSettings;
-            set(() => ({ schedules, clients, transactions, feeSettings }));
+            set(() => ({ schedules, clients, transactions, caddies, feeSettings }));
 
             // Supabase에도 동기화 (복원 데이터가 새로고침 후에도 유지되도록)
             const code = getCode();
