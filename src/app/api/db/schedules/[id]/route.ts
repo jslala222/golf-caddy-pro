@@ -28,6 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (updates.swapThanks !== undefined) patch.swap_thanks = updates.swapThanks;
   if (updates.swapThanksAmount !== undefined) patch.swap_thanks_amount = updates.swapThanksAmount;
   if (updates.swapThanksDate !== undefined) patch.swap_thanks_date = updates.swapThanksDate;
+  if (updates.swapThanksAddedToLedger !== undefined) patch.swap_thanks_added_to_ledger = updates.swapThanksAddedToLedger;
   if (updates.title     !== undefined) patch.title      = updates.title;
   if (updates.memo      !== undefined) patch.memo      = updates.memo;
 

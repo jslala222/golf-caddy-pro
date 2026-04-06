@@ -45,7 +45,7 @@ export default function TaxPage() {
     }, [transactions, selectedYear]);
 
     // 3. 경비 인정 지출 (세금 감면 가능)
-    const DEDUCTIBLE_CATS = ['transport', 'meal', 'gear', 'etc_expense'];
+    const DEDUCTIBLE_CATS = ['transport', 'meal', 'gear', 'etc_expense', 'swap_thanks'];
     const yearlyDeductibleExpense = useMemo(() => {
         return transactions
             .filter(t => t.type === 'expense' && t.date.startsWith(yearStr) && DEDUCTIBLE_CATS.includes(t.category || ''))

@@ -38,6 +38,10 @@ function ChangeContent() {
     // 지출 확인 팝업
     const [expenseConfirm, setExpenseConfirm] = useState<{ id: string; name: string } | null>(null);
 
+    // 가계부 추가 완료 토스트
+    const [toast, setToast] = useState<string | null>(null);
+    const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
     // 신규 추가 폼
     const [showAddForm, setShowAddForm] = useState(false);
     const [addDate, setAddDate] = useState('');
@@ -101,7 +105,8 @@ function ChangeContent() {
             swapThanksDate: thanksDate || undefined,
         });
         setEditingThanks(null);
-        if (amount > 0) setExpenseConfirm({ id, name: swapWithName });
+        const cur = schedules.find(x => x.id === id);
+        if (amount > 0 && !cur?.swapThanksAddedToLedger) setExpenseConfirm({ id, name: swapWithName });
     };
 
     const handleAddExpense = (scheduleId: string) => {
@@ -111,10 +116,12 @@ function ChangeContent() {
             date: s.swapThanksDate || todayKST(),
             type: 'expense',
             amount: s.swapThanksAmount || 0,
-            category: 'etc_expense',
+            category: 'swap_thanks',
             memo: `대기바꿈 감사 — ${s.swapWith}${s.swapThanks ? ` (${s.swapThanks})` : ''}`,
         });
+        updateSchedule(scheduleId, { swapThanksAddedToLedger: true });
         setExpenseConfirm(null);
+        showToast('✅ 가계부에 추가되었습니다');
     };
 
     const handleEdit = (s: any) => {
@@ -147,8 +154,21 @@ function ChangeContent() {
         setAddDate(''); setAddShift('1'); setAddName(''); setAddMemo('');
     };
 
+    // 대기바꿈 감사비용 요약 (swapThanksAmount 기반, 가계부 추가 여부 무관)
+    const thisYear = new Date().getFullYear().toString();
+    const thisMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+    const totalThisYear = allSwapRecords.filter(s => s.swapThanksDate?.startsWith(thisYear)).reduce((sum, s) => sum + (s.swapThanksAmount || 0), 0);
+    const totalThisMonth = allSwapRecords.filter(s => s.swapThanksDate?.startsWith(`${thisYear}-${thisMonth}`)).reduce((sum, s) => sum + (s.swapThanksAmount || 0), 0);
+    const totalAll = allSwapRecords.reduce((sum, s) => sum + (s.swapThanksAmount || 0), 0);
+
     return (
         <div className="p-6 pb-24 min-h-screen">
+            {/* 토스트 */}
+            {toast && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-stone-900 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl animate-in fade-in slide-in-from-top-2">
+                    {toast}
+                </div>
+            )}
             {/* 헤더 */}
             <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
@@ -186,6 +206,29 @@ function ChangeContent() {
                             <X size={16} />
                         </button>
                     )}
+                </div>
+            )}
+
+            {/* 감사비용 요약카드 */}
+            {totalAll > 0 && (
+                <div className="bg-gradient-to-r from-purple-50 to-amber-50 border border-purple-100 rounded-3xl p-4 mb-5">
+                    <p className="text-xs font-bold text-stone-400 mb-2">🔄 대기바꿈 감사비용 현황</p>
+                    <div className="flex gap-4">
+                        <div className="flex-1 text-center">
+                            <p className="text-[10px] text-stone-400">이번 달</p>
+                            <p className="text-base font-black text-purple-700">{totalThisMonth > 0 ? totalThisMonth.toLocaleString('ko-KR') + '원' : '—'}</p>
+                        </div>
+                        <div className="w-px bg-stone-200" />
+                        <div className="flex-1 text-center">
+                            <p className="text-[10px] text-stone-400">{thisYear}년</p>
+                            <p className="text-base font-black text-purple-700">{totalThisYear > 0 ? totalThisYear.toLocaleString('ko-KR') + '원' : '—'}</p>
+                        </div>
+                        <div className="w-px bg-stone-200" />
+                        <div className="flex-1 text-center">
+                            <p className="text-[10px] text-stone-400">누적 전체</p>
+                            <p className="text-base font-black text-amber-600">{totalAll.toLocaleString('ko-KR')}원</p>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -389,9 +432,10 @@ function ChangeContent() {
                                                     {s.swapThanks ? (
                                                         <div className="flex items-center justify-between">
                                                             <span>🙏 {s.swapThanks}</span>
-                                                            <div className="flex items-center gap-2 text-xs text-amber-500 font-bold">
-                                                                {s.swapThanksAmount ? <span>{s.swapThanksAmount.toLocaleString('ko-KR')}원</span> : null}
-                                                                {s.swapThanksDate ? <span>{s.swapThanksDate.slice(5).replace('-', '/')}</span> : null}
+                                                            <div className="flex items-center gap-2 text-xs font-bold">
+                                                                {s.swapThanksAmount ? <span className="text-amber-500">{s.swapThanksAmount.toLocaleString('ko-KR')}원</span> : null}
+                                                                {s.swapThanksDate ? <span className="text-amber-400">{s.swapThanksDate.slice(5).replace('-', '/')}</span> : null}
+                                                                {s.swapThanksAddedToLedger && <span className="bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full text-[10px]">가계부✓</span>}
                                                             </div>
                                                         </div>
                                                     ) : (

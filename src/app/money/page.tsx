@@ -318,7 +318,7 @@ export default function MoneyPage() {
                 setOcrResult({ amount: data.ocrAmount ?? null, memo: data.ocrMemo ?? null });
                 if (data.ocrAmount) setAmount(String(data.ocrAmount));
                 if (data.ocrMemo && !memo) setMemo(data.ocrMemo);
-                const validCats = ['transport','meal','gear','etc_expense','personal'];
+                const validCats = ['transport','meal','gear','etc_expense','personal','swap_thanks'];
                 if (data.ocrCategory && validCats.includes(data.ocrCategory)) setCategory(data.ocrCategory as ExpenseCategory);
             }
         } catch (err) {
@@ -743,9 +743,10 @@ export default function MoneyPage() {
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-3 gap-2">
                                         {[
                                             { id: 'etc_expense', label: '📱 기타경비', sub: '✅ 경비 인정' },
+                                            { id: 'swap_thanks', label: '🔄 대기감사', sub: '✅ 경비 인정' },
                                             { id: 'personal', label: '⚠️ 개인지출', sub: '❌ 경비 불인정' },
                                         ].map(cat => (
                                             <button
