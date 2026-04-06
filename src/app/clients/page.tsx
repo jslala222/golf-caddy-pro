@@ -516,7 +516,8 @@ export default function ClientsPage() {
                                 };
                                 const ball = ballColor[c.group_no ?? 0] ?? 'bg-stone-400 shadow-stone-300';
                                 return (
-                                <div key={c.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm flex justify-between items-center">
+                                <div key={c.id} className={`bg-white rounded-2xl px-4 py-3 shadow-sm flex justify-between items-center
+                                    ${c.rank === 'leader' ? 'border-2 border-amber-400 shadow-amber-100' : 'border border-stone-100'}`}>
                                     <div className="flex items-center gap-3">
                                         {/* 로또볼 */}
                                         <div className={`w-14 h-14 rounded-full ${ball} shadow-lg flex items-center justify-center flex-shrink-0`}>

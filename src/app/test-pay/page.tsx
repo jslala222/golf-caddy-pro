@@ -4,7 +4,14 @@ import React, { useState } from 'react';
 export default function TestIssuePage() {
   const [pin, setPin] = useState('');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('010-0000-0000');
+  const [phone, setPhone] = useState('');
+
+  const formatPhone = (v: string) => {
+    const n = v.replace(/[^0-9]/g, '');
+    if (n.length <= 3) return n;
+    if (n.length <= 7) return `${n.slice(0,3)}-${n.slice(3)}`;
+    return `${n.slice(0,3)}-${n.slice(3,7)}-${n.slice(7,11)}`;
+  };
   const [plan, setPlan] = useState('month');
   const [tier, setTier] = useState('standard');
   const [loading, setLoading] = useState(false);
@@ -37,7 +44,7 @@ export default function TestIssuePage() {
 
         <input
           type="password"
-          placeholder="마스터 비번 (0827)"
+          placeholder="마스터 비번"
           value={pin}
           onChange={e => setPin(e.target.value)}
           className="w-full p-3 rounded-2xl bg-stone-800 border border-stone-700 text-center text-lg font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -51,7 +58,8 @@ export default function TestIssuePage() {
           </div>
           <div>
             <p className="text-xs text-stone-400 mb-1">전화번호</p>
-            <input value={phone} onChange={e => setPhone(e.target.value)}
+            <input type="tel" value={phone} onChange={e => setPhone(formatPhone(e.target.value))}
+              placeholder="010-0000-0000"
               className="w-full p-2 rounded-xl bg-stone-800 border border-stone-700 text-sm focus:outline-none" />
           </div>
         </div>
