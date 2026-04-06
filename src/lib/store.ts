@@ -21,6 +21,7 @@ export interface Schedule {
     overFee?: number;
     isRain?: boolean;
     holes?: 18 | 9 | number;
+    swapWith?: string;
     createdAt?: string;
 }
 

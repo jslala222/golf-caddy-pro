@@ -35,6 +35,8 @@ function ScheduleContent() {
     const [isRain, setIsRain] = useState(false);
     const [holes, setHoles] = useState<number>(18); // Default 18 holes
     const [customHoles, setCustomHoles] = useState(''); // For custom hole entry
+    const [isSwap, setIsSwap] = useState(false);
+    const [swapWith, setSwapWith] = useState('');
 
     // Transaction State
     const [isExpenseFormOpen, setIsExpenseFormOpen] = useState(false);
@@ -138,6 +140,8 @@ function ScheduleContent() {
         setIsRain(false);
         setHoles(18);
         setCustomHoles('');
+        setIsSwap(false);
+        setSwapWith('');
         setEditingId(null);
         setViewMode('list');
     };
@@ -190,6 +194,8 @@ function ScheduleContent() {
             } else {
                 setCustomHoles('');
             }
+            setIsSwap(!!schedule.swapWith);
+            setSwapWith(schedule.swapWith || '');
         } else {
             setCaddyFee('');
             setOverFee('');
@@ -211,6 +217,7 @@ function ScheduleContent() {
             shift: type === 'work' ? shift : undefined,
             isRain: type === 'work' ? isRain : undefined,
             holes: type === 'work' ? (isRain && customHoles ? Number(customHoles) : holes) : undefined,
+            swapWith: type === 'work' && isSwap && swapWith.trim() ? swapWith.trim() : undefined,
             caddyFee: type === 'work' && caddyFee ? Number(caddyFee) : undefined,
             overFee: type === 'work' && overFee ? Number(overFee) : undefined,
         };
@@ -486,10 +493,22 @@ function ScheduleContent() {
                                                     {schedule.type === 'work' ? `${schedule.shift || '?'}부 · ${schedule.holes || 18}홀` :
                                                         schedule.type === 'holiday' ? '휴무' : '개인'}
                                                 </span>
+                                                {/* 쌈(9홀) 뱃지 */}
+                                                {schedule.type === 'work' && (schedule.holes || 18) <= 9 && (
+                                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0 bg-green-100 text-green-700">
+                                                        🟢 쌈
+                                                    </span>
+                                                )}
                                                 {/* 36홀/54홀 뱃지 */}
                                                 {schedule.type === 'work' && (schedule.holes || 18) >= 36 && (
                                                     <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0 ${(schedule.holes || 18) >= 54 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
                                                         {(schedule.holes || 18) >= 54 ? '🔴 54H' : '🟡 36H'}
+                                                    </span>
+                                                )}
+                                                {/* 대기바꿈 뱃지 */}
+                                                {schedule.swapWith && (
+                                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0 bg-purple-100 text-purple-700">
+                                                        🔄 {schedule.swapWith}
                                                     </span>
                                                 )}
                                                 {/* Time */}
@@ -821,6 +840,29 @@ function ScheduleContent() {
                                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-400 font-bold">홀</span>
                                             </div>
                                             <p className="mt-2 text-[10px] text-stone-400 ml-1 italic">* 18홀이 아닌 경우(9, 27홀 등)에만 켜주세요.</p>
+                                        </div>
+                                    )}
+
+                                    {/* 대기바꿈 입력 */}
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className="text-sm font-bold text-stone-500">대기바꿈</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsSwap(!isSwap); if (isSwap) setSwapWith(''); }}
+                                            className={`text-[11px] px-3 py-1.5 rounded-full border transition flex items-center gap-1.5 ${isSwap ? 'bg-purple-50 border-purple-200 text-purple-600 font-bold' : 'bg-white border-stone-200 text-stone-400'}`}
+                                        >
+                                            🔄 대기바꿈 {isSwap ? 'ON' : 'OFF'}
+                                        </button>
+                                    </div>
+                                    {isSwap && (
+                                        <div className="animate-in slide-in-from-top-2">
+                                            <input
+                                                type="text"
+                                                value={swapWith}
+                                                onChange={(e) => setSwapWith(e.target.value)}
+                                                placeholder="누구와 바꿨나요? (이름)"
+                                                className="w-full p-4 bg-purple-50 border-2 border-purple-200 rounded-2xl text-lg font-bold focus:outline-none focus:border-purple-400 text-purple-700 placeholder:text-purple-300"
+                                            />
                                         </div>
                                     )}
 
