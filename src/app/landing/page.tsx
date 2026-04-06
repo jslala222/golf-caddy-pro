@@ -300,7 +300,11 @@ export default function LandingPage() {
                             key={p.key}
                             onClick={() => setSelectedPlan(p.key)}
                             className={`w-full p-4 rounded-2xl border text-left transition relative overflow-hidden ${
-                                selectedPlan === p.key ? 'border-emerald-500 bg-emerald-500/10' : 'border-stone-800 bg-stone-900'
+                                selectedPlan === p.key
+                                    ? selectedTier === 'premium'
+                                        ? 'border-amber-500 bg-amber-500/10'
+                                        : 'border-emerald-500 bg-emerald-500/10'
+                                    : 'border-stone-800 bg-stone-900'
                             }`}
                         >
                             {p.badge && (
@@ -309,15 +313,23 @@ export default function LandingPage() {
                                 </span>
                             )}
                             <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedPlan === p.key ? 'border-emerald-500' : 'border-stone-600'}`}>
-                                    {selectedPlan === p.key && <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />}
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                    selectedPlan === p.key
+                                        ? selectedTier === 'premium' ? 'border-amber-500' : 'border-emerald-500'
+                                        : 'border-stone-600'
+                                }`}>
+                                    {selectedPlan === p.key && <div className={`w-2.5 h-2.5 rounded-full ${selectedTier === 'premium' ? 'bg-amber-500' : 'bg-emerald-500'}`} />}
                                 </div>
                                 <div>
                                     <p className="text-white font-bold text-sm">{p.label} 이용권</p>
                                     <p className="text-stone-400 text-xs">{p.days}일 사용</p>
                                 </div>
                                 <div className="ml-auto text-right">
-                                    <p className={`font-black text-lg ${selectedPlan === p.key ? 'text-emerald-400' : 'text-white'}`}>{p.price}</p>
+                                    <p className={`font-black text-lg ${
+                                        selectedPlan === p.key
+                                            ? selectedTier === 'premium' ? 'text-amber-400' : 'text-emerald-400'
+                                            : 'text-white'
+                                    }`}>{p.price}</p>
                                 </div>
                             </div>
                         </button>
