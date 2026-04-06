@@ -12,9 +12,9 @@ import type { PlanType } from '@/lib/licenseUtils';
 
 // ⚠️ 테스트 모드 — 확인 후 원복 필요
 const VALID_PLANS: Record<string, { days: number; amount: number; premiumAmount: number }> = {
-  month:    { days: 30,  amount: 1, premiumAmount: 1 },
-  '6month': { days: 180, amount: 1, premiumAmount: 1 },
-  year:     { days: 365, amount: 1, premiumAmount: 1 },
+  month:    { days: 30,  amount: 150, premiumAmount: 150 },
+  '6month': { days: 180, amount: 150, premiumAmount: 150 },
+  year:     { days: 365, amount: 150, premiumAmount: 150 },
 };
 
 export async function POST(request: NextRequest) {

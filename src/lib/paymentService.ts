@@ -20,15 +20,15 @@ declare global {
 // ── 상품 정의 (golf-caddy 요금제) ─────────────────────────────
 // ⚠️ 테스트 모드 — 확인 후 원복 필요
 export const PORTONE_PRODUCTS = {
-  month:    { name: 'Caddy Manager Pro 1개월', amount: 1,  days: 30  },
-  '6month': { name: 'Caddy Manager Pro 6개월', amount: 1, days: 180 },
-  year:     { name: 'Caddy Manager Pro 1년',   amount: 1, days: 365 },
+  month:    { name: 'Caddy Manager Pro 1개월', amount: 150,  days: 30  },
+  '6month': { name: 'Caddy Manager Pro 6개월', amount: 150, days: 180 },
+  year:     { name: 'Caddy Manager Pro 1년',   amount: 150, days: 365 },
 } as const;
 
 export const PORTONE_PRODUCTS_PREMIUM = {
-  month:    { name: 'Caddy Manager Pro 1개월 (프리미엄)', amount: 1, days: 30  },
-  '6month': { name: 'Caddy Manager Pro 6개월 (프리미엄)', amount: 1, days: 180 },
-  year:     { name: 'Caddy Manager Pro 1년 (프리미엄)',   amount: 1, days: 365 },
+  month:    { name: 'Caddy Manager Pro 1개월 (프리미엄)', amount: 150, days: 30  },
+  '6month': { name: 'Caddy Manager Pro 6개월 (프리미엄)', amount: 150, days: 180 },
+  year:     { name: 'Caddy Manager Pro 1년 (프리미엄)',   amount: 150, days: 365 },
 } as const;
 
 export type PortOneProductKey = keyof typeof PORTONE_PRODUCTS;
