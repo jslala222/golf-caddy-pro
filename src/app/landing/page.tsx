@@ -11,9 +11,14 @@ import { searchLicenseByNamePhone, verifyLicenseAsync } from '@/lib/licenseUtils
 import type { MemberSearchResult } from '@/lib/licenseUtils';
 
 const PLANS = [
-    { key: 'month',  label: '1개월',  price: '9,900원',  priceNum: 9900,  days: 30,  badge: null,       color: 'from-blue-500 to-blue-600' },
-    { key: '6month', label: '6개월',  price: '55,000원', priceNum: 55000, days: 180, badge: 'BEST',     color: 'from-emerald-500 to-emerald-600' },
-    { key: 'year',   label: '1년',    price: '99,000원', priceNum: 99000, days: 365, badge: '최대할인', color: 'from-violet-500 to-violet-600' },
+    { key: 'month',  label: '1개월',  price: '9,900원',   priceNum: 9900,  days: 30,  badge: null,       color: 'from-blue-500 to-blue-600' },
+    { key: '6month', label: '6개월',  price: '55,000원',  priceNum: 55000, days: 180, badge: 'BEST',     color: 'from-emerald-500 to-emerald-600' },
+    { key: 'year',   label: '1년',    price: '99,000원',  priceNum: 99000, days: 365, badge: '최대할인', color: 'from-violet-500 to-violet-600' },
+];
+const PLANS_PREMIUM = [
+    { key: 'month',  label: '1개월',  price: '12,900원',  priceNum: 12900,  days: 30,  badge: null,       color: 'from-blue-500 to-blue-600' },
+    { key: '6month', label: '6개월',  price: '69,000원',  priceNum: 69000,  days: 180, badge: 'BEST',     color: 'from-emerald-500 to-emerald-600' },
+    { key: 'year',   label: '1년',    price: '129,000원', priceNum: 129000, days: 365, badge: '최대할인', color: 'from-violet-500 to-violet-600' },
 ];
 
 const FEATURES = [
@@ -29,6 +34,7 @@ type Sheet = 'none' | 'start' | 'code' | 'member';
 export default function LandingPage() {
     const router = useRouter();
     const [selectedPlan, setSelectedPlan] = useState('6month');
+    const [selectedTier, setSelectedTier] = useState<'standard' | 'premium'>('standard');
     const [sheet, setSheet] = useState<Sheet>('none');
 
     // 코드 직접 입력
@@ -48,7 +54,8 @@ export default function LandingPage() {
     const tapCountRef = useRef(0);
     const lastTapRef = useRef(0);
 
-    const plan = PLANS.find(p => p.key === selectedPlan)!;
+    const activePlans = selectedTier === 'premium' ? PLANS_PREMIUM : PLANS;
+    const plan = activePlans.find(p => p.key === selectedPlan)!;
 
     // 코드 입력 후 활성화
     const handleCodeActivate = async () => {
@@ -262,9 +269,33 @@ export default function LandingPage() {
 
             {/* 이용권 요금제 */}
             <div className="px-5 mb-6">
-                <p className="text-stone-400 text-[11px] font-bold uppercase tracking-widest mb-4">이용권 요금제</p>
+                <p className="text-stone-400 text-[11px] font-bold uppercase tracking-widest mb-3">이용권 요금제</p>
+                {/* 티어 토글 */}
+                <div className="flex gap-2 mb-4">
+                    <button
+                        onClick={() => setSelectedTier('standard')}
+                        className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition ${
+                            selectedTier === 'standard' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' : 'border-stone-700 text-stone-500'
+                        }`}
+                    >
+                        스탠다드
+                    </button>
+                    <button
+                        onClick={() => setSelectedTier('premium')}
+                        className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition relative ${
+                            selectedTier === 'premium' ? 'border-amber-500 bg-amber-500/10 text-amber-400' : 'border-stone-700 text-stone-500'
+                        }`}
+                    >
+                        ⭐ 프리미엄
+                    </button>
+                </div>
+                {selectedTier === 'premium' && (
+                    <p className="text-amber-400/80 text-[11px] leading-relaxed mb-3 px-1">
+                        💡 매일 자동백업 · 기기 분실 시 데이터 자동 복구 포함
+                    </p>
+                )}
                 <div className="space-y-3">
-                    {PLANS.map(p => (
+                    {activePlans.map(p => (
                         <button
                             key={p.key}
                             onClick={() => setSelectedPlan(p.key)}
@@ -373,10 +404,10 @@ export default function LandingPage() {
                                     <div className="pt-2 border-t border-stone-800">
                                         <p className="text-stone-500 text-[11px] text-center mb-3">이용권이 없으신가요?</p>
                                         <div className="space-y-2">
-                                            {PLANS.map(p => (
+                                            {activePlans.map(p => (
                                                 <Link
                                                     key={p.key}
-                                                    href={`/subscribe?plan=${p.key}`}
+                                                    href={`/subscribe?plan=${p.key}${selectedTier === 'premium' ? '&tier=premium' : ''}`}
                                                     className={`w-full py-3 px-5 rounded-2xl bg-gradient-to-r ${p.color} text-white flex items-center justify-between active:scale-95 transition`}
                                                 >
                                                     <span className="font-bold text-sm">{p.label} 이용권</span>
