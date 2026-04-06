@@ -24,6 +24,8 @@ export interface Schedule {
     swapWith?: string;
     swapMemo?: string;
     swapThanks?: string;
+    swapThanksAmount?: number;
+    swapThanksDate?: string;
     createdAt?: string;
 }
 
