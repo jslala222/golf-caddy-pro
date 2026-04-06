@@ -49,6 +49,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     const isSubscribePage = pathname?.startsWith('/subscribe');
     const isLandingPage = pathname?.startsWith('/landing');
     const isDealerLoginPage = pathname?.startsWith('/dealer-login');
+    const isTestPayPage = pathname?.startsWith('/test-pay');
     const [isKakaotalk, setIsKakaotalk] = useState(false);
     const [showKakaoBanner, setShowKakaoBanner] = useState(true);
     const [isIOS, setIsIOS] = useState(false);
@@ -207,7 +208,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                     </div>
                 </div>
             )}
-            {isAdminPage || isDealerPage || isSubscribePage || isLandingPage || isDealerLoginPage ? (
+            {isAdminPage || isDealerPage || isSubscribePage || isLandingPage || isDealerLoginPage || isTestPayPage ? (
                 children
             ) : (
                 <div className="flex justify-center min-h-screen bg-stone-100">
