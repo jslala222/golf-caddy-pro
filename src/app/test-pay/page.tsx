@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 
 export default function TestIssuePage() {
   const [pin, setPin] = useState('');
-  const [name, setName] = useState('테스트');
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('010-0000-0000');
   const [plan, setPlan] = useState('month');
   const [tier, setTier] = useState('standard');
