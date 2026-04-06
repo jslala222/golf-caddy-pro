@@ -28,3 +28,11 @@
 - **이용권 코드 형식**: `SM-XXX-XXX`
 - **관리자 비번**: `0827` / **마스터코드**: `0827`
 - **R2 버킷**: `aonepro-db`, 경로: `caddy-manager-pro/backups/{코드}/latest.json`
+
+## UI/UX 규칙
+
+### 전화번호 입력
+- **모든** 전화번호 input은 자동 하이픈 포맷팅 적용 (`010-0000-0000`)
+- `formatPhoneNumber()` 함수 재사용: `value.replace(/[^0-9]/g,'')` → 3-4-4 하이픈 삽입
+- `type="tel"` + `placeholder="010-0000-0000"` 필수
+- 스마트폰 기준 설계 (99% 이상 스마트폰 사용자)

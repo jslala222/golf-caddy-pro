@@ -130,6 +130,10 @@ export default function ClientsPage() {
         setContact(formatPhoneNumber(e.target.value));
     };
 
+    const handleCaddyContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setCaddyContact(formatPhoneNumber(e.target.value));
+    };
+
     const resetForm = () => {
         setName('');
         setContact('');
@@ -516,9 +520,9 @@ export default function ClientsPage() {
                                                     {c.rank === 'leader' ? '⭐조장' : c.rank === 'standby' ? '대기' : '일반'}
                                                 </span>
                                             </div>
-                                            <div className="flex gap-2 mt-0.5 text-xs text-stone-400">
-                                                {c.group_no && <span className="font-bold text-stone-500">{c.group_no}조</span>}
-                                                {c.contact && <span>{c.contact}</span>}
+                                            <div className="flex gap-2 mt-0.5 items-center">
+                                                {c.group_no && <span className="text-xs font-bold text-stone-500">{c.group_no}조</span>}
+                                                {c.contact && <span className="text-sm font-bold text-stone-700">{c.contact}</span>}
                                             </div>
                                         </div>
                                     </div>
@@ -576,7 +580,7 @@ export default function ClientsPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-stone-500 mb-1 ml-1">전화번호 (선택)</label>
-                                <input type="tel" value={caddyContact} onChange={e => setCaddyContact(e.target.value)}
+                                <input type="tel" value={caddyContact} onChange={handleCaddyContactChange}
                                     placeholder="010-0000-0000"
                                     className="w-full p-4 bg-stone-50 rounded-2xl text-stone-800 focus:bg-white focus:ring-2 focus:ring-emerald-400 outline-none" />
                             </div>
