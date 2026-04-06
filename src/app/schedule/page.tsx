@@ -924,6 +924,66 @@ function ScheduleContent() {
             )
             }
 
+            {/* 대기바꿈 통계 섹션 */}
+            {(() => {
+                const swapRecords = schedules
+                    .filter(s => s.type === 'work' && s.swapWith)
+                    .sort((a, b) => b.date.localeCompare(a.date));
+
+                if (swapRecords.length === 0) return null;
+
+                // 이름별 집계
+                const countByName: Record<string, number> = {};
+                swapRecords.forEach(s => {
+                    const name = s.swapWith!;
+                    countByName[name] = (countByName[name] || 0) + 1;
+                });
+                const sortedNames = Object.entries(countByName).sort((a, b) => b[1] - a[1]);
+
+                return (
+                    <div className="mt-6 bg-white rounded-3xl p-6 shadow-sm border border-purple-100">
+                        <h2 className="text-lg font-black text-stone-800 mb-4 flex items-center gap-2">
+                            🔄 대기바꿈 기록
+                            <span className="text-sm font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded-full">{swapRecords.length}건</span>
+                        </h2>
+
+                        {/* 이름별 통계 */}
+                        <div className="mb-5">
+                            <p className="text-xs font-bold text-stone-400 mb-2 ml-1">누구와 자주 바꿨나요?</p>
+                            <div className="flex flex-wrap gap-2">
+                                {sortedNames.map(([name, count]) => (
+                                    <div key={name} className="flex items-center gap-1.5 bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-full">
+                                        <span className="font-black text-purple-700 text-sm">{name}</span>
+                                        <span className="text-xs font-bold text-purple-400 bg-white px-1.5 py-0.5 rounded-full">{count}회</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 날짜별 목록 */}
+                        <div>
+                            <p className="text-xs font-bold text-stone-400 mb-2 ml-1">날짜별 목록</p>
+                            <div className="space-y-2">
+                                {swapRecords.map(s => (
+                                    <div key={s.id} className="flex items-center justify-between bg-stone-50 rounded-2xl px-4 py-3">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-sm font-black text-stone-500 font-mono">
+                                                {s.date.slice(5).replace('-', '/')}
+                                            </span>
+                                            <span className="text-xs bg-stone-200 text-stone-500 px-2 py-0.5 rounded-full">{s.shift}부</span>
+                                            {s.title && <span className="text-xs text-stone-400 truncate max-w-[80px]">{s.title}</span>}
+                                        </div>
+                                        <span className="text-sm font-black text-purple-600 bg-purple-50 border border-purple-200 px-3 py-1 rounded-full">
+                                            🔄 {s.swapWith}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
         </div >
     );
 }
