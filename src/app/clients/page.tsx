@@ -490,21 +490,34 @@ export default function ClientsPage() {
                                     <p className="font-bold">등록된 캐디가 없습니다.</p>
                                     <p className="text-xs mt-1">우측 상단 + 버튼으로 추가하세요.</p>
                                 </div>
-                            ) : filteredCaddies.map(c => (
-                                <div key={c.id} className={`bg-white rounded-2xl px-4 py-3 shadow-sm border-l-4 flex justify-between items-center
-                                    ${c.rank === 'leader' ? 'border-l-amber-400' : c.rank === 'standby' ? 'border-l-sky-400' : 'border-l-stone-200'}`}>
+                            ) : filteredCaddies.map(c => {
+                                // 조별 로또볼 색상
+                                const ballColor: Record<number, string> = {
+                                    1: 'bg-yellow-400 shadow-yellow-300',
+                                    2: 'bg-sky-400 shadow-sky-300',
+                                    3: 'bg-red-500 shadow-red-300',
+                                    4: 'bg-violet-500 shadow-violet-300',
+                                    5: 'bg-emerald-500 shadow-emerald-300',
+                                    6: 'bg-orange-500 shadow-orange-300',
+                                };
+                                const ball = ballColor[c.group_no ?? 0] ?? 'bg-stone-400 shadow-stone-300';
+                                return (
+                                <div key={c.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm flex justify-between items-center">
                                     <div className="flex items-center gap-3">
+                                        {/* 로또볼 */}
+                                        <div className={`w-14 h-14 rounded-full ${ball} shadow-lg flex items-center justify-center flex-shrink-0`}>
+                                            <span className="text-white font-black text-xl leading-none drop-shadow">{c.caddy_no ?? '?'}</span>
+                                        </div>
                                         <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-bold text-stone-800">{c.name}</span>
-                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="font-bold text-stone-800 text-base">{c.name}</span>
+                                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full
                                                     ${c.rank === 'leader' ? 'bg-amber-100 text-amber-700' : c.rank === 'standby' ? 'bg-sky-100 text-sky-700' : 'bg-stone-100 text-stone-500'}`}>
-                                                    {c.rank === 'leader' ? '조장' : c.rank === 'standby' ? '대기' : '일반'}
+                                                    {c.rank === 'leader' ? '⭐조장' : c.rank === 'standby' ? '대기' : '일반'}
                                                 </span>
-                                                {c.group_no && <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-1.5 py-0.5 rounded-full">{c.group_no}조</span>}
                                             </div>
-                                            <div className="flex gap-3 mt-0.5 text-xs text-stone-400">
-                                                {c.caddy_no && <span className="flex items-center gap-0.5"><Hash size={10} />{c.caddy_no}번</span>}
+                                            <div className="flex gap-2 mt-0.5 text-xs text-stone-400">
+                                                {c.group_no && <span className="font-bold text-stone-500">{c.group_no}조</span>}
                                                 {c.contact && <span>{c.contact}</span>}
                                             </div>
                                         </div>
@@ -518,6 +531,7 @@ export default function ClientsPage() {
                                         </button>
                                     </div>
                                 </div>
+                                );})
                             ))}
                         </div>
                     </>
