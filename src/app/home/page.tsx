@@ -68,15 +68,19 @@ export default function HomePage() {
     );
   }
 
-  const { transactions = [], schedules = [], clients = [], feeSettings, addTransaction, upsertDiary, getDiaryByDate } = store;
+  const { transactions = [], schedules = [], clients = [], feeSettings, addTransaction, upsertDiary, getDiaryByDate, updateSchedule } = store;
 
   // 빠른 수입 입력 모달 열기
   const openQuickModal = () => {
     const todayStr = todayKST();
     const existing = getDiaryByDate(todayStr);
-    setQTip1(existing?.tip_1 ? fmtInput(String(existing.tip_1)) : '');
-    setQTip2(existing?.tip_2 ? fmtInput(String(existing.tip_2)) : '');
-    setQTip3(existing?.tip_3 ? fmtInput(String(existing.tip_3)) : '');
+    // 팁은 schedule.overFee에서 불러오기
+    const todayWork = schedules
+      .filter(s => s.date === todayStr && s.type === 'work')
+      .sort((a, b) => (a.shift ?? '1').localeCompare(b.shift ?? '1'));
+    setQTip1(todayWork[0]?.overFee ? fmtInput(String(todayWork[0].overFee)) : '');
+    setQTip2(todayWork[1]?.overFee ? fmtInput(String(todayWork[1].overFee)) : '');
+    setQTip3(todayWork[2]?.overFee ? fmtInput(String(todayWork[2].overFee)) : '');
     setQExtraReason(existing?.extra_reason ?? '');
     setQExtraAmount(existing?.extra_amount ? fmtInput(String(existing.extra_amount)) : '');
     setQMemo(existing?.memo ?? '');
@@ -97,19 +101,26 @@ export default function HomePage() {
       if (s.shift === '3') return feeSettings.shift3;
       return 150000;
     };
+    setQSaving(true);
+    // 팁 → schedule.overFee 업데이트 (수입 집계에 즉시 반영)
+    const tipValues = [toNum(qTip1), toNum(qTip2), toNum(qTip3)];
+    for (let i = 0; i < todayWork.length; i++) {
+      const newTip = tipValues[i];
+      if (newTip !== (todayWork[i].overFee ?? 0)) {
+        updateSchedule(todayWork[i].id, { overFee: newTip || undefined });
+      }
+    }
+    // diary: 캐디피 스냅샷 + 기타수입 + 메모 (팁은 schedule에 저장)
     const diary: Omit<Diary, 'id' | 'license_code' | 'updated_at'> = {
       date: todayStr,
       caddy_fee_1: todayWork[0] ? getCF(todayWork[0]) : 0,
       caddy_fee_2: todayWork[1] ? getCF(todayWork[1]) : 0,
       caddy_fee_3: todayWork[2] ? getCF(todayWork[2]) : 0,
-      tip_1: toNum(qTip1),
-      tip_2: toNum(qTip2),
-      tip_3: toNum(qTip3),
+      tip_1: 0, tip_2: 0, tip_3: 0,
       extra_reason: qExtraReason.trim(),
       extra_amount: toNum(qExtraAmount),
       memo: qMemo.trim(),
     };
-    setQSaving(true);
     await upsertDiary(diary);
     setQSaving(false);
     setQuickOpen(false);
@@ -466,9 +477,9 @@ export default function HomePage() {
 
     {/* 빠른 수입 입력 모달 */}
     {quickOpen && (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-0" onClick={() => setQuickOpen(false)}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setQuickOpen(false)}>
         <div
-          className="w-full max-w-[480px] bg-white rounded-t-3xl p-6 shadow-2xl space-y-4 overflow-y-auto max-h-[92dvh]"
+          className="w-full max-w-[480px] bg-white rounded-3xl p-6 shadow-2xl space-y-4 overflow-y-auto max-h-[88dvh]"
           onClick={e => e.stopPropagation()}
         >
           {/* 헤더 */}
@@ -550,7 +561,7 @@ export default function HomePage() {
 
           {/* 메모 */}
           <div>
-            <p className="text-xs font-bold text-stone-500 mb-2">메모 (일지)</p>
+            <p className="text-xs font-bold text-stone-500 mb-2">오늘의 메모</p>
             <textarea placeholder="오늘의 메모  잘한걸까 ? 못한걸까 ?"
               value={qMemo} onChange={e => setQMemo(e.target.value)} rows={3}
               className="w-full border border-stone-200 rounded-xl px-3 py-2 text-stone-700 text-sm focus:outline-none focus:border-emerald-400 resize-none" />

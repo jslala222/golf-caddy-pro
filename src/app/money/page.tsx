@@ -676,30 +676,19 @@ export default function MoneyPage() {
                         </div>
                     ) : filteredDiaries.map(d => {
                         const totalCaddyFee = d.caddy_fee_1 + d.caddy_fee_2 + d.caddy_fee_3;
-                        const totalTip = d.tip_1 + d.tip_2 + d.tip_3;
                         const totalExtra = d.extra_amount;
-                        const dayTotal = totalCaddyFee + totalTip + totalExtra;
+                        const dayTotal = totalCaddyFee + totalExtra;
                         return (
-                            <div key={d.date} className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-3">
+                            <div key={d.date} className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-2">
                                 {/* 날짜 + 합계 */}
                                 <div className="flex justify-between items-center">
                                     <span className="text-sm font-bold text-stone-700">{formatDate(d.date)}</span>
                                     <span className="text-emerald-600 font-black text-base">+{dayTotal.toLocaleString()}원</span>
                                 </div>
-                                {/* 캐디피 */}
+                                {/* 총 수입 칩 */}
                                 {totalCaddyFee > 0 && (
                                     <div className="flex flex-wrap gap-2">
-                                        {d.caddy_fee_1 > 0 && <span className="text-[11px] bg-emerald-50 text-emerald-700 font-bold px-2 py-1 rounded-full">1부 캐디피 {d.caddy_fee_1.toLocaleString()}</span>}
-                                        {d.caddy_fee_2 > 0 && <span className="text-[11px] bg-emerald-50 text-emerald-700 font-bold px-2 py-1 rounded-full">2부 캐디피 {d.caddy_fee_2.toLocaleString()}</span>}
-                                        {d.caddy_fee_3 > 0 && <span className="text-[11px] bg-emerald-50 text-emerald-700 font-bold px-2 py-1 rounded-full">3부 캐디피 {d.caddy_fee_3.toLocaleString()}</span>}
-                                    </div>
-                                )}
-                                {/* 팁 */}
-                                {totalTip > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {d.tip_1 > 0 && <span className="text-[11px] bg-sky-50 text-sky-700 font-bold px-2 py-1 rounded-full">1부 팁 {d.tip_1.toLocaleString()}</span>}
-                                        {d.tip_2 > 0 && <span className="text-[11px] bg-sky-50 text-sky-700 font-bold px-2 py-1 rounded-full">2부 팁 {d.tip_2.toLocaleString()}</span>}
-                                        {d.tip_3 > 0 && <span className="text-[11px] bg-sky-50 text-sky-700 font-bold px-2 py-1 rounded-full">3부 팁 {d.tip_3.toLocaleString()}</span>}
+                                        <span className="text-[11px] bg-emerald-50 text-emerald-700 font-bold px-2 py-1 rounded-full">캐디피 {totalCaddyFee.toLocaleString()}</span>
                                     </div>
                                 )}
                                 {/* 기타수입 */}
@@ -792,6 +781,8 @@ export default function MoneyPage() {
                                     <input
                                         id="amount-input"
                                         type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
                                         value={amount ? Number(amount).toLocaleString() : ''}
                                         onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
                                         placeholder="0"

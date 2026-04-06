@@ -898,6 +898,8 @@ function ScheduleContent() {
                                             <label className="block text-sm font-bold text-stone-500 mb-1.5 ml-1">오버피 (원)</label>
                                             <input
                                                 type="text"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
                                                 value={overFee ? Number(overFee).toLocaleString() : ''}
                                                 onChange={(e) => setOverFee(e.target.value.replace(/[^0-9]/g, ''))}
                                                 placeholder="0"
