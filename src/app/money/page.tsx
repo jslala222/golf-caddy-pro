@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useAppStore, type TransactionType, type ExpenseCategory } from '@/lib/store';
+import { useAppStore, type TransactionType, type ExpenseCategory, type Diary } from '@/lib/store';
 import { formatDate, formatCurrency, todayKST } from '@/lib/utils';
-import { Wallet, Plus, X, ArrowUp, ArrowDown, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Loader2, Calculator } from 'lucide-react';
+import { Wallet, Plus, X, ArrowUp, ArrowDown, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Loader2, Calculator, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 
 
 export default function MoneyPage() {
-    const { transactions, addTransaction, deleteTransaction, schedules, feeSettings } = useAppStore();
+    const { transactions, addTransaction, deleteTransaction, schedules, feeSettings, diaries } = useAppStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activePage, setActivePage] = useState<'ledger' | 'diary'>('ledger');
 
     // Filter Type State
     type FilterType = 'week' | 'month' | 'year';
@@ -214,6 +215,15 @@ export default function MoneyPage() {
             });
     }, [combinedHistory]);
 
+    // Filtered diaries for current month
+    const filteredDiaries = useMemo(() => {
+        const y = currentDate.getFullYear();
+        const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+        return (diaries || [])
+            .filter(d => d.date.startsWith(`${y}-${m}`))
+            .sort((a, b) => b.date.localeCompare(a.date));
+    }, [diaries, currentDate]);
+
     // ... (keep modal form state)
     // Form State
     const [date, setDate] = useState(todayKST());
@@ -397,25 +407,38 @@ export default function MoneyPage() {
 
     return (
         <div className="p-6 pb-24 relative min-h-screen">
-            {/* 가계부 / 세금 탭 */}
+            {/* 가계부 / 월간일지 / 세금 탭 */}
             <div className="flex gap-1 p-1 bg-stone-100 rounded-2xl mb-5">
-                <span className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-white text-emerald-700 rounded-xl font-black text-sm shadow-sm">
-                    <Wallet size={16} /> 가계부
-                </span>
+                <button
+                    onClick={() => setActivePage('ledger')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-black text-sm transition ${activePage === 'ledger' ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-400'}`}
+                >
+                    <Wallet size={15} /> 가계부
+                </button>
+                <button
+                    onClick={() => setActivePage('diary')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-black text-sm transition ${activePage === 'diary' ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-400'}`}
+                >
+                    <BookOpen size={15} /> 월간일지
+                </button>
                 <Link href="/tax" className="flex-1 flex items-center justify-center gap-1.5 py-2 text-stone-400 rounded-xl font-bold text-sm hover:text-stone-600">
-                    <Calculator size={16} /> 세금
+                    <Calculator size={15} /> 세금
                 </Link>
             </div>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-stone-900 flex items-center">
-                    <Wallet className="mr-2 text-emerald-600" /> 가계부
+                    {activePage === 'diary'
+                        ? <><BookOpen className="mr-2 text-emerald-600" /> 월간일지</>
+                        : <><Wallet className="mr-2 text-emerald-600" /> 가계부</>}
                 </h1>
-                <button
-                    onClick={handleOpenModal}
-                    className="bg-emerald-600 text-white px-4 py-2 rounded-2xl shadow-lg hover:bg-emerald-700 transition flex items-center gap-2 text-sm font-bold"
-                >
-                    <Plus size={18} /> 수입/지출 추가 입력
-                </button>
+                {activePage === 'ledger' && (
+                    <button
+                        onClick={handleOpenModal}
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-2xl shadow-lg hover:bg-emerald-700 transition flex items-center gap-2 text-sm font-bold"
+                    >
+                        <Plus size={18} /> 수입/지출 추가 입력
+                    </button>
+                )}
             </div>
 
             {/* Filter Tabs & Navigation */}
@@ -452,6 +475,8 @@ export default function MoneyPage() {
                 </div>
             </div>
 
+            {/* 가계부 본문 */}
+            {activePage === 'ledger' && <>
             {/* Summary Cards */}
             <div className="grid grid-cols-2 gap-3 mb-6">
                 <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
@@ -638,6 +663,62 @@ export default function MoneyPage() {
                     ))
                 )}
             </div>
+            </>}
+
+            {/* 월간일지 본문 */}
+            {activePage === 'diary' && (
+                <div className="space-y-3">
+                    {filteredDiaries.length === 0 ? (
+                        <div className="text-center py-16 text-stone-400 text-sm space-y-2">
+                            <BookOpen size={32} className="mx-auto text-stone-200 mb-3" />
+                            <p className="font-bold">이번 달 일지가 없습니다.</p>
+                            <p className="text-xs">홈 화면에서 오늘 수입 일지를 작성해 보세요.</p>
+                        </div>
+                    ) : filteredDiaries.map(d => {
+                        const totalCaddyFee = d.caddy_fee_1 + d.caddy_fee_2 + d.caddy_fee_3;
+                        const totalTip = d.tip_1 + d.tip_2 + d.tip_3;
+                        const totalExtra = d.extra_amount;
+                        const dayTotal = totalCaddyFee + totalTip + totalExtra;
+                        return (
+                            <div key={d.date} className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-3">
+                                {/* 날짜 + 합계 */}
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-bold text-stone-700">{formatDate(d.date)}</span>
+                                    <span className="text-emerald-600 font-black text-base">+{dayTotal.toLocaleString()}원</span>
+                                </div>
+                                {/* 캐디피 */}
+                                {totalCaddyFee > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {d.caddy_fee_1 > 0 && <span className="text-[11px] bg-emerald-50 text-emerald-700 font-bold px-2 py-1 rounded-full">1부 캐디피 {d.caddy_fee_1.toLocaleString()}</span>}
+                                        {d.caddy_fee_2 > 0 && <span className="text-[11px] bg-emerald-50 text-emerald-700 font-bold px-2 py-1 rounded-full">2부 캐디피 {d.caddy_fee_2.toLocaleString()}</span>}
+                                        {d.caddy_fee_3 > 0 && <span className="text-[11px] bg-emerald-50 text-emerald-700 font-bold px-2 py-1 rounded-full">3부 캐디피 {d.caddy_fee_3.toLocaleString()}</span>}
+                                    </div>
+                                )}
+                                {/* 팁 */}
+                                {totalTip > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {d.tip_1 > 0 && <span className="text-[11px] bg-sky-50 text-sky-700 font-bold px-2 py-1 rounded-full">1부 팁 {d.tip_1.toLocaleString()}</span>}
+                                        {d.tip_2 > 0 && <span className="text-[11px] bg-sky-50 text-sky-700 font-bold px-2 py-1 rounded-full">2부 팁 {d.tip_2.toLocaleString()}</span>}
+                                        {d.tip_3 > 0 && <span className="text-[11px] bg-sky-50 text-sky-700 font-bold px-2 py-1 rounded-full">3부 팁 {d.tip_3.toLocaleString()}</span>}
+                                    </div>
+                                )}
+                                {/* 기타수입 */}
+                                {totalExtra > 0 && (
+                                    <div className="flex gap-2 items-center">
+                                        <span className="text-[11px] bg-amber-50 text-amber-700 font-bold px-2 py-1 rounded-full">
+                                            기타 {d.extra_reason ? `(${d.extra_reason}) ` : ''}{totalExtra.toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}
+                                {/* 메모 */}
+                                {d.memo && (
+                                    <p className="text-xs text-stone-400 italic border-t border-stone-50 pt-2">📝 {d.memo}</p>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* 삭제 확인 모달 */}
             {deleteConfirmId && (

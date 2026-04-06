@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppStore } from '@/lib/store';
+import type { Diary } from '@/lib/store';
 import { formatCurrency, todayKST } from '@/lib/utils';
-import { Calendar as CalendarIcon, Wallet, ChevronRight, TrendingUp, TrendingDown, LogOut, Plus, X, DollarSign } from 'lucide-react';
+import { Calendar as CalendarIcon, Wallet, ChevronRight, TrendingUp, TrendingDown, LogOut, Plus, X, DollarSign, BookOpen } from 'lucide-react';
 import { Calendar } from '@/components/Calendar';
 
 export default function HomePage() {
@@ -15,9 +16,15 @@ export default function HomePage() {
 
   // 빠른 수입 입력 모달
   const [quickOpen, setQuickOpen] = useState(false);
-  const [qCaddyFee, setQCaddyFee] = useState('');
-  const [qTip, setQTip] = useState('');
-  const [qOverFee, setQOverFee] = useState('');
+  const [qSaving, setQSaving] = useState(false);
+  // 1부/2부/3부 팁
+  const [qTip1, setQTip1] = useState('');
+  const [qTip2, setQTip2] = useState('');
+  const [qTip3, setQTip3] = useState('');
+  // 기타수입
+  const [qExtraReason, setQExtraReason] = useState('');
+  const [qExtraAmount, setQExtraAmount] = useState('');
+  // 메모
   const [qMemo, setQMemo] = useState('');
 
   useEffect(() => {
@@ -61,31 +68,50 @@ export default function HomePage() {
     );
   }
 
-  const { transactions = [], schedules = [], clients = [], feeSettings, addTransaction } = store;
+  const { transactions = [], schedules = [], clients = [], feeSettings, addTransaction, upsertDiary, getDiaryByDate } = store;
 
-  // 빠른 수입 입력 모달 열기 (캐디피 기본값 자동 설정)
+  // 빠른 수입 입력 모달 열기
   const openQuickModal = () => {
     const todayStr = todayKST();
-    const alreadyToday = transactions.filter(t => t.date === todayStr && t.type === 'income');
-    // 오늘 이미 캐디피 입력 없을 때만 기본값 설정
-    const hasFeesToday = alreadyToday.some(t => t.category === 'caddy_fee');
-    if (!hasFeesToday && feeSettings) {
-      setQCaddyFee(fmtInput(String(feeSettings.shift1)));
-    } else {
-      setQCaddyFee('');
-    }
-    setQTip('');
-    setQOverFee('');
-    setQMemo('');
+    const existing = getDiaryByDate(todayStr);
+    setQTip1(existing?.tip_1 ? fmtInput(String(existing.tip_1)) : '');
+    setQTip2(existing?.tip_2 ? fmtInput(String(existing.tip_2)) : '');
+    setQTip3(existing?.tip_3 ? fmtInput(String(existing.tip_3)) : '');
+    setQExtraReason(existing?.extra_reason ?? '');
+    setQExtraAmount(existing?.extra_amount ? fmtInput(String(existing.extra_amount)) : '');
+    setQMemo(existing?.memo ?? '');
     setQuickOpen(true);
   };
 
-  const handleQuickIncome = () => {
+  const handleQuickIncome = async () => {
     const todayStr = todayKST();
     const toNum = (s: string) => parseInt(s.replace(/[^0-9]/g, ''), 10) || 0;
-    if (toNum(qCaddyFee) > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qCaddyFee), category: 'caddy_fee', memo: '캐디피' + (qMemo ? ` (${qMemo})` : '') });
-    if (toNum(qTip)      > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qTip),      category: 'tip',       memo: '팁·오버피' });
-    if (toNum(qOverFee)  > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qOverFee),  category: 'over_fee',  memo: '기타수입' });
+    const todayWork = schedules
+      .filter(s => s.date === todayStr && s.type === 'work')
+      .sort((a, b) => (a.shift ?? '1').localeCompare(b.shift ?? '1'));
+    const getCF = (s: any) => {
+      if (s.caddyFee) return s.caddyFee;
+      if (!feeSettings) return 150000;
+      if (s.shift === '1') return feeSettings.shift1;
+      if (s.shift === '2') return feeSettings.shift2;
+      if (s.shift === '3') return feeSettings.shift3;
+      return 150000;
+    };
+    const diary: Omit<Diary, 'id' | 'license_code' | 'updated_at'> = {
+      date: todayStr,
+      caddy_fee_1: todayWork[0] ? getCF(todayWork[0]) : 0,
+      caddy_fee_2: todayWork[1] ? getCF(todayWork[1]) : 0,
+      caddy_fee_3: todayWork[2] ? getCF(todayWork[2]) : 0,
+      tip_1: toNum(qTip1),
+      tip_2: toNum(qTip2),
+      tip_3: toNum(qTip3),
+      extra_reason: qExtraReason.trim(),
+      extra_amount: toNum(qExtraAmount),
+      memo: qMemo.trim(),
+    };
+    setQSaving(true);
+    await upsertDiary(diary);
+    setQSaving(false);
     setQuickOpen(false);
   };
 
@@ -440,90 +466,103 @@ export default function HomePage() {
 
     {/* 빠른 수입 입력 모달 */}
     {quickOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setQuickOpen(false)}>
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-0" onClick={() => setQuickOpen(false)}>
         <div
-          className="w-full max-w-[420px] bg-white rounded-3xl p-6 shadow-2xl space-y-4 overflow-y-auto max-h-[calc(100dvh-80px)]"
+          className="w-full max-w-[480px] bg-white rounded-t-3xl p-6 shadow-2xl space-y-4 overflow-y-auto max-h-[92dvh]"
           onClick={e => e.stopPropagation()}
         >
           {/* 헤더 */}
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              <DollarSign size={20} className="text-emerald-600" />
-              오늘 수입 입력
+              <BookOpen size={20} className="text-emerald-600" />
+              오늘 수입 일지
             </h3>
             <button onClick={() => setQuickOpen(false)} className="p-1 text-stone-400 hover:text-stone-600">
               <X size={22} />
             </button>
           </div>
 
-          {/* 캐디피 */}
+          {/* 오늘 스케줄 기반 캐디피 자동 표시 */}
+          {(() => {
+            const todayStr = todayKST();
+            const todayWork = schedules
+              .filter(s => s.date === todayStr && s.type === 'work')
+              .sort((a, b) => (a.shift ?? '1').localeCompare(b.shift ?? '1'));
+            const getCF = (s: any) => {
+              if (s.caddyFee) return s.caddyFee;
+              if (!feeSettings) return 150000;
+              if (s.shift === '1') return feeSettings.shift1;
+              if (s.shift === '2') return feeSettings.shift2;
+              if (s.shift === '3') return feeSettings.shift3;
+              return 150000;
+            };
+            if (todayWork.length === 0) return (
+              <p className="text-xs text-stone-400 bg-stone-50 rounded-xl px-4 py-2">오늘 등록된 근무 일정이 없습니다.</p>
+            );
+            return (
+              <div className="bg-emerald-50 rounded-2xl p-4 space-y-2">
+                <p className="text-xs font-bold text-emerald-700 mb-2">캐디피 (원) — 일정 자동</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {([1,2,3] as const).map(n => {
+                    const s = todayWork[n-1];
+                    return (
+                      <div key={n} className="text-center">
+                        <p className="text-[10px] text-stone-400 mb-1">{n}부</p>
+                        <p className={`font-bold text-sm ${s ? 'text-emerald-700' : 'text-stone-300'}`}>
+                          {s ? `₩${getCF(s).toLocaleString()}` : '—'}
+                        </p>
+                        {s?.title && <p className="text-[9px] text-stone-400 truncate">{s.title}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 팁·오버피 */}
           <div>
-            <label className="text-xs font-bold text-stone-500 block mb-1">캐디피 (원)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="150,000"
-              value={qCaddyFee}
-              onChange={e => setQCaddyFee(fmtInput(e.target.value))}
-              className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 font-bold text-right text-lg focus:outline-none focus:border-emerald-400"
-            />
+            <p className="text-xs font-bold text-stone-500 mb-2">팁·오버피 (원)</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([['1부', qTip1, setQTip1], ['2부', qTip2, setQTip2], ['3부', qTip3, setQTip3]] as [string, string, (v:string)=>void][]).map(([label, val, setter]) => (
+                <div key={label}>
+                  <p className="text-[10px] text-stone-400 mb-1 text-center">{label}</p>
+                  <input type="text" inputMode="numeric" placeholder="0"
+                    value={val} onChange={e => setter(fmtInput(e.target.value))}
+                    className="w-full border border-stone-200 rounded-xl px-2 py-2 text-stone-900 font-bold text-right text-sm focus:outline-none focus:border-emerald-400" />
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* 팁 */}
+          {/* 기타수입 */}
           <div>
-            <label className="text-xs font-bold text-stone-500 block mb-1">팁 · 오버피 (원)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="0"
-              value={qTip}
-              onChange={e => setQTip(fmtInput(e.target.value))}
-              className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 font-bold text-right text-lg focus:outline-none focus:border-emerald-400"
-            />
-          </div>
-
-          {/* 오버피 */}
-          <div>
-            <label className="text-xs font-bold text-stone-500 block mb-1">기타수입 (원)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="0"
-              value={qOverFee}
-              onChange={e => setQOverFee(fmtInput(e.target.value))}
-              className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 font-bold text-right text-lg focus:outline-none focus:border-emerald-400"
-            />
+            <p className="text-xs font-bold text-stone-500 mb-2">기타수입 (원)</p>
+            <div className="flex gap-2">
+              <input type="text" placeholder="수입 사유 (선택)"
+                value={qExtraReason} onChange={e => setQExtraReason(e.target.value)}
+                className="flex-1 border border-stone-200 rounded-xl px-3 py-2 text-stone-700 text-sm focus:outline-none focus:border-emerald-400" />
+              <input type="text" inputMode="numeric" placeholder="0"
+                value={qExtraAmount} onChange={e => setQExtraAmount(fmtInput(e.target.value))}
+                className="w-28 border border-stone-200 rounded-xl px-3 py-2 text-stone-900 font-bold text-right text-sm focus:outline-none focus:border-emerald-400" />
+            </div>
           </div>
 
           {/* 메모 */}
           <div>
-            <label className="text-xs font-bold text-stone-500 block mb-1">메모 (선택)</label>
-            <input
-              type="text"
-              placeholder="골프장명, 특이사항 등"
-              value={qMemo}
-              onChange={e => setQMemo(e.target.value)}
-              className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-700 text-sm focus:outline-none focus:border-emerald-400"
-            />
+            <p className="text-xs font-bold text-stone-500 mb-2">메모 (일지)</p>
+            <textarea placeholder="오늘의 메모  잘한걸까 ? 못한걸까 ?"
+              value={qMemo} onChange={e => setQMemo(e.target.value)} rows={3}
+              className="w-full border border-stone-200 rounded-xl px-3 py-2 text-stone-700 text-sm focus:outline-none focus:border-emerald-400 resize-none" />
           </div>
-
-          {/* 합계 미리보기 */}
-          {(parseInt(qCaddyFee.replace(/,/g,''),10)||0) + (parseInt(qTip.replace(/,/g,''),10)||0) + (parseInt(qOverFee.replace(/,/g,''),10)||0) > 0 && (
-            <div className="bg-emerald-50 rounded-xl px-4 py-3 flex justify-between items-center">
-              <span className="text-sm text-emerald-700 font-semibold">오늘 총 수입</span>
-              <span className="text-emerald-700 font-bold text-lg">
-                {((parseInt(qCaddyFee.replace(/,/g,''),10)||0) + (parseInt(qTip.replace(/,/g,''),10)||0) + (parseInt(qOverFee.replace(/,/g,''),10)||0)).toLocaleString()}원
-              </span>
-            </div>
-          )}
 
           {/* 저장 버튼 */}
           <button
             onClick={handleQuickIncome}
-            disabled={!qCaddyFee && !qTip && !qOverFee}
+            disabled={qSaving}
             className="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl text-base disabled:opacity-40 active:scale-[.98] transition"
           >
-            저장
+            {qSaving ? '저장 중...' : '저장'}
           </button>
         </div>
       </div>

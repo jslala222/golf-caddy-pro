@@ -43,6 +43,22 @@ export interface Client {
     createdAt: string;
 }
 
+export interface Diary {
+    id?: string;
+    license_code?: string;
+    date: string;           // YYYY-MM-DD
+    caddy_fee_1: number;
+    caddy_fee_2: number;
+    caddy_fee_3: number;
+    tip_1: number;
+    tip_2: number;
+    tip_3: number;
+    extra_reason: string;
+    extra_amount: number;
+    memo: string;
+    updated_at?: string;
+}
+
 export interface Transaction {
     id: string;
     date: string;
@@ -58,6 +74,7 @@ interface AppState {
     schedules: Schedule[];
     clients: Client[];
     transactions: Transaction[];
+    diaries: Diary[];
     feeSettings: {
         shift1: number;
         shift2: number;
@@ -77,6 +94,9 @@ interface AppState {
 
     addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
     deleteTransaction: (id: string) => void;
+
+    upsertDiary: (diary: Omit<Diary, 'id' | 'license_code' | 'updated_at'>) => Promise<void>;
+    getDiaryByDate: (date: string) => Diary | undefined;
 
     updateFeeSettings: (settings: { shift1: number; shift2: number; shift3: number; useShift3: boolean }) => void;
 
@@ -140,6 +160,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     schedules: [],
     clients: [],
     transactions: [],
+    diaries: [],
     feeSettings: { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
     _initialized: false,
 
@@ -300,7 +321,26 @@ export const useAppStore = create<AppState>()((set, get) => ({
         }
     },
 
-    resetData: () => set({ schedules: [], clients: [], transactions: [] }),
+    upsertDiary: async (diary) => {
+        const code = getCode();
+        if (!code) return;
+        const entry: Diary = { ...diary, license_code: code };
+        set(s => {
+            const others = s.diaries.filter(d => d.date !== diary.date);
+            return { diaries: [...others, entry] };
+        });
+        await fetch('/api/db/diary', {
+            method: 'POST',
+            headers: apiHeaders(),
+            body: JSON.stringify(entry),
+        });
+    },
+
+    getDiaryByDate: (date) => {
+        return get().diaries.find(d => d.date === date);
+    },
+
+    resetData: () => set({ schedules: [], clients: [], transactions: [], diaries: [] }),
 
     deleteDataBefore: (date: string) => {
         set(s => ({
@@ -351,22 +391,25 @@ export async function initializeStore(licenseCode: string): Promise<void> {
             if (!res.ok) return fallback;
             try { return await res.json(); } catch { return fallback; }
         };
-        const [schedRes, clientRes, txRes, feeRes] = await Promise.all([
+        const [schedRes, clientRes, txRes, feeRes, diaryRes] = await Promise.all([
             fetch('/api/db/schedules', { headers }),
             fetch('/api/db/clients', { headers }),
             fetch('/api/db/transactions', { headers }),
             fetch('/api/db/fee-settings', { headers }),
+            fetch('/api/db/diary', { headers }),
         ]);
-        const [schedData, clientData, txData, feeData] = await Promise.all([
+        const [schedData, clientData, txData, feeData, diaryData] = await Promise.all([
             safeJson(schedRes, { schedules: [] }),
             safeJson(clientRes, { clients: [] }),
             safeJson(txRes, { transactions: [] }),
             safeJson(feeRes, { feeSettings: null }),
+            safeJson(diaryRes, { diaries: [] }),
         ]);
         const freshState = {
             schedules: schedData.schedules ?? [],
             clients: clientData.clients ?? [],
             transactions: txData.transactions ?? [],
+            diaries: diaryData.diaries ?? [],
             feeSettings: feeData.feeSettings ?? { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
         };
 
