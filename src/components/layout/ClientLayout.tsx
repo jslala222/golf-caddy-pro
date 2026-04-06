@@ -168,7 +168,9 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                             <p className="text-xs text-emerald-50 leading-relaxed">
                                 카카오톡 안에서는 앱 설치·카메라 등 일부 기능이 제한됩니다.<br />
                                 {isIOS
-                                    ? <><strong>우측 상단 [···]</strong> → <strong>Safari로 열기</strong> 를 눌러주세요. ⛳️</>                                    : <><strong>우측 상단 [⋮]</strong> → <strong>다른 브라우저로 열기</strong> 를 눌러주세요. ⛳️</>                                }
+                                    ? <><strong>우측 상단 [···]</strong> → <strong>Safari로 열기</strong> 를 눌러주세요. ⛳️</>
+                                    : <><strong>우측 상단 또는 우측하단 점세개 [⋮]</strong> → <strong>다른 브라우저로 열기</strong> 를 눌러주세요. ⛳️</>
+                                }
                             </p>
                         </div>
                         <button onClick={() => setShowKakaoBanner(false)} className="p-1 hover:bg-white/10 rounded-full">
