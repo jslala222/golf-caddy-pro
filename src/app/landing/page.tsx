@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-    CheckCircle2, Star, Shield, Smartphone, BarChart3, Users, Calendar,
+    CheckCircle2, Star, Shield, Smartphone, BarChart3, Users,
     ChevronRight, Key, Zap, RefreshCcw, Search, X, Phone, Lock,
 } from 'lucide-react';
 import { searchLicenseByNamePhone, verifyLicenseAsync } from '@/lib/licenseUtils';
@@ -17,7 +17,6 @@ const PLANS = [
 ];
 
 const FEATURES = [
-    { icon: <Calendar size={22} className="text-emerald-400" />, title: '자동 순번 배정', desc: '출근 캐디 입력 → 순번 자동 계산' },
     { icon: <Users size={22} className="text-blue-400" />,       title: '캐디 명단 관리', desc: '고객별 배정 이력 + 예비자 명단' },
     { icon: <BarChart3 size={22} className="text-violet-400" />, title: '수입 자동 집계', desc: '월별 수당·세금 자동 계산' },
     { icon: <Smartphone size={22} className="text-amber-400" />, title: '모바일 최적화', desc: '스마트폰에서 바로 쓰는 PWA 앱' },
@@ -189,13 +188,13 @@ export default function LandingPage() {
                         onClick={() => { window.location.href = '/dealer-login'; }}
                         className="text-xs font-bold text-amber-400 border border-amber-700/60 px-3 py-1.5 rounded-full hover:border-amber-500 transition"
                     >
-                        딜러 입력
+                        딜러
                     </button>
                     <button
                         onClick={() => openSheet('code')}
                         className="text-xs font-bold text-stone-400 border border-stone-700 px-3 py-1.5 rounded-full hover:border-stone-500 transition"
                     >
-                        코드 입력
+                        코드
                     </button>
                 </div>
             </div>
@@ -206,7 +205,7 @@ export default function LandingPage() {
                     <Star size={11} fill="currentColor" /> 골프장 캐디 전용 앱
                 </div>
                 <h2 className="text-3xl font-black leading-tight mb-4" style={{ wordBreak: 'keep-all' }}>
-                    캐디 순번 배정부터<br />
+                    캐디 근무일정부터<br />
                     <span
                         className="text-emerald-400 cursor-default select-none"
                         onClick={() => {
@@ -217,7 +216,7 @@ export default function LandingPage() {
                             if (tapCountRef.current >= 5) { tapCountRef.current = 0; router.push('/admin'); }
                         }}
                     >수입 관리까지</span><br />
-                    한 앱에서
+                    한 손에서
                 </h2>
                 <p className="text-stone-400 text-sm leading-relaxed" style={{ wordBreak: 'keep-all' }}>
                     설치 없이, PC 없이<br />
