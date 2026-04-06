@@ -531,8 +531,7 @@ export default function ClientsPage() {
                                         </button>
                                     </div>
                                 </div>
-                                );})
-                            ))}
+                                );})}
                         </div>
                     </>
                 ) : (
