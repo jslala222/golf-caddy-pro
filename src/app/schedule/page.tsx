@@ -37,6 +37,8 @@ function ScheduleContent() {
     const [customHoles, setCustomHoles] = useState(''); // For custom hole entry
     const [isSwap, setIsSwap] = useState(false);
     const [swapWith, setSwapWith] = useState('');
+    const [swapMemo, setSwapMemo] = useState('');
+    const [swapPopup, setSwapPopup] = useState<string | null>(null); // 팝업에 표시할 schedule id
 
     // Transaction State
     const [isExpenseFormOpen, setIsExpenseFormOpen] = useState(false);
@@ -142,6 +144,7 @@ function ScheduleContent() {
         setCustomHoles('');
         setIsSwap(false);
         setSwapWith('');
+        setSwapMemo('');
         setEditingId(null);
         setViewMode('list');
     };
@@ -196,6 +199,7 @@ function ScheduleContent() {
             }
             setIsSwap(!!schedule.swapWith);
             setSwapWith(schedule.swapWith || '');
+            setSwapMemo(schedule.swapMemo || '');
         } else {
             setCaddyFee('');
             setOverFee('');
@@ -218,6 +222,7 @@ function ScheduleContent() {
             isRain: type === 'work' ? isRain : undefined,
             holes: type === 'work' ? (isRain && customHoles ? Number(customHoles) : holes) : undefined,
             swapWith: type === 'work' && isSwap && swapWith.trim() ? swapWith.trim() : undefined,
+            swapMemo: type === 'work' && isSwap && swapMemo.trim() ? swapMemo.trim() : undefined,
             caddyFee: type === 'work' && caddyFee ? Number(caddyFee) : undefined,
             overFee: type === 'work' && overFee ? Number(overFee) : undefined,
         };
@@ -848,20 +853,29 @@ function ScheduleContent() {
                                         <label className="text-sm font-bold text-stone-500">대기바꿈</label>
                                         <button
                                             type="button"
-                                            onClick={() => { setIsSwap(!isSwap); if (isSwap) setSwapWith(''); }}
+                                            onClick={() => { setIsSwap(!isSwap); if (isSwap) { setSwapWith(''); setSwapMemo(''); } }}
                                             className={`text-[11px] px-3 py-1.5 rounded-full border transition flex items-center gap-1.5 ${isSwap ? 'bg-purple-50 border-purple-200 text-purple-600 font-bold' : 'bg-white border-stone-200 text-stone-400'}`}
                                         >
                                             🔄 대기바꿈 {isSwap ? 'ON' : 'OFF'}
                                         </button>
                                     </div>
                                     {isSwap && (
-                                        <div className="animate-in slide-in-from-top-2">
+                                        <div className="animate-in slide-in-from-top-2 space-y-2">
                                             <input
                                                 type="text"
                                                 value={swapWith}
                                                 onChange={(e) => setSwapWith(e.target.value)}
                                                 placeholder="누구와 바꿨나요? (이름)"
+                                                maxLength={15}
                                                 className="w-full p-4 bg-purple-50 border-2 border-purple-200 rounded-2xl text-lg font-bold focus:outline-none focus:border-purple-400 text-purple-700 placeholder:text-purple-300"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={swapMemo}
+                                                onChange={(e) => setSwapMemo(e.target.value)}
+                                                placeholder="메모 (예: 1시로 바꿈)  선택입력"
+                                                maxLength={30}
+                                                className="w-full p-4 bg-white border-2 border-purple-100 rounded-2xl text-base font-medium focus:outline-none focus:border-purple-300 text-stone-600 placeholder:text-stone-300"
                                             />
                                         </div>
                                     )}
@@ -942,6 +956,55 @@ function ScheduleContent() {
 
                 return (
                     <div className="mt-6 bg-white rounded-3xl p-6 shadow-sm border border-purple-100">
+                        {/* 풍선 팝업 오버레이 */}
+                        {swapPopup && (() => {
+                            const rec = swapRecords.find(s => s.id === swapPopup);
+                            if (!rec) return null;
+                            return (
+                                <div
+                                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+                                    onClick={() => setSwapPopup(null)}
+                                >
+                                    <div
+                                        className="bg-white rounded-3xl p-6 shadow-2xl max-w-xs w-full mx-6 border border-purple-200"
+                                        onClick={e => e.stopPropagation()}
+                                    >
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <span className="text-2xl">🔄</span>
+                                            <span className="text-xl font-black text-purple-700">{rec.swapWith}</span>
+                                        </div>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex items-center gap-2 text-stone-500">
+                                                <span>📅</span>
+                                                <span className="font-bold">{rec.date.slice(5).replace('-', '/')} · {rec.shift}부</span>
+                                            </div>
+                                            {rec.title && (
+                                                <div className="flex items-center gap-2 text-stone-500">
+                                                    <span>⛳️</span>
+                                                    <span>{rec.title}</span>
+                                                </div>
+                                            )}
+                                            {rec.swapMemo && (
+                                                <div className="flex items-start gap-2 text-stone-600 bg-purple-50 rounded-xl p-3 mt-2">
+                                                    <span>📝</span>
+                                                    <span className="font-medium">{rec.swapMemo}</span>
+                                                </div>
+                                            )}
+                                            {!rec.swapMemo && (
+                                                <div className="text-stone-300 text-xs mt-1">메모 없음</div>
+                                            )}
+                                        </div>
+                                        <button
+                                            onClick={() => setSwapPopup(null)}
+                                            className="w-full mt-5 py-3 bg-stone-900 text-white font-black rounded-2xl"
+                                        >
+                                            닫기
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         <h2 className="text-lg font-black text-stone-800 mb-4 flex items-center gap-2">
                             🔄 대기바꿈 기록
                             <span className="text-sm font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded-full">{swapRecords.length}건</span>
@@ -960,9 +1023,9 @@ function ScheduleContent() {
                             </div>
                         </div>
 
-                        {/* 날짜별 목록 */}
+                        {/* 날짜별 목록 — 이름 클릭 시 풍선팝업 */}
                         <div>
-                            <p className="text-xs font-bold text-stone-400 mb-2 ml-1">날짜별 목록</p>
+                            <p className="text-xs font-bold text-stone-400 mb-2 ml-1">날짜별 목록 <span className="text-purple-300">(이름 터치 → 상세)</span></p>
                             <div className="space-y-2">
                                 {swapRecords.map(s => (
                                     <div key={s.id} className="flex items-center justify-between bg-stone-50 rounded-2xl px-4 py-3">
@@ -971,11 +1034,15 @@ function ScheduleContent() {
                                                 {s.date.slice(5).replace('-', '/')}
                                             </span>
                                             <span className="text-xs bg-stone-200 text-stone-500 px-2 py-0.5 rounded-full">{s.shift}부</span>
-                                            {s.title && <span className="text-xs text-stone-400 truncate max-w-[80px]">{s.title}</span>}
                                         </div>
-                                        <span className="text-sm font-black text-purple-600 bg-purple-50 border border-purple-200 px-3 py-1 rounded-full">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSwapPopup(s.id)}
+                                            className="text-sm font-black text-purple-600 bg-purple-50 border border-purple-200 px-3 py-1 rounded-full active:scale-95 transition"
+                                        >
                                             🔄 {s.swapWith}
-                                        </span>
+                                            {s.swapMemo && <span className="ml-1 text-[10px] text-purple-300">📝</span>}
+                                        </button>
                                     </div>
                                 ))}
                             </div>

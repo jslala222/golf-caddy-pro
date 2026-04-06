@@ -22,6 +22,7 @@ export interface Schedule {
     isRain?: boolean;
     holes?: 18 | 9 | number;
     swapWith?: string;
+    swapMemo?: string;
     createdAt?: string;
 }
 

@@ -23,8 +23,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (updates.caddyFee  !== undefined) patch.caddy_fee = updates.caddyFee;
   if (updates.overFee   !== undefined) patch.over_fee  = updates.overFee;
   if (updates.isRain    !== undefined) patch.is_rain   = updates.isRain;
-  if (updates.swapWith  !== undefined) patch.swap_with = updates.swapWith;
-  if (updates.title     !== undefined) patch.title     = updates.title;
+  if (updates.swapWith  !== undefined) patch.swap_with  = updates.swapWith;
+  if (updates.swapMemo  !== undefined) patch.swap_memo  = updates.swapMemo;
+  if (updates.title     !== undefined) patch.title      = updates.title;
   if (updates.memo      !== undefined) patch.memo      = updates.memo;
 
   const db = createServerClient();
