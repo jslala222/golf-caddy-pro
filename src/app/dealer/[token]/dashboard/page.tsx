@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { PLANS, issueVoucher, searchLicenseByPhone, extendLicense } from '@/lib/licenseUtils';
 import type { PlanType } from '@/lib/licenseUtils';
 import { supabase } from '@/lib/supabaseClient';
@@ -8,7 +9,7 @@ import {
     ShieldAlert, User, Check, Copy, Plus, Minus, Tag, CheckCircle2,
     Key, TrendingUp, Users, Receipt, Lock, Eye, EyeOff, RefreshCcw,
     ChevronDown, ChevronUp, BadgeCheck, Clock, AlertCircle, Share2, ExternalLink,
-    Search, RotateCcw, Coins, CreditCard,
+    Search, RotateCcw, Coins, CreditCard, LogOut,
 } from 'lucide-react';
 
 // ── 타입 ──────────────────────────────────────────────────────────
@@ -83,6 +84,7 @@ type DealerTab = 'issue' | 'earnings' | 'customers' | 'settlement' | 'credits';
 // ── 컴포넌트 ──────────────────────────────────────────────────────
 export default function DealerDashboardPage({ params }: { params: { token: string } }) {
     const { token } = params;
+    const router = useRouter();
 
     // 인증
     const [dealer, setDealer] = useState<DealerInfo | null>(null);
@@ -108,6 +110,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [payMethod, setPayMethod] = useState<'cash' | 'virtual_account' | 'transfer'>('cash');
     const [isIssuing, setIsIssuing] = useState(false);
     const [issueConfirm, setIssueConfirm] = useState<{ type: 'credit' | 'cash' | 'extend'; creditCol?: string; avail?: number; newExpiresAt?: string } | null>(null);
+    const [noCreditModal, setNoCreditModal] = useState<{ planLabel: string; tier: 'standard' | 'premium' } | null>(null);
     const [issuedCode, setIssuedCode] = useState('');
     const [issuedPlan, setIssuedPlan] = useState('');
     const [issuedDays, setIssuedDays] = useState(0);
@@ -481,8 +484,9 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         setRenewSearching(true);
         setRenewResult(null);
         setRenewResults([]);
+        const dealerFilter = `dealer_${token}`;
         if (hasFullPhone) {
-            const result = await searchLicenseByPhone(renewPhone);
+            const result = await searchLicenseByPhone(renewPhone, dealerFilter);
             if (result.found && hasName) {
                 const match = result.userName?.includes(renewName.trim()) !== false;
                 setRenewResult(match ? result : { found: false });
@@ -494,7 +498,8 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
             let query = supabase
                 .from('aone_pro_caddypro_licenses')
                 .select('id, code, plan, tier, expires_at, user_name, user_phone')
-                .ilike('user_phone', `%${digits}`);
+                .ilike('user_phone', `%${digits}`)
+                .eq('issued_by', dealerFilter);
             if (hasName) query = query.ilike('user_name', `%${renewName.trim()}%`);
             const { data } = await query.order('expires_at', { ascending: false }).limit(20);
             const now = new Date();
@@ -517,6 +522,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 .from('aone_pro_caddypro_licenses')
                 .select('id, code, plan, tier, expires_at, user_name, user_phone')
                 .ilike('user_name', `%${renewName.trim()}%`)
+                .eq('issued_by', dealerFilter)
                 .order('expires_at', { ascending: false })
                 .limit(20);
             const now = new Date();
@@ -885,13 +891,57 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 </div>
             )}
 
+            {/* 크레딧 부족 경고 모달 */}
+            {noCreditModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-6"
+                    style={{ background: 'rgba(0,0,0,0.85)' }}
+                    onClick={() => setNoCreditModal(null)}>
+                    <div className="bg-stone-900 border border-amber-600 rounded-3xl p-8 w-full max-w-sm text-center space-y-5 shadow-2xl"
+                        onClick={e => e.stopPropagation()}>
+                        <div className="w-16 h-16 bg-amber-900/40 rounded-full flex items-center justify-center mx-auto">
+                            <AlertCircle size={36} className="text-amber-400" />
+                        </div>
+                        <div>
+                            <p className="text-amber-300 font-black text-xl mb-3">크레딧이 없어요!</p>
+                            <p className="text-stone-300 text-sm leading-relaxed">
+                                <span className="font-bold text-white">
+                                    {noCreditModal.planLabel} {noCreditModal.tier === 'premium' ? '⭐ 프리미엄' : '스탠다드'}
+                                </span> 크레딧이 <span className="text-red-400 font-black">0장</span>입니다.
+                            </p>
+                            <p className="text-stone-400 text-xs mt-2 leading-relaxed">
+                                크레딧을 먼저 구매해야<br />고객에게 이용권을 발급할 수 있습니다.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => setNoCreditModal(null)}
+                                className="py-3.5 bg-stone-700 hover:bg-stone-600 rounded-2xl font-bold text-stone-300 transition">
+                                닫기
+                            </button>
+                            <button onClick={() => { setNoCreditModal(null); setActiveTab('credits'); }}
+                                className="py-3.5 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold text-white transition flex items-center justify-center gap-2">
+                                <Coins size={16} /> 크레딧 구매
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 헤더 */}
             <div className="bg-blue-700 px-6 pt-12 pb-5">
-                <p className="text-blue-300 text-xs font-bold uppercase tracking-widest mb-1">Caddy Manager Pro</p>
-                <h1 className="text-2xl font-black">딜러 대시보드</h1>
-                <p className="text-blue-200 text-sm mt-1">
-                    {dealer?.name} 님 · 총 {dealer?.total_issued ?? 0}건 발급
-                </p>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <p className="text-blue-300 text-xs font-bold uppercase tracking-widest mb-1">Caddy Manager Pro</p>
+                        <h1 className="text-2xl font-black">딜러 대시보드</h1>
+                        <p className="text-blue-200 text-sm mt-1">
+                            {dealer?.name} 님 · 총 {dealer?.total_issued ?? 0}건 발급
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => { router.push('/landing'); }}
+                        className="flex items-center gap-1.5 bg-blue-800/60 hover:bg-blue-900/80 text-blue-200 hover:text-white text-xs font-bold px-3 py-2 rounded-xl transition mt-1">
+                        <LogOut size={13} /> 로그아웃
+                    </button>
+                </div>
                 {/* 크레딧 잔량 요약 */}
                 {(() => {
                     const d = dealer;
@@ -998,6 +1048,25 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                             </div>
                         </section>
 
+                        {/* 골프장명 + 특이사항 */}
+                        <section className="bg-stone-900 rounded-3xl p-5 space-y-3">
+                            <div className="flex items-center gap-2 text-stone-400 font-bold text-sm">
+                                <Tag size={16} /> 추가 정보 (선택)
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">골프장명</label>
+                                <input value={golfCourse} onChange={e => setGolfCourse(e.target.value)}
+                                    placeholder="예: 발리오스CC, 남서울CC"
+                                    className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">특이사항</label>
+                                <input value={specialNote} onChange={e => setSpecialNote(e.target.value)}
+                                    placeholder="예: 1조 조장, 캐디 10년차, 소개자 홍길동"
+                                    className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
+                            </div>
+                        </section>
+
                         {/* 요금제 */}
                         <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
                             <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
@@ -1062,25 +1131,6 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                             <p className="text-stone-500 text-[10px] text-center mt-2">기본 {minDays}일 + 보너스 최대 {maxDays - minDays}일</p>
                         </section>
 
-                        {/* 골프장명 + 특이사항 */}
-                        <section className="bg-stone-900 rounded-3xl p-5 space-y-3">
-                            <div className="flex items-center gap-2 text-stone-400 font-bold text-sm">
-                                <Tag size={16} /> 추가 정보 (선택)
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">골프장명</label>
-                                <input value={golfCourse} onChange={e => setGolfCourse(e.target.value)}
-                                    placeholder="예: 발리오스CC, 남서울CC"
-                                    className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">특이사항</label>
-                                <input value={specialNote} onChange={e => setSpecialNote(e.target.value)}
-                                    placeholder="예: 1조 조장, 캐디 10년차, 소개자 홍길동"
-                                    className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
-                            </div>
-                        </section>
-
                         {/* 결제 방식 선택 */}
                         <section className="bg-stone-900 rounded-3xl p-5 space-y-3">
                             <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
@@ -1090,10 +1140,10 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                 <button onClick={() => { setPayMethod('cash'); setPaymentLink(''); }}
                                     className={`p-3.5 rounded-2xl border text-left transition ${payMethod === 'cash' ? 'border-amber-500 bg-amber-900/20' : 'border-stone-700 bg-stone-800'}`}>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-lg">💵</span>
+                                        <span className="text-lg">�</span>
                                         <div>
-                                            <p className="text-sm font-bold text-white">A 안 — 현금/계좌이체 수금</p>
-                                            <p className="text-[10px] text-stone-400">딜러가 직접 수금 → 이용권 즉시 발급 → 본사에 정산 요청</p>
+                                            <p className="text-sm font-bold text-white">A 안 — 크레딧 이용권</p>
+                                            <p className="text-[10px] text-stone-400">딜러 직접 수금 → 크레딧 이용권 즉시 발급</p>
                                         </div>
                                     </div>
                                 </button>
@@ -1102,51 +1152,49 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                     <div className="flex items-center gap-2">
                                         <span className="text-lg">📲</span>
                                         <div>
-                                            <p className="text-sm font-bold text-white">B 안 — 실시간 계좌이체</p>
-                                            <p className="text-[10px] text-stone-400">고객이 링크에서 실시간 이체 → 즉시 코드 발급</p>
+                                            <p className="text-sm font-bold text-white">B 안 — 카드결제 / 실시간 계좌이체</p>
+                                            <p className="text-[10px] text-stone-400">고객이 링크에서 직접 결제 → 카드/실시간계좌 → 이용권 발급</p>
                                         </div>
                                     </div>
                                 </button>
                             </div>
                         </section>
 
-                        {/* 안A: 현금발급 버튼 */}
-                        {(payMethod === 'cash') && (
-                        <>
-                        {/* 크레딧 발급 버튼 (크레딧 있을 때만 표시) */}
-                        {(() => {
+                        {/* 안A: 크레딧 발급 버튼 */}
+                        {(payMethod === 'cash') && (() => {
                             const creditCol = CREDIT_COL[issueTier][plan];
                             const avail = dealer ? ((dealer[creditCol as keyof DealerInfo] as number) ?? 0) : 0;
-                            if (avail <= 0) return null;
                             return (
-                                <button onClick={() => setIssueConfirm({ type: 'credit', creditCol, avail })} disabled={isIssuing || !customerName.trim() || !customerPhone.trim()}
-                                    className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition border-2 border-emerald-400">
-                                    {isIssuing ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Coins size={24} />}
-                                    {isIssuing ? '발급 중...' : `💳 크레딧 발급 (잔량 ${avail}장)`}
+                                <button
+                                    onClick={() => {
+                                        if (avail <= 0) {
+                                            setNoCreditModal({ planLabel: PLANS[plan].label, tier: issueTier });
+                                        } else {
+                                            setIssueConfirm({ type: 'credit', creditCol, avail });
+                                        }
+                                    }}
+                                    disabled={isIssuing || !customerName.trim() || !customerPhone.trim()}
+                                    className={`w-full py-5 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition border-2 disabled:opacity-40 ${
+                                        avail > 0
+                                            ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-400'
+                                            : 'bg-amber-700/60 hover:bg-amber-700 border-amber-500'
+                                    }`}>
+                                    {isIssuing ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : avail > 0 ? <Coins size={24} /> : <AlertCircle size={24} />}
+                                    {isIssuing ? '발급 중...' : avail > 0 ? `💳 크레딧 발급 (잔량 ${avail}장)` : `⚠️ 크레딧 없음 (${PLANS[plan].label} ${issueTier === 'premium' ? '프리미엄' : '스탠다드'})`}
                                 </button>
                             );
                         })()}
-                        <button onClick={() => setIssueConfirm({ type: 'cash' })} disabled={isIssuing || !customerName.trim() || !customerPhone.trim()}
-                            className="w-full py-5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition">
-                            {isIssuing ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Key size={24} />}
-                            {isIssuing ? '발급 중...' : '💵 현금 수금 후 즉시 발급'}
-                        </button>
-                        </>
-                        )}
 
-                        {/* 결제 링크 발송 (안B) */}
+                        {/* 결제 링크 발송 (안B만 표시) */}
+                        {payMethod === 'transfer' && (
                         <div className="space-y-3">
-                            <div className="flex items-center gap-3 text-stone-600">
-                                <div className="flex-1 h-px bg-stone-800" />
-                                <span className="text-xs">또는</span>
-                                <div className="flex-1 h-px bg-stone-800" />
-                            </div>
                             <button onClick={handleGenerateLink}
                                 disabled={!customerName.trim() || !customerPhone.trim()}
                                 className="w-full py-4 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 rounded-3xl font-bold text-base flex items-center justify-center gap-2 transition">
-                                <ExternalLink size={18} /> 🏦 결제 링크 생성 (가상계좌/이체/카드)
+                                <ExternalLink size={18} /> 🏦 결제링크 생성 ( 카드결제 / 실시간 계좌이체 )
                             </button>
                         </div>
+                        )}
 
                         {paymentLink && (
                             <div ref={linkBoxRef} className="bg-stone-900 rounded-3xl p-4 space-y-3 border border-emerald-700">
@@ -1460,17 +1508,45 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                         <button onClick={() => setCart([])} className="text-stone-500 hover:text-red-400 text-xs transition">전체 비우기</button>
                                     </div>
 
+                                    {/* 합산 요약 */}
+                                    {(() => {
+                                        const stdQty  = cart.filter(i => i.tier === 'standard').reduce((s,i) => s+i.qty, 0);
+                                        const premQty = cart.filter(i => i.tier === 'premium').reduce((s,i) => s+i.qty, 0);
+                                        return (
+                                            <div className="flex gap-2 flex-wrap">
+                                                {stdQty > 0 && (
+                                                    <span className="flex items-center gap-1 bg-slate-700 text-slate-200 text-xs font-black px-3 py-1.5 rounded-full">
+                                                        <span className="bg-slate-400 text-stone-900 text-[9px] font-black px-1.5 py-0.5 rounded-full">S</span>
+                                                        스탠다드 {stdQty}장
+                                                    </span>
+                                                )}
+                                                {premQty > 0 && (
+                                                    <span className="flex items-center gap-1 bg-amber-900/50 text-amber-300 text-xs font-black px-3 py-1.5 rounded-full">
+                                                        <span className="bg-amber-400 text-stone-900 text-[9px] font-black px-1.5 py-0.5 rounded-full">P</span>
+                                                        ⭐ 프리미엄 {premQty}장
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
                                     {/* 아이템 목록 */}
                                     <div className="space-y-2">
                                         {cart.map(item => {
                                             const consumerP = CONSUMER_PRICE[item.tier][item.plan];
                                             const supplyP   = DEALER_SUPPLY_PRICE[item.tier][item.plan];
                                             const saving    = (consumerP - supplyP) * item.qty;
-                                            const tierLabel = item.tier === 'premium' ? '⭐프리미엄' : '스탠다드';
+                                            const isPremium = item.tier === 'premium';
                                             return (
-                                                <div key={`${item.tier}-${item.plan}`} className="bg-stone-800 rounded-2xl p-3 flex items-center justify-between gap-2">
+                                                <div key={`${item.tier}-${item.plan}`}
+                                                    className={`bg-stone-800 rounded-2xl p-3 flex items-center justify-between gap-2 border-l-4 ${isPremium ? 'border-amber-400' : 'border-slate-500'}`}>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-white text-sm font-bold">{PLAN_LABEL[item.plan]} {tierLabel} × {item.qty}장</p>
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${isPremium ? 'bg-amber-400 text-stone-900' : 'bg-slate-500 text-slate-100'}`}>
+                                                                {isPremium ? 'P' : 'S'}
+                                                            </span>
+                                                            <p className="text-white text-sm font-bold">{PLAN_LABEL[item.plan]} {isPremium ? '⭐ 프리미엄' : '스탠다드'} × {item.qty}장</p>
+                                                        </div>
                                                         <p className="text-stone-400 text-[10px]">
                                                             <span className="line-through text-stone-600">₩{(consumerP * item.qty).toLocaleString()}</span>
                                                             {' → '}
@@ -1534,6 +1610,8 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                         {isBuyingCredit ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Coins size={24} />}
                                         {isBuyingCredit ? '결제 중...' : `₩${totalSupply.toLocaleString()} 결제하기`}
                                     </button>
+
+
                                 </section>
                             );
                         })()}

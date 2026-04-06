@@ -45,11 +45,11 @@ const SECRET_SALT = "CADDY-PRO-SAFETY-2026";
 // 형식: [prefix]-XXX-XXX  (예: sm-AB3-MN7, 총 10자)
 // 딜러 추적은 DB issued_by 컬럼에서 처리 (코드에 딜러 ID 불포함)
 export const CHANNEL_PREFIX: Record<ChannelType, string> = {
-    smartstore: 'sm',
-    kmong:      'cm',
-    event:      'ev',
-    direct:     'dc',
-    dealer:     'dl',
+    smartstore: 'SM',
+    kmong:      'CM',
+    event:      'EV',
+    direct:     'DC',
+    dealer:     'DL',
 };
 
 // 시드 → 체크섬 3자리 계산
@@ -80,7 +80,7 @@ function generateCodeWithPrefix(prefix: string): string {
         seed += CHARS.charAt(Math.floor(Math.random() * CHARS.length));
     }
     const checksum = computeChecksum(seed);
-    return `${prefix}-${seed}-${checksum}`;
+    return `${prefix.toUpperCase()}-${seed}-${checksum}`;
 }
 
 /**
@@ -111,7 +111,7 @@ export const verifyLicense = (inputKey: string): boolean => {
         return parts[1] === computeChecksum(parts[0]);
     }
     if (parts.length === 3) {
-        // 신형: sm-XXX-XXX (prefix 2자리 소문자, 총 10자)
+        // 신형: SM-XXX-XXX (prefix 2자리 대문자, 총 10자)
         const [prefix, seed, checksum] = parts;
         if (prefix.length !== 2) return false;
         if (seed.length !== 3 || checksum.length !== 3) return false;
@@ -239,40 +239,44 @@ export const verifyLicenseAsync = async (inputKey: string): Promise<{
  * 전화번호로 이용권 검색 (갱신용)
  * 가장 최근 만료일 기준 이용권 1건 반환
  */
-export const searchLicenseByPhone = async (phone: string): Promise<{
+export const searchLicenseByPhone = async (phone: string, issuedBy?: string): Promise<{
     found: boolean;
     id?: string;
     code?: string;
     plan?: string;
+    tier?: string;
     expiresAt?: string | null;
     userName?: string | null;
     daysLeft?: number;
     isExpired?: boolean;
 }> => {
-    const { data } = await supabase
+    const formatted = phone.replace(/\D/g, '').replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3').trim();
+    let q = supabase
         .from('aone_pro_caddypro_licenses')
-        .select('id, code, plan, expires_at, user_name, is_active')
-        .eq('user_phone', phone.replace(/\D/g, '').replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3').trim())
+        .select('id, code, plan, tier, expires_at, user_name, is_active')
+        .eq('user_phone', formatted)
         .order('expires_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
+    if (issuedBy) q = q.eq('issued_by', issuedBy);
+    const { data } = await q.maybeSingle();
 
     // 하이픈 없는 경우도 시도
     if (!data) {
         const digits = phone.replace(/\D/g, '');
-        const { data: data2 } = await supabase
+        let q2 = supabase
             .from('aone_pro_caddypro_licenses')
-            .select('id, code, plan, expires_at, user_name, is_active')
+            .select('id, code, plan, tier, expires_at, user_name, is_active')
             .or(`user_phone.eq.${digits},user_phone.ilike.%${digits}%`)
             .order('expires_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .limit(1);
+        if (issuedBy) q2 = q2.eq('issued_by', issuedBy);
+        const { data: data2 } = await q2.maybeSingle();
         if (!data2) return { found: false };
         const now2 = new Date();
         const exp2 = data2.expires_at ? new Date(data2.expires_at) : null;
         const dl2 = exp2 ? Math.ceil((exp2.getTime() - now2.getTime()) / 86_400_000) : undefined;
         return {
-            found: true, id: data2.id, code: data2.code, plan: data2.plan,
+            found: true, id: data2.id, code: data2.code, plan: data2.plan, tier: data2.tier ?? 'standard',
             expiresAt: data2.expires_at, userName: data2.user_name,
             daysLeft: dl2, isExpired: exp2 ? now2 > exp2 : false,
         };
@@ -282,7 +286,7 @@ export const searchLicenseByPhone = async (phone: string): Promise<{
     const expires = data.expires_at ? new Date(data.expires_at) : null;
     const daysLeft = expires ? Math.ceil((expires.getTime() - now.getTime()) / 86_400_000) : undefined;
     return {
-        found: true, id: data.id, code: data.code, plan: data.plan,
+        found: true, id: data.id, code: data.code, plan: data.plan, tier: data.tier ?? 'standard',
         expiresAt: data.expires_at, userName: data.user_name,
         daysLeft, isExpired: expires ? now > expires : false,
     };
