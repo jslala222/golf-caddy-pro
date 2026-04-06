@@ -3,7 +3,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppStore, type TransactionType, type ExpenseCategory } from '@/lib/store';
 import { formatDate, formatCurrency, todayKST } from '@/lib/utils';
-import { Wallet, Plus, X, ArrowUp, ArrowDown, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Loader2 } from 'lucide-react';
+import { Wallet, Plus, X, ArrowUp, ArrowDown, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Loader2, Calculator } from 'lucide-react';
+import Link from 'next/link';
 
 
 export default function MoneyPage() {
@@ -396,6 +397,15 @@ export default function MoneyPage() {
 
     return (
         <div className="p-6 pb-24 relative min-h-screen">
+            {/* 가계부 / 세금 탭 */}
+            <div className="flex gap-1 p-1 bg-stone-100 rounded-2xl mb-5">
+                <span className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-white text-emerald-700 rounded-xl font-black text-sm shadow-sm">
+                    <Wallet size={16} /> 가계부
+                </span>
+                <Link href="/tax" className="flex-1 flex items-center justify-center gap-1.5 py-2 text-stone-400 rounded-xl font-bold text-sm hover:text-stone-600">
+                    <Calculator size={16} /> 세금
+                </Link>
+            </div>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-stone-900 flex items-center">
                     <Wallet className="mr-2 text-emerald-600" /> 가계부

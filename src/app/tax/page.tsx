@@ -4,7 +4,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { calculateCaddyTax, TaxResult } from '@/lib/taxUtils';
 import { formatCurrency, todayKST } from '@/lib/utils';
-import { Wallet, Share2, Info, RefreshCcw } from 'lucide-react';
+import { Wallet, Share2, Info, RefreshCcw, Calculator } from 'lucide-react';
+import Link from 'next/link';
 
 export default function TaxPage() {
     const { schedules, transactions, feeSettings } = useAppStore();
@@ -83,6 +84,15 @@ export default function TaxPage() {
 
     return (
         <div className="p-6 pb-24 space-y-8 bg-stone-50 min-h-screen">
+            {/* 가계부 / 세금 탭 */}
+            <div className="flex gap-1 p-1 bg-stone-100 rounded-2xl">
+                <Link href="/money" className="flex-1 flex items-center justify-center gap-1.5 py-2 text-stone-400 rounded-xl font-bold text-sm hover:text-stone-600">
+                    <Wallet size={16} /> 가계부
+                </Link>
+                <span className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-white text-emerald-700 rounded-xl font-black text-sm shadow-sm">
+                    <Calculator size={16} /> 세금
+                </span>
+            </div>
             <header className="flex items-center justify-between">
                 <h1 className="text-2xl font-black text-stone-900 flex items-center gap-2">
                     <Wallet size={24} className="text-emerald-500" /> 예상 세금 계산기
