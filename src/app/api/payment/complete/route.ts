@@ -10,11 +10,10 @@ import { supabase } from '@/lib/supabaseClient';
 import { issueVoucher } from '@/lib/licenseUtils';
 import type { PlanType } from '@/lib/licenseUtils';
 
-// ⚠️ 테스트 모드 — 확인 후 원복 필요
 const VALID_PLANS: Record<string, { days: number; amount: number; premiumAmount: number }> = {
-  month:    { days: 30,  amount: 150, premiumAmount: 150 },
-  '6month': { days: 180, amount: 150, premiumAmount: 150 },
-  year:     { days: 365, amount: 150, premiumAmount: 150 },
+  month:    { days: 30,  amount: 9_900,  premiumAmount: 12_900  },
+  '6month': { days: 180, amount: 55_000, premiumAmount: 69_000  },
+  year:     { days: 365, amount: 99_000, premiumAmount: 129_000 },
 };
 
 export async function POST(request: NextRequest) {
