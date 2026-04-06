@@ -43,7 +43,17 @@ export default function ClientsPage() {
             const matchSearch = !caddySearchTerm || c.name.includes(caddySearchTerm) ||
                 String(c.caddy_no ?? '').includes(caddySearchTerm);
             return matchGroup && matchSearch && c.is_active;
-        }).sort((a, b) => (a.caddy_no ?? 999) - (b.caddy_no ?? 999));
+        }).sort((a, b) => {
+            // 1. 조번호 오름차순
+            const gDiff = (a.group_no ?? 99) - (b.group_no ?? 99);
+            if (gDiff !== 0) return gDiff;
+            // 2. 직위: 조장 → 일반 → 대기
+            const rankOrder: Record<string, number> = { leader: 0, normal: 1, standby: 2 };
+            const rDiff = (rankOrder[a.rank] ?? 1) - (rankOrder[b.rank] ?? 1);
+            if (rDiff !== 0) return rDiff;
+            // 3. 캐디번호 오름차순
+            return (a.caddy_no ?? 999) - (b.caddy_no ?? 999);
+        });
     }, [caddies, caddyGroupTab, caddySearchTerm]);
 
     const caddyGroupCounts = useMemo(() => {
