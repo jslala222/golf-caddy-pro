@@ -59,6 +59,20 @@ export interface Diary {
     updated_at?: string;
 }
 
+export type CaddyRank = 'leader' | 'normal' | 'standby';
+
+export interface Caddy {
+    id: string;
+    name: string;
+    caddy_no?: number;     // 캐디번호
+    group_no?: number;    // 조번호
+    rank: CaddyRank;      // 조장/일반/대기
+    contact?: string;
+    memo?: string;
+    is_active: boolean;
+    createdAt: string;
+}
+
 export interface Transaction {
     id: string;
     date: string;
@@ -75,6 +89,7 @@ interface AppState {
     clients: Client[];
     transactions: Transaction[];
     diaries: Diary[];
+    caddies: Caddy[];
     feeSettings: {
         shift1: number;
         shift2: number;
@@ -97,6 +112,10 @@ interface AppState {
 
     upsertDiary: (diary: Omit<Diary, 'id' | 'license_code' | 'updated_at'>) => Promise<void>;
     getDiaryByDate: (date: string) => Diary | undefined;
+
+    addCaddy: (caddy: Omit<Caddy, 'id' | 'createdAt'>) => void;
+    updateCaddy: (id: string, updates: Partial<Caddy>) => void;
+    deleteCaddy: (id: string) => void;
 
     updateFeeSettings: (settings: { shift1: number; shift2: number; shift3: number; useShift3: boolean }) => void;
 
@@ -161,6 +180,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     clients: [],
     transactions: [],
     diaries: [],
+    caddies: [],
     feeSettings: { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
     _initialized: false,
 
@@ -340,7 +360,21 @@ export const useAppStore = create<AppState>()((set, get) => ({
         return get().diaries.find(d => d.date === date);
     },
 
-    resetData: () => set({ schedules: [], clients: [], transactions: [], diaries: [] }),
+    addCaddy: (caddy) => {
+        const newCaddy: Caddy = { ...caddy, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+        set(s => ({ caddies: [...s.caddies, newCaddy] }));
+        bgFetch('/api/db/caddies', { method: 'POST', headers: apiHeaders(), body: JSON.stringify(newCaddy) });
+    },
+    updateCaddy: (id, updates) => {
+        set(s => ({ caddies: s.caddies.map(c => c.id === id ? { ...c, ...updates } : c) }));
+        bgFetch(`/api/db/caddies/${id}`, { method: 'PUT', headers: apiHeaders(), body: JSON.stringify(updates) });
+    },
+    deleteCaddy: (id) => {
+        set(s => ({ caddies: s.caddies.filter(c => c.id !== id) }));
+        bgFetch(`/api/db/caddies/${id}`, { method: 'DELETE', headers: apiHeaders() });
+    },
+
+    resetData: () => set({ schedules: [], clients: [], transactions: [], diaries: [], caddies: [] }),
 
     deleteDataBefore: (date: string) => {
         set(s => ({
@@ -391,25 +425,28 @@ export async function initializeStore(licenseCode: string): Promise<void> {
             if (!res.ok) return fallback;
             try { return await res.json(); } catch { return fallback; }
         };
-        const [schedRes, clientRes, txRes, feeRes, diaryRes] = await Promise.all([
+        const [schedRes, clientRes, txRes, feeRes, diaryRes, caddyRes] = await Promise.all([
             fetch('/api/db/schedules', { headers }),
             fetch('/api/db/clients', { headers }),
             fetch('/api/db/transactions', { headers }),
             fetch('/api/db/fee-settings', { headers }),
             fetch('/api/db/diary', { headers }),
+            fetch('/api/db/caddies', { headers }),
         ]);
-        const [schedData, clientData, txData, feeData, diaryData] = await Promise.all([
+        const [schedData, clientData, txData, feeData, diaryData, caddyData] = await Promise.all([
             safeJson(schedRes, { schedules: [] }),
             safeJson(clientRes, { clients: [] }),
             safeJson(txRes, { transactions: [] }),
             safeJson(feeRes, { feeSettings: null }),
             safeJson(diaryRes, { diaries: [] }),
+            safeJson(caddyRes, { caddies: [] }),
         ]);
         const freshState = {
             schedules: schedData.schedules ?? [],
             clients: clientData.clients ?? [],
             transactions: txData.transactions ?? [],
             diaries: diaryData.diaries ?? [],
+            caddies: caddyData.caddies ?? [],
             feeSettings: feeData.feeSettings ?? { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
         };
 

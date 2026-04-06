@@ -18,7 +18,7 @@ export function BottomNav() {
         { href: '/home', label: '홈', icon: Home, exact: true },
         { href: '/schedule', label: '근무', icon: Calendar },
         { href: '/change', label: '대기바꿈', icon: RefreshCw },
-        { href: '/clients', label: '고객', icon: Users },
+        { href: '/clients', label: '인원관리', icon: Users },
         { href: '/money', label: '가계부', icon: Wallet },
         { href: '/settings', label: '설정', icon: Settings },
     ];
