@@ -11,14 +11,14 @@ import { searchLicenseByNamePhone, verifyLicenseAsync } from '@/lib/licenseUtils
 import type { MemberSearchResult } from '@/lib/licenseUtils';
 
 const PLANS = [
-    { key: 'month',  label: '1개월',  price: '9,900원',   priceNum: 9900,  days: 30,  badge: null,       color: 'from-blue-500 to-blue-600' },
-    { key: '6month', label: '6개월',  price: '55,000원',  priceNum: 55000, days: 180, badge: 'BEST',     color: 'from-emerald-500 to-emerald-600' },
-    { key: 'year',   label: '1년',    price: '99,000원',  priceNum: 99000, days: 365, badge: '최대할인', color: 'from-violet-500 to-violet-600' },
+    { key: 'month',  label: '1개월',  price: '9,900원',   priceNum: 9900,  days: 30,  badge: null,          monthlyPrice: '월 9,900원',  discount: null,      color: 'from-blue-500 to-blue-600' },
+    { key: '6month', label: '6개월',  price: '55,000원',  priceNum: 55000, days: 180, badge: 'BEST',        monthlyPrice: '월 9,167원',  discount: '7% 할인', color: 'from-emerald-500 to-emerald-600' },
+    { key: 'year',   label: '1년',    price: '99,000원',  priceNum: 99000, days: 365, badge: '🔥 최고혜택', monthlyPrice: '월 8,250원',  discount: '16% 할인', color: 'from-violet-500 to-violet-600' },
 ];
 const PLANS_PREMIUM = [
-    { key: 'month',  label: '1개월',  price: '12,900원',  priceNum: 12900,  days: 30,  badge: null,       color: 'from-blue-500 to-blue-600' },
-    { key: '6month', label: '6개월',  price: '69,000원',  priceNum: 69000,  days: 180, badge: 'BEST',     color: 'from-emerald-500 to-emerald-600' },
-    { key: 'year',   label: '1년',    price: '129,000원', priceNum: 129000, days: 365, badge: '최대할인', color: 'from-violet-500 to-violet-600' },
+    { key: 'month',  label: '1개월',  price: '12,900원',  priceNum: 12900,  days: 30,  badge: null,          monthlyPrice: '월 12,900원', discount: null,       color: 'from-blue-500 to-blue-600' },
+    { key: '6month', label: '6개월',  price: '69,000원',  priceNum: 69000,  days: 180, badge: 'BEST',        monthlyPrice: '월 11,500원', discount: '11% 할인', color: 'from-emerald-500 to-emerald-600' },
+    { key: 'year',   label: '1년',    price: '129,000원', priceNum: 129000, days: 365, badge: '🔥 최고혜택', monthlyPrice: '월 10,750원', discount: '17% 할인', color: 'from-violet-500 to-violet-600' },
 ];
 
 const FEATURES = [
@@ -322,7 +322,10 @@ export default function LandingPage() {
                                 </div>
                                 <div>
                                     <p className="text-white font-bold text-sm">{p.label} 이용권</p>
-                                    <p className="text-stone-400 text-xs">{p.days}일 사용</p>
+                                    <p className="text-stone-400 text-xs">
+                                        {p.monthlyPrice}
+                                        {p.discount && <span className="ml-1 text-emerald-400 font-bold">{p.discount}</span>}
+                                    </p>
                                 </div>
                                 <div className="ml-auto text-right">
                                     <p className={`font-black text-lg ${
@@ -422,7 +425,10 @@ export default function LandingPage() {
                                                     href={`/subscribe?plan=${p.key}${selectedTier === 'premium' ? '&tier=premium' : ''}`}
                                                     className={`w-full py-3 px-5 rounded-2xl bg-gradient-to-r ${p.color} text-white flex items-center justify-between active:scale-95 transition`}
                                                 >
-                                                    <span className="font-bold text-sm">{p.label} 이용권</span>
+                                                    <div>
+                                                        <p className="font-bold text-sm">{p.label} 이용권</p>
+                                                        {p.discount && <p className="text-white/75 text-[11px]">{p.monthlyPrice} · {p.discount}</p>}
+                                                    </div>
                                                     <span className="font-black">{p.price}</span>
                                                 </Link>
                                             ))}

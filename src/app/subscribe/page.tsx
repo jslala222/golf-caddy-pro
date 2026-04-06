@@ -9,8 +9,8 @@ import type { PortOneProductKey } from '@/lib/paymentService';
 // ── 요금제 카드 레이블 ────────────────────────────────────────
 const PLAN_LABELS: Record<PortOneProductKey, { period: string; badge?: string; color: string }> = {
   month:    { period: '1개월',  color: 'border-blue-400 bg-blue-50'    },
-  '6month': { period: '6개월',  badge: '인기',    color: 'border-emerald-400 bg-emerald-50' },
-  year:     { period: '1년',    badge: '최저가',  color: 'border-amber-400 bg-amber-50'    },
+  '6month': { period: '6개월',  badge: 'BEST',       color: 'border-emerald-400 bg-emerald-50' },
+  year:     { period: '1년',    badge: '🔥 최고혜택', color: 'border-amber-400 bg-amber-50'    },
 };
 
 function formatKRW(amount: number) {
@@ -261,6 +261,9 @@ function SubscribeInner() {
           {(Object.entries(selectedTier === 'premium' ? PORTONE_PRODUCTS_PREMIUM : PORTONE_PRODUCTS) as [PortOneProductKey, { name: string; amount: number; days: number }][]).map(([key, product]) => {
             const label = PLAN_LABELS[key];
             const isSelected = selectedPlan === key;
+            const monthlyAmt = Math.round(product.amount / (product.days / 30));
+            const baseMonthly = selectedTier === 'premium' ? 12900 : 9900;
+            const discountPct = key === 'month' ? null : Math.round((1 - monthlyAmt / baseMonthly) * 100);
             return (
               <button
                 key={key}
@@ -284,7 +287,10 @@ function SubscribeInner() {
                         </span>
                       )}
                     </div>
-                    <p className="text-stone-400 text-xs">{product.days}일 이용</p>
+                    <p className="text-stone-400 text-xs">
+                        월 {monthlyAmt.toLocaleString('ko-KR')}원
+                        {discountPct && <span className="ml-1 text-emerald-600 font-bold">{discountPct}% 할인</span>}
+                    </p>
                   </div>
                 </div>
                 <span className="font-black text-stone-900 text-lg">{(product.amount).toLocaleString('ko-KR')}원</span>
