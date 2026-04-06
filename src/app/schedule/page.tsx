@@ -899,7 +899,6 @@ function ScheduleContent() {
                                             <input
                                                 type="text"
                                                 inputMode="numeric"
-                                                pattern="[0-9]*"
                                                 value={overFee ? Number(overFee).toLocaleString() : ''}
                                                 onChange={(e) => setOverFee(e.target.value.replace(/[^0-9]/g, ''))}
                                                 placeholder="0"

@@ -782,7 +782,6 @@ export default function MoneyPage() {
                                         id="amount-input"
                                         type="text"
                                         inputMode="numeric"
-                                        pattern="[0-9]*"
                                         value={amount ? Number(amount).toLocaleString() : ''}
                                         onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
                                         placeholder="0"
