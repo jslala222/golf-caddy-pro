@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { calculateCaddyTax, TaxResult } from '@/lib/taxUtils';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, todayKST } from '@/lib/utils';
 import { Wallet, Share2, Info, RefreshCcw } from 'lucide-react';
 
 export default function TaxPage() {
@@ -18,7 +18,7 @@ export default function TaxPage() {
     }, []);
 
     const yearStr = String(selectedYear);
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayKST();
 
     const getCaddyFee = (s: any) => {
         if (s.caddyFee) return s.caddyFee;

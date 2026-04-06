@@ -9,6 +9,7 @@ import { Calendar as CalendarIcon, Clock, Plus, Trash2, X, Edit, ArrowLeft, More
 import { useCaddyStore } from '@/store/useCaddyStore';
 import { findCaddyTurn } from '@/lib/caddyLogic';
 import { clsx } from 'clsx';
+import { todayKST } from '@/lib/utils';
 
 function ScheduleContent() {
     const router = useRouter();
@@ -23,7 +24,7 @@ function ScheduleContent() {
     const [editingId, setEditingId] = useState<string | null>(null);
 
     // Form State
-    const [date, setDate] = useState(dateParam || new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(dateParam || todayKST());
     const [hour, setHour] = useState('00');
     const [minute, setMinute] = useState('00');
     const [title, setTitle] = useState('');
@@ -61,7 +62,7 @@ function ScheduleContent() {
         if (dateParam) {
             setDate(dateParam);
         } else {
-            const today = new Date().toISOString().split('T')[0];
+            const today = todayKST();
             router.replace(`/schedule?date=${today}`);
         }
     }, [dateParam]);
@@ -423,7 +424,7 @@ function ScheduleContent() {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        const today = new Date().toISOString().split('T')[0];
+                                        const today = todayKST();
                                         if (date < today) {
                                             setShowPastDateAlert(true);
                                             return;
@@ -667,31 +668,40 @@ function ScheduleContent() {
                     {/* FORM VIEW (Add or Edit) */}
                     {viewMode === 'form' && (
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* Type Toggle */}
-                            <div className="grid grid-cols-2 gap-2 bg-stone-100 p-1 rounded-2xl">
-                                <button
-                                    type="button"
-                                    onClick={() => setType('work')}
-                                    disabled={activeDateSchedules.some(s => s.type === 'holiday')}
-                                    className={`py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 ${type === 'work' ? 'bg-white text-emerald-600 shadow-sm' : 'text-stone-400'} ${activeDateSchedules.some(s => s.type === 'holiday') ? 'opacity-50 grayscale' : ''}`}
-                                >
-                                    ⛳️ 근무
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setType('personal')}
-                                    className={`py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 ${type === 'personal' ? 'bg-white text-orange-500 shadow-sm' : 'text-stone-400'}`}
-                                >
-                                    📅 개인
-                                </button>
-                            </div>
-                            {activeDateSchedules.some(s => s.type === 'holiday') && (
+                            {/* Type Toggle — 편집 시 type 변경 불가 */}
+                            {editingId ? (
+                                <div className="flex items-center justify-center gap-2 bg-stone-50 border border-stone-200 p-3 rounded-2xl">
+                                    <span className="text-sm font-bold text-stone-500">
+                                        {type === 'work' ? '⛳️ 근무' : type === 'personal' ? '📅 개인' : '🏖️ 휴무'}
+                                    </span>
+                                    <span className="text-[10px] bg-stone-200 text-stone-500 px-2 py-0.5 rounded-full">편집 중 (유형 변경 불가)</span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-2 bg-stone-100 p-1 rounded-2xl">
+                                    <button
+                                        type="button"
+                                        onClick={() => setType('work')}
+                                        disabled={activeDateSchedules.some(s => s.type === 'holiday')}
+                                        className={`py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 ${type === 'work' ? 'bg-white text-emerald-600 shadow-sm' : 'text-stone-400'} ${activeDateSchedules.some(s => s.type === 'holiday') ? 'opacity-50 grayscale' : ''}`}
+                                    >
+                                        ⛳️ 근무
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setType('personal')}
+                                        className={`py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 ${type === 'personal' ? 'bg-white text-orange-500 shadow-sm' : 'text-stone-400'}`}
+                                    >
+                                        📅 개인
+                                    </button>
+                                </div>
+                            )}
+                            {!editingId && activeDateSchedules.some(s => s.type === 'holiday') && (
                                 <p className="text-[10px] text-blue-600 text-center font-bold">💡 휴무일에는 개인 일정만 추가할 수 있습니다.</p>
                             )}
 
                             {/* Date Logic for UI */}
                             {(() => {
-                                const todayStr = new Date().toISOString().split('T')[0];
+                                const todayStr = todayKST();
                                 const isFuture = date > todayStr;
 
                                 return (
@@ -762,7 +772,7 @@ function ScheduleContent() {
                             {type === 'work' && (
                                 <div className="space-y-4 pt-2">
                                     {(() => {
-                                        const todayStr = new Date().toISOString().split('T')[0];
+                                        const todayStr = todayKST();
                                         const isFuture = date > todayStr;
 
                                         return (
@@ -784,13 +794,13 @@ function ScheduleContent() {
                                                 >
                                                     <span className="text-sm">⛳️</span>
                                                     {!isFuture && <span className="text-sm">☔️❄️</span>}
-                                                    {isFuture ? '홀수 직접 입력 (9, 27홀 등)' : '홀수/우천 정산'} {isRain ? 'ON' : 'OFF'}
+                                                    홀수/우천 정산 {isRain ? 'ON' : 'OFF'}
                                                 </button>
                                             </div>
                                         );
                                     })()}
 
-                                    {isRain ? (
+                                    {isRain && (
                                         <div className="animate-in slide-in-from-top-2">
                                             <div className="relative">
                                                 <input
@@ -800,30 +810,17 @@ function ScheduleContent() {
                                                     value={customHoles}
                                                     onChange={(e) => {
                                                         const val = e.target.value.replace(/[^0-9]/g, '');
-                                                        if (val.length <= 2) { // Max 99 holes
+                                                        if (val.length <= 2) {
                                                             setCustomHoles(val);
                                                         }
                                                     }}
-                                                    placeholder="직접 입력 (예: 9, 27, 4)"
+                                                    placeholder="직접 입력 (예: 9, 27)"
                                                     className="w-full p-4 bg-blue-50 border-2 border-blue-200 rounded-2xl text-lg font-bold focus:outline-none focus:border-blue-500 text-blue-700"
                                                     maxLength={2}
                                                 />
                                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-400 font-bold">홀</span>
                                             </div>
                                             <p className="mt-2 text-[10px] text-stone-400 ml-1 italic">* 18홀이 아닌 경우(9, 27홀 등)에만 켜주세요.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {([18, 36, 54] as const).map(h => (
-                                                <button key={h} type="button"
-                                                    onClick={() => setHoles(h)}
-                                                    className={`py-3 rounded-2xl border-2 text-center font-black transition ${holes === h ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-stone-200 bg-white text-stone-400'}`}>
-                                                    <p className="text-lg">{h}홀</p>
-                                                    <p className="text-[10px] font-normal mt-0.5 text-stone-400">
-                                                        {h === 18 ? '1라운드' : h === 36 ? '2라운드' : '3라운드'}
-                                                    </p>
-                                                </button>
-                                            ))}
                                         </div>
                                     )}
 

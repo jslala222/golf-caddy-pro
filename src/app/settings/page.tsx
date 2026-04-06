@@ -6,7 +6,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw } from 'lucide-react';
 import { migrateLocalDataToSupabase } from '@/lib/supabaseDB';
-import { formatNumber } from '@/lib/utils';
+import { formatNumber, todayKST } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
 
 export default function SettingsPage() {
@@ -121,7 +121,7 @@ export default function SettingsPage() {
         const blob = new Blob([raw], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        const date = new Date().toISOString().split('T')[0];
+        const date = todayKST();
         const shortCode = licenseCode.replace(/[^A-Z0-9-]/gi, '').toUpperCase();
         link.href = url;
         link.download = `caddy-backup-${shortCode}-${date}.json`;
@@ -148,7 +148,7 @@ export default function SettingsPage() {
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        const date = new Date().toISOString().split('T')[0];
+        const date = todayKST();
         const licenseCode = localStorage.getItem('caddy_license_key') ?? 'unknown';
         const shortCode = licenseCode.replace(/[^A-Z0-9-]/gi, '').toUpperCase();
         link.href = url;

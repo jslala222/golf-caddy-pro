@@ -6,6 +6,11 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+/** 한국 시간(KST, UTC+9) 기준 오늘 날짜 문자열 반환 — YYYY-MM-DD */
+export function todayKST(): string {
+    return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+}
+
 export function formatCurrency(amount: number) {
     return new Intl.NumberFormat('ko-KR', {
         style: 'currency',

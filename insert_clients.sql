@@ -1,0 +1,2 @@
+INSERT INTO aone_pro_caddypro_clients(id,license_code,name,phone,car_info,birth_date,grade,visit_count,last_visit,memo,created_at) VALUES
+('8efb2d52-dba8-4534-b9e8-d9a9b0165959','DC-AWA-S72','서두리',NULL,'아우디  27가3209','','vip',0,NULL,'72세 할부지 인천','2026-02-12T21:42:08.025Z');

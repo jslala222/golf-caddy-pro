@@ -1,0 +1,1593 @@
+{
+  "schedules": [
+    {
+      "date": "2026-04-01",
+      "time": "02:03",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "8843a65b-0e90-45a2-804d-5f1563120fee",
+      "createdAt": "2026-04-04T08:22:33.190Z"
+    },
+    {
+      "date": "2026-02-10",
+      "time": "07:57",
+      "title": "남동코스",
+      "type": "work",
+      "shift": "1",
+      "isRain": true,
+      "holes": 6,
+      "caddyFee": 80000,
+      "overFee": 10000,
+      "id": "101bff7e-ae84-4a2f-b161-9f75c5ebe521",
+      "createdAt": "2026-02-12T12:37:05.576Z"
+    },
+    {
+      "date": "2026-02-06",
+      "time": "13:03",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "overFee": 20000,
+      "id": "126d8683-8333-4167-9cdd-73cbe97fc825",
+      "createdAt": "2026-02-12T12:37:51.745Z"
+    },
+    {
+      "date": "2026-02-13",
+      "time": "17:00",
+      "title": "저녁",
+      "type": "personal",
+      "id": "d2a588c7-1aa4-4bbe-9194-2a3a57994d68",
+      "createdAt": "2026-02-12T12:39:19.929Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-19",
+      "time": "09:41",
+      "title": "남동코스/  이주형 회원님\n김남주 회원님\n조민상\n김서기",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "987f192d-d65d-47a1-be99-6db9196a1820",
+      "createdAt": "2026-02-12T21:50:08.812Z"
+    },
+    {
+      "date": "2026-02-04",
+      "time": "12:13",
+      "title": "남동코스",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "15a0f2f9-2b2e-4c73-934e-7131a9736066",
+      "createdAt": "2026-02-13T01:40:57.197Z"
+    },
+    {
+      "date": "2025-08-06",
+      "time": "14:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "79cc8b59-49f7-4b7a-b210-ea42265a9070",
+      "createdAt": "2026-02-13T01:43:07.096Z"
+    },
+    {
+      "date": "2025-08-11",
+      "time": "14:07",
+      "title": "청용코스",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "42154f6b-71ab-46cd-b9b4-dbe92dd14200",
+      "createdAt": "2026-02-13T01:43:38.492Z"
+    },
+    {
+      "date": "2026-02-05",
+      "time": "06:07",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "a783640e-a8c0-4642-bd13-e3297ff38e9e",
+      "createdAt": "2026-02-13T05:32:40.649Z"
+    },
+    {
+      "date": "2026-02-07",
+      "time": "00:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "0a9e9bea-bb95-45a5-ba6b-1fbe70128fee",
+      "createdAt": "2026-02-13T05:40:21.340Z"
+    },
+    {
+      "date": "2026-02-03",
+      "time": "14:00",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "5c3b7abf-c9b7-4cbf-a04b-8b677dbf910b",
+      "createdAt": "2026-02-13T05:43:16.285Z"
+    },
+    {
+      "date": "2026-02-25",
+      "time": "08:00",
+      "title": "아침",
+      "type": "personal",
+      "id": "03aa33ab-c009-492b-8055-4cd1705640b8",
+      "createdAt": "2026-02-13T12:35:07.734Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-01",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "eac2af51-6e61-4124-a5bc-a5f96c5aa502",
+      "createdAt": "2026-02-13T21:18:27.413Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-02",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "5b63e01b-0e3c-4d21-bfa8-746d7a766fea",
+      "createdAt": "2026-02-13T21:18:33.507Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-02",
+      "time": "07:00",
+      "title": "시댁",
+      "type": "personal",
+      "id": "03675b67-ca0b-481f-bfe8-98eb064d3c61",
+      "createdAt": "2026-02-13T21:18:48.868Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-12",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "ac0cc342-cd55-4a10-9637-b5308d8f82e9",
+      "createdAt": "2026-02-13T21:18:57.985Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-21",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "3d7e3e6b-26e1-4007-876b-d84d2b9addd4",
+      "createdAt": "2026-02-13T21:19:02.998Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-22",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "9910bd1e-355d-4855-b24f-513af8800d9e",
+      "createdAt": "2026-02-13T21:19:08.203Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-23",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "4e15ee49-ee17-40e3-827a-b0cd619255b2",
+      "createdAt": "2026-02-13T21:19:11.890Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-24",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "9cbaae66-f077-4270-b3c0-2345167bd5fd",
+      "createdAt": "2026-02-13T21:19:16.554Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-15",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "f8205ab3-da4f-4d63-a54f-ebae43acb2c9",
+      "createdAt": "2026-02-13T21:19:24.584Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-15",
+      "time": "11:30",
+      "title": "동호회 모임",
+      "type": "personal",
+      "id": "2b1d8c14-d1a4-4a64-8ccf-5541e8b7a175",
+      "createdAt": "2026-02-13T21:19:56.751Z",
+      "holes": 18
+    },
+    {
+      "date": "2025-12-10",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "9985cae8-a26c-414e-b8b7-78b89d21f09b",
+      "createdAt": "2026-02-13T21:25:46.112Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-01-03",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "226b3560-cf59-4b6b-a9b9-8bab929afffb",
+      "createdAt": "2026-02-13T22:44:29.955Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-01",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "7c1b7775-97dc-4f3b-ab1f-068b9a85471f",
+      "createdAt": "2026-02-13T22:44:43.270Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-02",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "a16431dc-fb1f-4068-b97c-19e63c1940be",
+      "createdAt": "2026-02-13T22:44:55.011Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-28",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "2cfdf020-8ee0-49e8-a34b-9e2e211371ec",
+      "createdAt": "2026-02-13T22:45:08.944Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-03",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "1d8f8a6f-9253-4403-b60b-7479202a5ddc",
+      "createdAt": "2026-03-02T22:18:04.946Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-04",
+      "time": "07:35",
+      "title": "남동",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "a5d512e5-48fd-49b2-a304-1b01ed5d8b90",
+      "createdAt": "2026-03-02T22:18:44.885Z"
+    },
+    {
+      "date": "2026-04-23",
+      "time": "12:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "98d149b7-dd38-4acb-912f-748edee6d616",
+      "createdAt": "2026-04-04T08:38:59.742Z"
+    },
+    {
+      "date": "2026-05-14",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "2b6cb923-d9ff-47d8-b4b0-5c140cc617b4",
+      "createdAt": "2026-04-04T08:39:09.059Z"
+    },
+    {
+      "date": "2026-03-10",
+      "time": "05:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "ce78a4ed-f104-4822-9e6d-a2f2bf00a172",
+      "createdAt": "2026-04-04T08:39:16.711Z"
+    },
+    {
+      "date": "2026-04-24",
+      "time": "15:00",
+      "title": "동서코스",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "df33ff4b-45e9-474c-a4f5-c9fc4463ea49",
+      "createdAt": "2026-04-04T10:47:56.726Z"
+    },
+    {
+      "date": "2026-04-03",
+      "time": "14:11",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "overFee": 20000,
+      "id": "f15d2186-4929-4b77-b650-203b900fc5d6",
+      "createdAt": "2026-04-04T10:48:17.220Z"
+    },
+    {
+      "date": "2026-02-15",
+      "time": "13:00",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "7f73c031-9d15-4b31-bfd9-bb124dba5448",
+      "createdAt": "2026-02-12T12:05:20.693Z",
+      "overFee": 30000
+    },
+    {
+      "date": "2026-02-13",
+      "time": "10:00",
+      "title": "홍성 올케네 경숙언니 근형언니\n형부들이랑 오가피ㆍ냉이켐^^\n청하돌솥 점심 광천 젓갈^^",
+      "type": "personal",
+      "id": "b0866eab-1b06-4520-a4da-2f96981f7f26",
+      "createdAt": "2026-02-13T03:54:24.384Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-13",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "8f869981-3321-4bc6-a516-c573b5ea7879",
+      "createdAt": "2026-02-13T12:38:06.804Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-17",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "f0c91660-5e35-44e6-9ef5-0bcedc330286",
+      "createdAt": "2026-02-13T12:38:47.508Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-18",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "669328ea-04c2-4a77-92fe-01d4b79f6fe5",
+      "createdAt": "2026-02-13T12:38:50.463Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-17",
+      "time": "00:00",
+      "title": "수원.홍성",
+      "type": "personal",
+      "id": "fa8cbd9c-a602-493a-bdab-7f4f939ff466",
+      "createdAt": "2026-02-13T12:39:10.285Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-18",
+      "time": "15:00",
+      "title": "귀가",
+      "type": "personal",
+      "id": "4a5a6167-a256-4a35-91de-2b538d1f72d2",
+      "createdAt": "2026-02-13T12:39:34.714Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-25",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "ccf5f909-b7b1-449f-bb62-da1574a0f129",
+      "createdAt": "2026-02-13T12:39:49.747Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-25",
+      "time": "10:30",
+      "title": "조치원",
+      "type": "personal",
+      "id": "df469058-b81c-4605-ac4c-0cbaa7c16232",
+      "createdAt": "2026-02-13T12:40:10.310Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-14",
+      "time": "09:05",
+      "title": "ABC병원 CT찍고 향남정형외과 내원하기",
+      "type": "personal",
+      "id": "780734a5-5094-43c1-889f-3ce98773a78c",
+      "createdAt": "2026-02-13T12:41:38.394Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-14",
+      "time": "00:00",
+      "title": "근무 넘기고 병원 ABC 골절4.5번",
+      "type": "personal",
+      "id": "86d36d12-1284-4791-9b2d-bfb44a627191",
+      "createdAt": "2026-02-14T00:59:26.968Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-03",
+      "time": "00:00",
+      "title": "휴무.ABC 병원 9시 진료 후 조치원♡♡",
+      "type": "personal",
+      "id": "17ac99d9-1ad5-4685-9e9a-98fe17cacdf7",
+      "createdAt": "2026-02-14T01:00:18.616Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-03",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "68d484f4-9d4b-4314-93ac-7b54d1e3f40f",
+      "createdAt": "2026-02-14T01:00:30.966Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-16",
+      "time": "11:00",
+      "title": "아빠한테 갔다가 수원 어머님댁\nㅠㅠ 실컷 장보고 아빠 못 차려드리고 왔따!!\n엄청 속상하다!!!!!!!!\n힝~ 담부턴 10흘전에 가겠어!!!",
+      "type": "personal",
+      "id": "7fa4db75-754d-4460-9670-97baf86f1176",
+      "createdAt": "2026-02-16T02:04:10.191Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-16",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "c73ae153-c7cc-4b20-9e08-e2d4b0db456f",
+      "createdAt": "2026-02-16T02:04:15.586Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-19",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "a7a28d52-89f3-414e-917f-3a8c4aeb89d9",
+      "createdAt": "2026-02-18T00:27:12.230Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-21",
+      "time": "12:00",
+      "title": "투라운드",
+      "type": "work",
+      "shift": "2",
+      "isRain": true,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "b2c00e31-4e6a-4250-9e49-ea24c7234ccd",
+      "createdAt": "2026-02-18T22:07:26.716Z",
+      "overFee": 20000
+    },
+    {
+      "date": "2026-02-22",
+      "time": "11:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "bd24d0e5-d17f-432a-baa6-799c00fc2631",
+      "createdAt": "2026-02-18T22:07:49.330Z",
+      "overFee": 80000
+    },
+    {
+      "date": "2026-02-25",
+      "time": "05:00",
+      "title": "해물보따리 ",
+      "type": "personal",
+      "id": "98365ac3-7884-4621-bcaa-c21a988e8cc5",
+      "createdAt": "2026-02-18T22:08:15.574Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-14",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "12f0514b-beab-4307-bddd-c7e188dad05c",
+      "createdAt": "2026-02-19T07:10:29.383Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-26",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "9585e533-47fb-4ef4-aaef-63c0dd4932bb",
+      "createdAt": "2026-02-21T02:03:31.984Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-26",
+      "time": "12:00",
+      "title": "경원.윤지 남양 점심",
+      "type": "personal",
+      "id": "4f6f6d77-a382-426b-9a2b-bbe1097f21fa",
+      "createdAt": "2026-02-21T02:03:58.157Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-24",
+      "time": "08:57",
+      "title": "잼났다 ㅋㅋ 하얀집 ",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "9db79c42-ce09-470c-ba2d-777864a33c76",
+      "createdAt": "2026-02-22T07:55:47.040Z",
+      "overFee": 30000
+    },
+    {
+      "date": "2026-02-26",
+      "time": "15:00",
+      "title": "피치네일",
+      "type": "personal",
+      "id": "2e4e2d38-1b34-42ff-8df7-6c75e77c2e91",
+      "createdAt": "2026-02-23T02:00:26.034Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-25",
+      "time": "15:00",
+      "title": "경숙언니 간장게장 김치 양념장.김치 ",
+      "type": "personal",
+      "id": "e696aa62-ef9e-4806-b258-77ab12299797",
+      "createdAt": "2026-02-24T12:50:12.333Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-10",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "a047b2d3-5693-48a0-a14e-689cfe3a5f66",
+      "createdAt": "2026-02-25T00:18:51.407Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-11",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "788a19fc-e82c-43f1-a904-c640e926ac19",
+      "createdAt": "2026-02-25T00:18:54.875Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-11",
+      "time": "07:45",
+      "title": "심장이 🎂 생일 축하고 감사하고 사랑한다!!♡",
+      "type": "personal",
+      "id": "0faf1bd9-64e3-4e9a-9004-719a78238a7c",
+      "createdAt": "2026-02-25T00:19:45.059Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-17",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "0f25beb9-c582-4dd2-89df-2ee78ab0155c",
+      "createdAt": "2026-02-25T00:20:16.882Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-18",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "1321218a-3183-46f3-8687-a7c20d0c235c",
+      "createdAt": "2026-02-25T00:20:20.104Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-23",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "c8b64903-5e13-4013-a8d8-28e766d6d74b",
+      "createdAt": "2026-02-25T00:20:23.528Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-24",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "c8367dae-ddd5-4375-9cf2-1f8c547dccd8",
+      "createdAt": "2026-02-25T00:20:49.860Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-31",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "b4f5c33f-712a-4d22-bebe-3410538eed4e",
+      "createdAt": "2026-02-25T00:20:55.173Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-02-27",
+      "time": "12:34",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "1f7538bb-28f1-4bb2-a33c-23e35b581c05",
+      "createdAt": "2026-02-25T03:38:59.640Z",
+      "overFee": 10000
+    },
+    {
+      "date": "2026-02-28",
+      "time": "12:20",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "a1636243-618a-44df-9b3f-653fa3b39619",
+      "createdAt": "2026-02-25T03:39:14.372Z",
+      "overFee": 20000
+    },
+    {
+      "date": "2026-03-24",
+      "time": "10:00",
+      "title": "네일 하는날",
+      "type": "personal",
+      "id": "e3d35f4e-97b1-4ff8-a5a9-8e35294a9063",
+      "createdAt": "2026-02-26T23:56:13.976Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-01",
+      "time": "12:34",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "bfc678bf-9c39-4157-9231-0f985ee4bc8b",
+      "createdAt": "2026-02-28T08:58:26.840Z"
+    },
+    {
+      "date": "2026-04-28",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "d27dc516-a0c4-4678-a2b8-06db6595776f",
+      "createdAt": "2026-02-28T08:59:05.180Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-04-29",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "83f4b09e-1bda-4a9b-95c7-268d9d6310c7",
+      "createdAt": "2026-02-28T08:59:08.298Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-04-28",
+      "time": "16:00",
+      "title": "해물보따리 혼자",
+      "type": "personal",
+      "id": "2bd3dd4f-7b7b-4554-8633-6438a6516f9e",
+      "createdAt": "2026-02-28T08:59:55.582Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-04-29",
+      "time": "00:00",
+      "title": "숯가마",
+      "type": "personal",
+      "id": "c8cf1248-f432-49a3-b96e-91150ee4aa85",
+      "createdAt": "2026-02-28T09:00:08.849Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-02",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "8290e48f-cbd7-45ec-a891-b7c0ce7dd232",
+      "createdAt": "2026-03-02T05:18:25.007Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-02",
+      "time": "00:00",
+      "title": "비와서 꽁휴 되었음",
+      "type": "personal",
+      "id": "f9e7aa0e-5735-4981-acd5-477184c856a2",
+      "createdAt": "2026-03-02T05:18:40.221Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-04",
+      "time": "12:48",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "0a5fd7cd-b5f1-4319-b21d-87951bc80934",
+      "createdAt": "2026-03-02T05:18:56.833Z",
+      "overFee": 50000
+    },
+    {
+      "date": "2026-03-23",
+      "time": "11:00",
+      "title": "조치원 가는날",
+      "type": "personal",
+      "id": "a1042327-57c8-4e6e-bd57-8243994605be",
+      "createdAt": "2026-03-04T00:29:19.634Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-04-07",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "dc53f07f-8b1c-458d-a442-a1e933e56ece",
+      "createdAt": "2026-03-04T00:30:03.076Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-04-08",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "71039176-aae3-4522-a8dd-a3d680ac1f80",
+      "createdAt": "2026-03-04T00:30:06.256Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-04-14",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "86626e9d-b9d2-4d8f-ba27-973838839613",
+      "createdAt": "2026-03-04T00:30:11.363Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-04-15",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "5acc3898-5a54-4ce6-bf02-80800c4a810c",
+      "createdAt": "2026-03-04T00:30:14.267Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-04-22",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "4aafe299-45b2-4645-80d7-144cf70e3e3e",
+      "createdAt": "2026-03-04T00:30:21.468Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-05-15",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "7c552840-8bc6-4e2d-8578-1495450bf9b7",
+      "createdAt": "2026-03-04T00:30:34.497Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-05-15",
+      "time": "14:00",
+      "title": "아들 이사",
+      "type": "personal",
+      "id": "e2c61ae4-5902-4bdf-8ec0-6a1827435fe2",
+      "createdAt": "2026-03-04T00:30:48.594Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-05-16",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "9bf72e6f-47b8-4abd-b0df-61eb029d6bb5",
+      "createdAt": "2026-03-04T00:30:54.278Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-05-16",
+      "time": "00:00",
+      "title": "아들 이사 정리",
+      "type": "personal",
+      "id": "4b4df6b3-1e2c-41dc-8174-c2efbbd3e155",
+      "createdAt": "2026-03-04T00:31:07.582Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-05-06",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "35014dc3-8322-4d0f-a76a-007a1547377f",
+      "createdAt": "2026-03-04T00:31:22.741Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-05",
+      "time": "13:16",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "1a966de6-ea56-4608-b2c1-208491bcb204",
+      "createdAt": "2026-03-04T09:22:26.921Z",
+      "overFee": 70000
+    },
+    {
+      "date": "2026-03-17",
+      "time": "16:00",
+      "title": "해물보따리 ",
+      "type": "personal",
+      "id": "6c6f2684-e65c-4fbf-ac8e-15e171ba394a",
+      "createdAt": "2026-03-04T15:12:36.363Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-06",
+      "time": "12:00",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "5e33bad2-8313-402a-a1ee-9292be4d1757",
+      "createdAt": "2026-03-05T03:58:21.956Z",
+      "overFee": 20000
+    },
+    {
+      "date": "2026-03-07",
+      "time": "12:00",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "overFee": 20000,
+      "id": "9df9b6fd-d990-4e2f-9c54-a5228e1253b6",
+      "createdAt": "2026-03-07T08:55:07.633Z"
+    },
+    {
+      "date": "2026-03-08",
+      "time": "13:16",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "e72ea1cf-9b97-495e-8149-83348758acd2",
+      "createdAt": "2026-03-07T08:55:55.236Z",
+      "overFee": 20000
+    },
+    {
+      "date": "2026-03-09",
+      "time": "12:20",
+      "title": "123 현주 대근",
+      "type": "work",
+      "id": "ea0f21be-fb7b-4faa-826c-4c9ec39b5eb2",
+      "createdAt": "2026-03-07T13:50:11.211Z",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "overFee": 40000
+    },
+    {
+      "date": "2026-03-10",
+      "time": "15:00",
+      "title": "유화 약속",
+      "type": "personal",
+      "id": "59c72218-5194-485f-bfd4-75d4e9618de9",
+      "createdAt": "2026-03-08T02:39:50.493Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-14",
+      "time": "07:47",
+      "title": "조별청소!!!",
+      "type": "work",
+      "id": "b1bbb24c-3fe4-49cf-82b3-4e41d351af9f",
+      "createdAt": "2026-03-10T04:14:06.224Z",
+      "shift": "1",
+      "isRain": true,
+      "holes": 36,
+      "caddyFee": 300000,
+      "overFee": 50000
+    },
+    {
+      "date": "2026-03-12",
+      "time": "12:48",
+      "title": "장정식회원님 왜!!!왜!! 늦어서 무전타게 하냐고~~~화나 짜장면 먹음 ᆢ",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "89163882-7be6-42b0-ae7a-5b2ee5a4df05",
+      "createdAt": "2026-03-12T06:13:18.446Z",
+      "overFee": 30000
+    },
+    {
+      "date": "2026-03-13",
+      "time": "08:50",
+      "title": "싱글즈회장~ 홍푸중화요리 겁나 웃김",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "overFee": 20000,
+      "id": "2f4c6a0b-29ca-44fb-9950-07778ba07191",
+      "createdAt": "2026-03-13T05:16:04.600Z"
+    },
+    {
+      "date": "2026-03-15",
+      "time": "08:15",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": true,
+      "holes": 36,
+      "caddyFee": 300000,
+      "id": "386e4530-770e-401c-964d-cad60e165512",
+      "createdAt": "2026-03-14T20:00:33.603Z",
+      "overFee": 50000
+    },
+    {
+      "date": "2026-03-16",
+      "time": "08:22",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "04119206-dd86-4fc8-808f-fcdca36c4f14",
+      "createdAt": "2026-03-15T21:07:17.217Z",
+      "overFee": 10000
+    },
+    {
+      "date": "2026-03-19",
+      "time": "07:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": true,
+      "holes": 36,
+      "caddyFee": 300000,
+      "id": "bff6e2e0-5ee3-40ae-87da-9ca31040865b",
+      "createdAt": "2026-03-17T23:34:06.222Z",
+      "overFee": 40000
+    },
+    {
+      "date": "2026-03-23",
+      "time": "06:00",
+      "title": "전직원 디봇",
+      "type": "personal",
+      "id": "ade221bf-3d3a-4544-8ba4-49b99e5d149b",
+      "createdAt": "2026-03-18T06:49:59.753Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-20",
+      "time": "08:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": true,
+      "holes": 36,
+      "caddyFee": 300000,
+      "id": "09f6eeb5-b3bd-4462-be5a-872a2a87dbc9",
+      "createdAt": "2026-03-19T07:29:52.923Z",
+      "overFee": 30000
+    },
+    {
+      "date": "2026-03-21",
+      "time": "08:36",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": true,
+      "holes": 36,
+      "caddyFee": 300000,
+      "id": "ec5832c4-449f-4f68-aad4-7043d7478522",
+      "createdAt": "2026-03-20T11:11:20.521Z",
+      "overFee": 20000
+    },
+    {
+      "date": "2026-03-22",
+      "time": "07:47",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": true,
+      "holes": 36,
+      "caddyFee": 300000,
+      "overFee": 30000,
+      "id": "fcd5ddce-9a4f-424e-a672-06a7c1c02054",
+      "createdAt": "2026-03-22T11:37:46.874Z"
+    },
+    {
+      "date": "2026-03-25",
+      "time": "13:09",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "8e8cfb0f-674f-4f1d-919d-6e53b48966a1",
+      "createdAt": "2026-03-24T10:21:43.918Z",
+      "overFee": 20000
+    },
+    {
+      "date": "2026-04-23",
+      "time": "00:00",
+      "title": "휴무",
+      "type": "holiday",
+      "id": "88470cee-8008-4ce3-8cbd-63e94276bbab",
+      "createdAt": "2026-03-24T22:51:27.928Z",
+      "holes": 18
+    },
+    {
+      "date": "2026-03-26",
+      "time": "08:29",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": true,
+      "holes": 36,
+      "caddyFee": 300000,
+      "id": "544e79e5-14c9-40f8-8ee3-75f91579ad89",
+      "createdAt": "2026-03-25T11:43:13.601Z",
+      "overFee": 40000
+    },
+    {
+      "date": "2026-03-27",
+      "time": "08:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": true,
+      "holes": 36,
+      "caddyFee": 300000,
+      "id": "6f8d0ba4-160a-491a-b24d-be487c3acb16",
+      "createdAt": "2026-03-26T07:34:41.019Z",
+      "overFee": 30000
+    },
+    {
+      "date": "2026-03-28",
+      "time": "08:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": true,
+      "holes": 36,
+      "caddyFee": 300000,
+      "id": "e8e3044d-cce0-4fac-b72f-c1ae9cd5f864",
+      "createdAt": "2026-03-26T12:18:32.202Z",
+      "overFee": 30000
+    },
+    {
+      "date": "2026-03-29",
+      "time": "07:00",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": true,
+      "holes": 36,
+      "caddyFee": 300000,
+      "id": "3556e354-7c6b-41bc-a6ed-1272f628956a",
+      "createdAt": "2026-03-26T12:19:22.885Z",
+      "overFee": 50000
+    },
+    {
+      "date": "2026-03-30",
+      "time": "12:20",
+      "title": "원",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "09dd2677-d404-4c3c-b73c-82b7ffaddf8e",
+      "createdAt": "2026-03-28T11:57:04.153Z",
+      "overFee": 50000
+    },
+    {
+      "date": "2026-04-05",
+      "time": "00:00",
+      "title": "당번",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "id": "d82fde8f-c6ed-43f5-9f64-e3ba35725f50",
+      "createdAt": "2026-03-31T06:09:34.538Z"
+    },
+    {
+      "date": "2026-04-01",
+      "time": "12:44",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "68a6ca7d-256e-4741-a9cc-e86b0ba3c629",
+      "createdAt": "2026-03-31T06:10:04.714Z",
+      "overFee": 10000
+    },
+    {
+      "date": "2026-04-02",
+      "time": "13:09",
+      "title": "",
+      "type": "work",
+      "shift": "2",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "b78eaed3-38ab-4d85-92dc-2ae81046f8c3",
+      "createdAt": "2026-04-01T09:28:57.880Z",
+      "overFee": 10000
+    },
+    {
+      "date": "2026-04-03",
+      "time": "08:57",
+      "title": "",
+      "type": "work",
+      "shift": "1",
+      "isRain": false,
+      "holes": 18,
+      "caddyFee": 150000,
+      "id": "4c608a75-5557-48ff-9e7e-10077b0ad8a0",
+      "createdAt": "2026-04-02T11:00:28.253Z",
+      "overFee": 10000
+    },
+    {
+      "date": "2026-03-31",
+      "time": "00:00",
+      "title": "혜영쌤 이랑 마미",
+      "type": "personal",
+      "id": "3e2a6605-41a3-4611-9c6b-4fe8000488ae",
+      "createdAt": "2026-04-03T08:01:35.368Z",
+      "holes": 18
+    }
+  ],
+  "clients": [
+    {
+      "name": "서두리",
+      "contact": "010-2256-8554",
+      "carInfo": "아우디  27가3209",
+      "birthDate": "",
+      "memo": "72세 할부지 인천",
+      "grade": "vip",
+      "id": "b30beba5-38e3-45fc-a2db-f4efe9f20ab7",
+      "createdAt": "2026-02-12T21:42:08.025Z",
+      "visitCount": 0
+    }
+  ],
+  "transactions": [
+    {
+      "date": "2026-02-12",
+      "type": "expense",
+      "amount": 20000,
+      "category": "transport",
+      "memo": "기름",
+      "id": "228221cd-e21d-4351-80f0-b099538708d6",
+      "createdAt": "2026-02-12T12:41:24.342Z"
+    },
+    {
+      "date": "2026-02-11",
+      "type": "income",
+      "amount": 120000,
+      "memo": "용돈",
+      "id": "3b48f7fd-47d8-4ad3-bade-57734548a60e",
+      "createdAt": "2026-02-12T21:35:49.024Z"
+    },
+    {
+      "date": "2026-02-02",
+      "type": "expense",
+      "amount": 50000,
+      "category": "transport",
+      "memo": "주유",
+      "id": "9a06693a-ca3d-4167-b3b2-85d567db5d0d",
+      "createdAt": "2026-02-12T22:48:33.183Z"
+    },
+    {
+      "date": "2026-02-04",
+      "type": "expense",
+      "amount": 5000,
+      "category": "food",
+      "memo": "점심",
+      "id": "32fce741-e0b0-4352-b016-755f3953b4c8",
+      "createdAt": "2026-02-13T01:41:14.515Z"
+    },
+    {
+      "date": "2026-02-04",
+      "type": "expense",
+      "amount": 4500,
+      "category": "food",
+      "memo": "커피",
+      "id": "63cf390d-ab1c-4ec9-b191-71225da4e7a5",
+      "createdAt": "2026-02-13T01:41:22.612Z"
+    },
+    {
+      "date": "2026-02-15",
+      "type": "expense",
+      "amount": 67200,
+      "category": "other",
+      "memo": "가압류 취소비용",
+      "id": "c74dd9b5-2607-4aa2-a3b2-c1b21f4559f5",
+      "createdAt": "2026-02-15T07:56:28.813Z"
+    },
+    {
+      "date": "2026-02-19",
+      "type": "expense",
+      "amount": 5500,
+      "category": "other",
+      "memo": "부동액 보충",
+      "id": "3ccc63d0-e3cb-4d5f-b4ad-0754b0998481",
+      "createdAt": "2026-02-19T09:18:20.050Z"
+    },
+    {
+      "date": "2026-02-21",
+      "type": "expense",
+      "amount": 63000,
+      "category": "food",
+      "memo": "저녁 쪽갈비",
+      "id": "73b007d5-4752-4aad-a51b-fcef13397ece",
+      "createdAt": "2026-02-21T10:11:11.896Z"
+    },
+    {
+      "date": "2026-02-23",
+      "type": "expense",
+      "amount": 135000,
+      "category": "food",
+      "memo": "명조 형네 부부 식사",
+      "id": "aff832c6-afb3-4d84-a354-7b340c2ebdab",
+      "createdAt": "2026-02-23T23:13:15.687Z"
+    },
+    {
+      "date": "2026-02-24",
+      "type": "expense",
+      "amount": 13000,
+      "category": "food",
+      "memo": "미용실",
+      "id": "a09ba871-a08b-42c3-aaba-5c1d28479dd7",
+      "createdAt": "2026-02-24T02:55:41.438Z"
+    },
+    {
+      "date": "2026-02-24",
+      "type": "expense",
+      "amount": 180000,
+      "category": "transport",
+      "memo": "배터리 교체 펠리세이드 ",
+      "id": "8e562dbc-42ce-42d4-82f1-e36f0c3377a7",
+      "createdAt": "2026-02-24T02:56:04.070Z"
+    },
+    {
+      "date": "2026-02-24",
+      "type": "expense",
+      "amount": 3000,
+      "category": "transport",
+      "memo": "워셔액 펠리세이드 ",
+      "id": "6a0d9eb1-50c7-4cda-9dad-566c8bca01dc",
+      "createdAt": "2026-02-24T02:56:23.463Z"
+    },
+    {
+      "date": "2026-02-24",
+      "type": "expense",
+      "amount": 11000,
+      "category": "food",
+      "memo": "곱창해장국",
+      "id": "fc1d09c9-ca93-437f-8a54-3b1b4333a53e",
+      "createdAt": "2026-02-24T03:21:32.777Z"
+    },
+    {
+      "date": "2026-02-27",
+      "type": "expense",
+      "amount": 25000,
+      "category": "food",
+      "memo": "도이제 식사 경준",
+      "id": "dc5a718d-c1ba-4f3b-a3ef-3a5098473664",
+      "createdAt": "2026-02-27T12:08:07.103Z"
+    },
+    {
+      "date": "2026-02-12",
+      "type": "expense",
+      "amount": 10000,
+      "category": "food",
+      "memo": "점심",
+      "id": "9ade334d-a68a-4b90-86ca-fdfbd211435f",
+      "createdAt": "2026-02-12T12:42:59.412Z"
+    },
+    {
+      "date": "2026-02-13",
+      "type": "expense",
+      "amount": 500,
+      "category": "gear",
+      "memo": "선물",
+      "id": "ba05b0c7-3ec8-425d-8323-2d71ae7635fd",
+      "createdAt": "2026-02-12T21:38:25.350Z"
+    },
+    {
+      "date": "2026-02-11",
+      "type": "expense",
+      "amount": 5000,
+      "category": "other",
+      "memo": "사고처리비",
+      "id": "2b370024-5781-444b-98de-f5d31e00ba5c",
+      "createdAt": "2026-02-12T21:46:21.540Z"
+    },
+    {
+      "date": "2026-02-13",
+      "type": "expense",
+      "amount": 500,
+      "category": "food",
+      "memo": "",
+      "id": "b740c4ec-cd13-4685-973c-301251f90ce9",
+      "createdAt": "2026-02-12T22:10:26.613Z"
+    },
+    {
+      "date": "2026-02-12",
+      "type": "expense",
+      "amount": 8000,
+      "category": "food",
+      "memo": "커피",
+      "id": "42de561b-52ff-4d34-922d-2723927dcff8",
+      "createdAt": "2026-02-12T22:48:12.628Z"
+    },
+    {
+      "date": "2026-04-04",
+      "type": "income",
+      "amount": 300000,
+      "category": "caddy_fee",
+      "memo": "캐디피 (투 )",
+      "id": "48208cf7-f08d-4a27-9ef8-72a0fe5c89ba",
+      "createdAt": "2026-04-04T10:49:17.539Z"
+    },
+    {
+      "date": "2026-04-04",
+      "type": "income",
+      "amount": 60000,
+      "category": "tip",
+      "memo": "팁",
+      "id": "6da5a533-96b6-4121-86c4-39c58464cefa",
+      "createdAt": "2026-04-04T10:49:17.539Z"
+    },
+    {
+      "date": "2026-04-04",
+      "type": "income",
+      "amount": 300000,
+      "category": "caddy_fee",
+      "memo": "캐디피 (투)",
+      "id": "ff21f85e-ac7f-4eaf-b995-984c419924cc",
+      "createdAt": "2026-04-04T10:52:44.518Z"
+    },
+    {
+      "date": "2026-04-04",
+      "type": "income",
+      "amount": 60000,
+      "category": "tip",
+      "memo": "팁·오버피",
+      "id": "b4c1bb79-2cf3-479e-b708-6a9b3708526f",
+      "createdAt": "2026-04-04T10:52:44.518Z"
+    },
+    {
+      "date": "2026-02-13",
+      "type": "expense",
+      "amount": 30000,
+      "category": "other",
+      "memo": "청하돌솥밥  영양과자 3봉",
+      "id": "deb15ccb-4b22-4948-bf71-b6f82f1901de",
+      "createdAt": "2026-02-13T12:58:02.765Z"
+    },
+    {
+      "date": "2026-02-14",
+      "type": "expense",
+      "amount": 317000,
+      "category": "other",
+      "memo": "CT + 진료",
+      "id": "753a406a-206a-46ac-8460-134110d124ed",
+      "createdAt": "2026-02-14T12:03:10.134Z"
+    },
+    {
+      "date": "2026-02-14",
+      "type": "expense",
+      "amount": 150000,
+      "category": "other",
+      "memo": "상해진단서",
+      "id": "9b6fe87c-010e-4694-b197-43215065b79c",
+      "createdAt": "2026-02-14T12:03:26.364Z"
+    },
+    {
+      "date": "2026-02-14",
+      "type": "expense",
+      "amount": 70000,
+      "category": "other",
+      "memo": "주유",
+      "id": "a2c0d2fd-a944-414a-b937-4a278b0be296",
+      "createdAt": "2026-02-14T12:03:35.499Z"
+    },
+    {
+      "date": "2026-02-10",
+      "type": "expense",
+      "amount": 13000,
+      "category": "other",
+      "memo": "향남정형외가",
+      "id": "78ec00cf-34fd-4a1b-92ec-988fd2a230c9",
+      "createdAt": "2026-02-14T12:04:49.145Z"
+    },
+    {
+      "date": "2026-02-10",
+      "type": "expense",
+      "amount": 17000,
+      "category": "other",
+      "memo": "약국",
+      "id": "c3cfe5cb-a40f-4d8e-b661-1f49cf7e2d2b",
+      "createdAt": "2026-02-14T12:05:08.251Z"
+    },
+    {
+      "date": "2026-02-04",
+      "type": "expense",
+      "amount": 210000,
+      "category": "other",
+      "memo": "병원비+진단서",
+      "id": "bbc0997f-3da7-431c-b808-3edbee648583",
+      "createdAt": "2026-02-14T12:06:33.647Z"
+    },
+    {
+      "date": "2026-02-04",
+      "type": "expense",
+      "amount": 17000,
+      "category": "other",
+      "memo": "약값",
+      "id": "106e8908-cdfe-4afe-ac5c-9ac16291efea",
+      "createdAt": "2026-02-14T12:06:55.534Z"
+    },
+    {
+      "date": "2026-02-13",
+      "type": "expense",
+      "amount": 140000,
+      "category": "other",
+      "memo": "현금지출 젓갈",
+      "id": "75122df7-7872-4ff6-83a3-689dac2dbbbf",
+      "createdAt": "2026-02-14T12:08:05.900Z"
+    },
+    {
+      "date": "2026-02-13",
+      "type": "expense",
+      "amount": 30000,
+      "category": "other",
+      "memo": "현금지출 과자 청하돌솥",
+      "id": "0f69488f-190a-4544-86da-4c3b7a953369",
+      "createdAt": "2026-02-14T12:08:33.573Z"
+    },
+    {
+      "date": "2026-02-14",
+      "type": "expense",
+      "amount": 14000,
+      "category": "other",
+      "memo": "경순이 파이",
+      "id": "86c2bf8c-1337-44c6-8638-da4501e4feab",
+      "createdAt": "2026-02-14T12:08:58.943Z"
+    },
+    {
+      "date": "2026-02-14",
+      "type": "expense",
+      "amount": 400000,
+      "category": "other",
+      "memo": "현금지출",
+      "id": "b5d5cb66-8ca5-4e19-be77-27d6761f2b84",
+      "createdAt": "2026-02-14T12:10:55.290Z"
+    },
+    {
+      "date": "2026-02-15",
+      "type": "expense",
+      "amount": 61300,
+      "category": "other",
+      "memo": "분말세제.섬유린스.트리오.각각2개씩 애터미",
+      "id": "df2beb59-4d2d-47b3-a5c6-d60396342293",
+      "createdAt": "2026-02-14T23:35:09.625Z"
+    },
+    {
+      "date": "2026-02-16",
+      "type": "expense",
+      "amount": 122000,
+      "category": "other",
+      "memo": "장보기 ",
+      "id": "691973ef-c456-4753-a943-57eb89e8a921",
+      "createdAt": "2026-02-16T10:44:00.062Z"
+    }
+  ],
+  "feeSettings": {
+    "shift1": 150000,
+    "shift2": 150000,
+    "shift3": 160000,
+    "useShift3": true
+  },
+  "version": 1,
+  "exportedAt": "2026-04-05T01:10:29.919Z"
+}

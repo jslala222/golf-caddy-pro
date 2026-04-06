@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppStore } from '@/lib/store';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, todayKST } from '@/lib/utils';
 import { Calendar as CalendarIcon, Wallet, ChevronRight, TrendingUp, TrendingDown, LogOut, Plus, X, DollarSign } from 'lucide-react';
 import { Calendar } from '@/components/Calendar';
 
@@ -65,7 +65,7 @@ export default function HomePage() {
 
   // 빠른 수입 입력 모달 열기 (캐디피 기본값 자동 설정)
   const openQuickModal = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayKST();
     const alreadyToday = transactions.filter(t => t.date === todayStr && t.type === 'income');
     // 오늘 이미 캐디피 입력 없을 때만 기본값 설정
     const hasFeesToday = alreadyToday.some(t => t.category === 'caddy_fee');
@@ -81,7 +81,7 @@ export default function HomePage() {
   };
 
   const handleQuickIncome = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayKST();
     const toNum = (s: string) => parseInt(s.replace(/[^0-9]/g, ''), 10) || 0;
     if (toNum(qCaddyFee) > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qCaddyFee), category: 'caddy_fee', memo: '캐디피' + (qMemo ? ` (${qMemo})` : '') });
     if (toNum(qTip)      > 0) addTransaction({ date: todayStr, type: 'income', amount: toNum(qTip),      category: 'tip',       memo: '팁·오버피' });
@@ -95,7 +95,7 @@ export default function HomePage() {
   };
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayKST();
 
   const monthlyTransactions = transactions.filter(t => {
     const d = new Date(t.date);
@@ -131,15 +131,19 @@ export default function HomePage() {
   const netIncomeExpected = totalIncomeExpected - totalExpense;
 
   const roundStats = {
-    realized: { h18: 0, h9: 0, other: 0, total: 0 },
-    expected: { h18: 0, h9: 0, other: 0, total: 0 }
+    realized: { h18: 0, h36: 0, h54: 0, h9: 0, other: 0, total: 0 },
+    expected: { h18: 0, h36: 0, h54: 0, h9: 0, other: 0, total: 0 }
   };
 
   workSchedules.forEach(s => {
     const isRealized = s.date <= today;
     const target = isRealized ? roundStats.realized : roundStats.expected;
     const holes = parseInt(String(s.holes || '18').replace(/[^0-9]/g, '')) || 18;
-    if (holes === 18) target.h18++; else if (holes === 9) target.h9++; else target.other++;
+    if (holes === 18) target.h18++;
+    else if (holes === 36) target.h36++;
+    else if (holes === 54) target.h54++;
+    else if (holes === 9) target.h9++;
+    else target.other++;
     target.total++;
   });
 
@@ -230,13 +234,33 @@ export default function HomePage() {
                 {roundStats.expected.h18 > 0 && <span className="text-[10px] ml-0.5 text-emerald-300">+{roundStats.expected.h18}</span>}
               </span>
             </div>
-            <div className="text-center">
-              <span className="text-[10px] text-emerald-200 block">9홀</span>
-              <span className="font-bold text-lg">
-                {roundStats.realized.h9}
-                {roundStats.expected.h9 > 0 && <span className="text-[10px] ml-0.5 text-emerald-300">+{roundStats.expected.h9}</span>}
-              </span>
-            </div>
+            {(roundStats.realized.h36 > 0 || roundStats.expected.h36 > 0) && (
+              <div className="text-center">
+                <span className="text-[10px] text-emerald-200 block">36홀</span>
+                <span className="font-bold text-lg">
+                  {roundStats.realized.h36}
+                  {roundStats.expected.h36 > 0 && <span className="text-[10px] ml-0.5 text-emerald-300">+{roundStats.expected.h36}</span>}
+                </span>
+              </div>
+            )}
+            {(roundStats.realized.h54 > 0 || roundStats.expected.h54 > 0) && (
+              <div className="text-center">
+                <span className="text-[10px] text-emerald-200 block">54홀</span>
+                <span className="font-bold text-lg">
+                  {roundStats.realized.h54}
+                  {roundStats.expected.h54 > 0 && <span className="text-[10px] ml-0.5 text-emerald-300">+{roundStats.expected.h54}</span>}
+                </span>
+              </div>
+            )}
+            {(roundStats.realized.h9 > 0 || roundStats.expected.h9 > 0) && (
+              <div className="text-center">
+                <span className="text-[10px] text-emerald-200 block">9홀</span>
+                <span className="font-bold text-lg">
+                  {roundStats.realized.h9}
+                  {roundStats.expected.h9 > 0 && <span className="text-[10px] ml-0.5 text-emerald-300">+{roundStats.expected.h9}</span>}
+                </span>
+              </div>
+            )}
             {(roundStats.realized.other > 0 || roundStats.expected.other > 0) && (
               <div className="text-center">
                 <span className="text-[10px] text-emerald-200 block">기타</span>
@@ -269,7 +293,7 @@ export default function HomePage() {
         </button>
         {/* 오늘 입력된 수입 리스트 */}
         {(() => {
-          const todayStr = new Date().toISOString().split('T')[0];
+          const todayStr = todayKST();
           const todayIncomes = transactions.filter(t => t.date === todayStr && t.type === 'income');
           if (todayIncomes.length === 0) return null;
           const todayTotal = todayIncomes.reduce((s, t) => s + t.amount, 0);
@@ -323,7 +347,17 @@ export default function HomePage() {
         const yearlyNet = yearlyScheduleIncome + yearlyManualIncome - yearlyExpense;
         const totalRounds = yearlyWork.length;
         const h18 = yearlyWork.filter(s => (s.holes ?? 18) === 18).length;
+        const h36 = yearlyWork.filter(s => s.holes === 36).length;
+        const h54 = yearlyWork.filter(s => s.holes === 54).length;
         const h9 = yearlyWork.filter(s => s.holes === 9).length;
+        const hOther = yearlyWork.filter(s => { const h = s.holes ?? 18; return h !== 18 && h !== 36 && h !== 54 && h !== 9; }).length;
+        const holeItems = [
+          { label: '18홀', count: h18 },
+          ...(h36 > 0 ? [{ label: '36홀', count: h36 }] : []),
+          ...(h54 > 0 ? [{ label: '54홀', count: h54 }] : []),
+          ...(h9 > 0 ? [{ label: '9홀', count: h9 }] : []),
+          ...(hOther > 0 ? [{ label: '기타', count: hOther }] : []),
+        ];
         return (
           <section className="bg-stone-800 rounded-2xl p-5 text-white">
             <div className="flex justify-between items-center mb-3">
@@ -332,19 +366,17 @@ export default function HomePage() {
             </div>
             <div className="text-2xl font-black mb-1 break-all">{yearlyNet.toLocaleString()}<span className="text-xs font-normal text-stone-400 ml-1">원 (순수익)</span></div>
             <div className="text-xs text-stone-400 mb-4">수입 {(yearlyScheduleIncome + yearlyManualIncome).toLocaleString()} — 지출 {yearlyExpense.toLocaleString()}</div>
-            <div className="grid grid-cols-3 divide-x divide-stone-700 bg-stone-700/50 rounded-xl py-3">
-              <div className="text-center">
+            <div className="divide-x divide-stone-700 bg-stone-700/50 rounded-xl py-3 flex">
+              <div className="text-center flex-1">
                 <div className="text-[10px] text-stone-400 mb-1">총 라운드</div>
                 <div className="text-xl font-black text-emerald-400">{totalRounds}<span className="text-xs font-normal ml-0.5">회</span></div>
               </div>
-              <div className="text-center">
-                <div className="text-[10px] text-stone-400 mb-1">18홀</div>
-                <div className="text-xl font-black">{h18}<span className="text-xs font-normal ml-0.5">회</span></div>
-              </div>
-              <div className="text-center">
-                <div className="text-[10px] text-stone-400 mb-1">9홀</div>
-                <div className="text-xl font-black">{h9}<span className="text-xs font-normal ml-0.5">회</span></div>
-              </div>
+              {holeItems.map(item => (
+                <div key={item.label} className="text-center flex-1">
+                  <div className="text-[10px] text-stone-400 mb-1">{item.label}</div>
+                  <div className="text-xl font-black">{item.count}<span className="text-xs font-normal ml-0.5">회</span></div>
+                </div>
+              ))}
             </div>
           </section>
         );

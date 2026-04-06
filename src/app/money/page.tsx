@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppStore, type TransactionType, type ExpenseCategory } from '@/lib/store';
-import { formatDate, formatCurrency } from '@/lib/utils';
+import { formatDate, formatCurrency, todayKST } from '@/lib/utils';
 import { Wallet, Plus, X, ArrowUp, ArrowDown, Trash2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Loader2 } from 'lucide-react';
 
 
@@ -111,20 +111,34 @@ export default function MoneyPage() {
     };
 
     // Calculate Totals
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayKST();
     const realizedSchedules = filteredSchedules.filter(s => s.date <= today); // Calculate realized income based on filter range
 
     const scheduleIncome = realizedSchedules.reduce((acc, s) => acc + getCaddyFee(s) + (s.overFee || 0), 0);
     const manualIncome = filteredTransactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
     const totalIncome = scheduleIncome + manualIncome;
 
-    // Calculate Rounding Stats
+    // Calculate Rounding Stats (날짜별 그룹: 2건=투라운드, 단독 36홀도 36홀 카운트)
     const roundStats = useMemo(() => {
-        const stats = { h18: 0, h9: 0, other: 0 };
+        const stats = { h18: 0, h36: 0, h54: 0, h9: 0, other: 0 };
+        // 날짜별 그룹핑
+        const byDate: Record<string, typeof realizedSchedules> = {};
         realizedSchedules.forEach(s => {
-            if (s.holes === 18) stats.h18++;
-            else if (s.holes === 9) stats.h9++;
-            else stats.other++;
+            if (!byDate[s.date]) byDate[s.date] = [];
+            byDate[s.date].push(s);
+        });
+        Object.values(byDate).forEach(group => {
+            if (group.length >= 2) {
+                // 투라운드: 36홀로 집계
+                stats.h36++;
+            } else {
+                const holes = group[0].holes ?? 18;
+                if (holes === 18) stats.h18++;
+                else if (holes === 36) stats.h36++;
+                else if (holes === 54) stats.h54++;
+                else if (holes === 9) stats.h9++;
+                else stats.other++;
+            }
         });
         return stats;
     }, [realizedSchedules]);
@@ -143,6 +157,9 @@ export default function MoneyPage() {
             isSchedule: boolean;
             category?: string;
             receiptUrl?: string;
+            shift?: string;
+            holes?: number;
+            isFuture?: boolean;
         }
         const history: HistoryItem[] = [];
 
@@ -155,7 +172,10 @@ export default function MoneyPage() {
                 amount: getCaddyFee(s) + (s.overFee || 0),
                 memo: `${s.title || '근무'}${isFuture ? ' (예정)' : ' (완료)'}`,
                 isSchedule: true,
-                category: 'work'
+                category: 'work',
+                shift: s.shift,
+                holes: s.holes || 18,
+                isFuture,
             });
         });
 
@@ -175,9 +195,27 @@ export default function MoneyPage() {
         return history.sort((a, b) => b.date.localeCompare(a.date));
     }, [filteredSchedules, filteredTransactions, today, feeSettings]); // Added dependencies
 
+    // 날짜별 그룹핑: 같은 날 근무(work) 2건 이상이면 묶음 카드로 표시
+    const groupedDays = useMemo(() => {
+        const byDate: Record<string, { scheduleItems: typeof combinedHistory; txItems: typeof combinedHistory }> = {};
+        combinedHistory.forEach(item => {
+            if (!byDate[item.date]) byDate[item.date] = { scheduleItems: [], txItems: [] };
+            if (item.isSchedule) byDate[item.date].scheduleItems.push(item);
+            else byDate[item.date].txItems.push(item);
+        });
+        return Object.keys(byDate)
+            .sort((a, b) => b.localeCompare(a))
+            .map(date => {
+                const { scheduleItems, txItems } = byDate[date];
+                const dayIncome = [...scheduleItems, ...txItems].filter(i => i.type === 'income').reduce((a, i) => a + i.amount, 0);
+                const dayExpense = txItems.filter(i => i.type === 'expense').reduce((a, i) => a + i.amount, 0);
+                return { date, scheduleItems, txItems, dayIncome, dayExpense };
+            });
+    }, [combinedHistory]);
+
     // ... (keep modal form state)
     // Form State
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(todayKST());
     const [type, setType] = useState<TransactionType>('expense');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState<ExpenseCategory>('meal');
@@ -339,9 +377,7 @@ export default function MoneyPage() {
 
     // Modal defaulting logic adjusted for period
     const handleOpenModal = () => {
-        const now = new Date();
-        const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-        const todayStr = localNow.toISOString().split('T')[0];
+        const todayStr = todayKST();
 
         // If "Today" is within the currently viewed range, default to "Today".
         // Otherwise, default to range start date?
@@ -441,14 +477,30 @@ export default function MoneyPage() {
                             <div className="text-[10px] text-stone-400 mb-1">18홀</div>
                             <div className="text-lg font-black text-stone-700">{roundStats.h18}<span className="text-xs font-normal ml-0.5">회</span></div>
                         </div>
-                        <div className="flex-1 text-center">
-                            <div className="text-[10px] text-stone-400 mb-1">9홀</div>
-                            <div className="text-lg font-black text-stone-700">{roundStats.h9}<span className="text-xs font-normal ml-0.5">회</span></div>
-                        </div>
-                        <div className="flex-1 text-center font-bold text-stone-800">
-                            <div className="text-[10px] text-stone-400 mb-1">기타(중단)</div>
-                            <div className="text-lg font-black text-emerald-600">{roundStats.other}<span className="text-xs font-normal ml-0.5">회</span></div>
-                        </div>
+                        {roundStats.h36 > 0 && (
+                            <div className="flex-1 text-center">
+                                <div className="text-[10px] text-stone-400 mb-1">36홀(투)</div>
+                                <div className="text-lg font-black text-red-500">{roundStats.h36}<span className="text-xs font-normal ml-0.5">회</span></div>
+                            </div>
+                        )}
+                        {roundStats.h54 > 0 && (
+                            <div className="flex-1 text-center">
+                                <div className="text-[10px] text-stone-400 mb-1">54홀</div>
+                                <div className="text-lg font-black text-stone-700">{roundStats.h54}<span className="text-xs font-normal ml-0.5">회</span></div>
+                            </div>
+                        )}
+                        {roundStats.h9 > 0 && (
+                            <div className="flex-1 text-center">
+                                <div className="text-[10px] text-stone-400 mb-1">9홀</div>
+                                <div className="text-lg font-black text-stone-700">{roundStats.h9}<span className="text-xs font-normal ml-0.5">회</span></div>
+                            </div>
+                        )}
+                        {roundStats.other > 0 && (
+                            <div className="flex-1 text-center">
+                                <div className="text-[10px] text-stone-400 mb-1">기타</div>
+                                <div className="text-lg font-black text-stone-500">{roundStats.other}<span className="text-xs font-normal ml-0.5">회</span></div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -461,53 +513,117 @@ export default function MoneyPage() {
             </div>
 
             {/* Transaction List */}
-            <div className="space-y-3">
+            <div className="space-y-4">
                 <h3 className="text-sm font-bold text-stone-500 mb-2">
                     {dateRange.label} 내역 ({combinedHistory.length}건)
                 </h3>
 
-                {combinedHistory.length === 0 ? (
+                {groupedDays.length === 0 ? (
                     <div className="text-center py-10 text-stone-400 text-xs">
                         내역이 없습니다.
                     </div>
                 ) : (
-                    combinedHistory.map((item, index) => (
-                        <div key={`${item.id}-${index}`} className="bg-white rounded-xl border border-stone-100 shadow-sm overflow-hidden">
-                            <div className="p-4 flex justify-between items-center">
-                                <div className="flex items-center">
-                                    <div className={`p-2.5 rounded-full mr-3 ${item.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'}`}>
-                                        {item.type === 'income' ? <ArrowUp size={20} /> : <ArrowDown size={20} />}
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-stone-400 mb-0.5">{formatDate(item.date)}</div>
-                                        <div className="font-bold text-stone-800 text-sm">
-                                            {item.memo || (item.type === 'income' ? '수입' : '지출')}
-                                            {item.isSchedule && <span className="ml-2 text-[10px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded">자동</span>}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center">
-                                    <span className={`font-bold mr-3 text-lg ${item.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
-                                        {item.type === 'income' ? '+' : '-'}{formatCurrency(item.amount).replace('₩', '')}
-                                    </span>
-                                    {!item.isSchedule && (
-                                        <button onClick={() => setDeleteConfirmId(item.id)} className="text-stone-300 hover:text-red-400 p-1">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
+                    groupedDays.map(dayGroup => (
+                        <div key={dayGroup.date}>
+                            {/* 날짜 섹션 헤더 */}
+                            <div className="flex justify-between items-center px-1 mb-2 pb-1 border-b border-stone-100">
+                                <span className="text-xs font-bold text-stone-400">{formatDate(dayGroup.date)}</span>
+                                <div className="flex gap-2 text-xs">
+                                    {dayGroup.dayIncome > 0 && <span className="text-emerald-600 font-bold">+{dayGroup.dayIncome.toLocaleString()}</span>}
+                                    {dayGroup.dayExpense > 0 && <span className="text-red-500 font-bold">-{dayGroup.dayExpense.toLocaleString()}</span>}
                                 </div>
                             </div>
-                            {item.receiptUrl && (
-                                <a href={item.receiptUrl} target="_blank" rel="noopener noreferrer" className="block border-t border-stone-100">
-                                    <img
-                                        src={item.receiptUrl}
-                                        alt="영수증"
-                                        className="w-full max-h-48 object-cover object-top"
-                                        loading="lazy"
-                                    />
-                                    <div className="text-[10px] text-stone-400 text-center py-1 bg-stone-50">🧾 영수증 보기 (탭하면 원본)</div>
-                                </a>
-                            )}
+
+                            <div className="space-y-2">
+                                {/* 근무 카드: 2건 이상이면 묶음 */}
+                                {dayGroup.scheduleItems.length >= 2 ? (
+                                    <div className="bg-white rounded-xl border-2 border-red-400 shadow-sm overflow-hidden">
+                                        <div className="p-4 pb-2 flex justify-between items-center">
+                                            <div className="flex items-center">
+                                                <div className="p-2.5 rounded-full mr-3 bg-emerald-100 text-emerald-600">
+                                                    <ArrowUp size={20} />
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-stone-800 text-sm">
+                                                        🏌️ {dayGroup.scheduleItems.reduce((a, i) => a + (i.holes || 18), 0)}홀(투) 근무
+                                                        <span className="ml-2 text-[10px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded">자동</span>
+                                                    </div>
+                                                    <div className="text-xs text-blue-600 font-bold mt-0.5">
+                                                        합계 +{dayGroup.scheduleItems.reduce((a, i) => a + i.amount, 0).toLocaleString()}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="border-t border-stone-50">
+                                            {dayGroup.scheduleItems.map((item, idx) => (
+                                                <div key={item.id} className={`px-4 py-3 flex justify-between items-center ${idx < dayGroup.scheduleItems.length - 1 ? 'border-b border-stone-50' : ''}`}>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${item.shift === '1' ? 'bg-red-100 text-red-600' : item.shift === '2' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                            {item.shift || '?'}부
+                                                        </span>
+                                                        <span className="text-sm text-stone-500">{item.holes || 18}홀 · {item.memo}</span>
+                                                    </div>
+                                                    <span className="font-bold text-blue-600 text-sm">+{item.amount.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : dayGroup.scheduleItems.length === 1 ? (
+                                    <div className="bg-white rounded-xl border border-stone-100 shadow-sm overflow-hidden">
+                                        <div className="p-4 flex justify-between items-center">
+                                            <div className="flex items-center">
+                                                <div className="p-2.5 rounded-full mr-3 bg-emerald-100 text-emerald-600">
+                                                    <ArrowUp size={20} />
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-stone-800 text-sm">
+                                                        {dayGroup.scheduleItems[0].memo || '근무'}
+                                                        <span className="ml-2 text-[10px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded">자동</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span className="font-bold text-emerald-600 text-lg">+{formatCurrency(dayGroup.scheduleItems[0].amount).replace('₩', '')}</span>
+                                        </div>
+                                    </div>
+                                ) : null}
+
+                                {/* 개별 거래 내역 카드 */}
+                                {dayGroup.txItems.map((item, index) => (
+                                    <div key={`${item.id}-${index}`} className="bg-white rounded-xl border border-stone-100 shadow-sm overflow-hidden">
+                                        <div className="p-4 flex justify-between items-center">
+                                            <div className="flex items-center">
+                                                <div className={`p-2.5 rounded-full mr-3 ${item.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'}`}>
+                                                    {item.type === 'income' ? <ArrowUp size={20} /> : <ArrowDown size={20} />}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-stone-800 text-sm">
+                                                        {item.memo || (item.type === 'income' ? '수입' : '지출')}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <span className={`font-bold mr-3 text-lg ${item.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                    {item.type === 'income' ? '+' : '-'}{formatCurrency(item.amount).replace('₩', '')}
+                                                </span>
+                                                <button onClick={() => setDeleteConfirmId(item.id)} className="text-stone-300 hover:text-red-400 p-1">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {item.receiptUrl && (
+                                            <a href={item.receiptUrl} target="_blank" rel="noopener noreferrer" className="block border-t border-stone-100">
+                                                <img
+                                                    src={item.receiptUrl}
+                                                    alt="영수증"
+                                                    className="w-full max-h-48 object-cover object-top"
+                                                    loading="lazy"
+                                                />
+                                                <div className="text-[10px] text-stone-400 text-center py-1 bg-stone-50">🧾 영수증 보기 (탭하면 원본)</div>
+                                            </a>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     ))
                 )}

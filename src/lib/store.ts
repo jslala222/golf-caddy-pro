@@ -94,7 +94,9 @@ function apiHeaders(): HeadersInit {
 }
 
 function bgFetch(url: string, options: RequestInit) {
-    fetch(url, options).catch(e => console.warn('[store]', url, e));
+    fetch(url, options)
+        .then(res => { if (!res.ok) console.warn('[store] failed:', options.method, url, res.status); })
+        .catch(e => console.warn('[store]', url, e));
 }
 
 // ─────────────────────────────────────────────────────────
@@ -157,13 +159,35 @@ export const useAppStore = create<AppState>()((set, get) => ({
     },
 
     updateSchedule: (id, updates) => {
+        const prev = get().schedules;
         set(s => ({ schedules: s.schedules.map(sc => sc.id === id ? { ...sc, ...updates } : sc) }));
-        bgFetch(`/api/db/schedules/${id}`, { method: 'PUT', headers: apiHeaders(), body: JSON.stringify(updates) });
+        fetch(`/api/db/schedules/${id}`, { method: 'PUT', headers: apiHeaders(), body: JSON.stringify(updates) })
+            .then(res => {
+                if (!res.ok) {
+                    set(() => ({ schedules: prev }));
+                    if (typeof window !== 'undefined') alert('수정 실패! 다시 시도해주세요.');
+                }
+            })
+            .catch(() => {
+                set(() => ({ schedules: prev }));
+                if (typeof window !== 'undefined') alert('수정 실패! 네트워크를 확인해주세요.');
+            });
     },
 
     deleteSchedule: (id) => {
+        const prev = get().schedules;
         set(s => ({ schedules: s.schedules.filter(sc => sc.id !== id) }));
-        bgFetch(`/api/db/schedules/${id}`, { method: 'DELETE', headers: apiHeaders() });
+        fetch(`/api/db/schedules/${id}`, { method: 'DELETE', headers: apiHeaders() })
+            .then(res => {
+                if (!res.ok) {
+                    set(() => ({ schedules: prev }));
+                    if (typeof window !== 'undefined') alert('삭제 실패! 다시 시도해주세요.');
+                }
+            })
+            .catch(() => {
+                set(() => ({ schedules: prev }));
+                if (typeof window !== 'undefined') alert('삭제 실패! 네트워크를 확인해주세요.');
+            });
     },
 
     deleteSchedulesByDate: (date) => {
@@ -195,8 +219,19 @@ export const useAppStore = create<AppState>()((set, get) => ({
     },
 
     deleteTransaction: (id) => {
+        const prev = get().transactions;
         set(s => ({ transactions: s.transactions.filter(t => t.id !== id) }));
-        bgFetch(`/api/db/transactions/${id}`, { method: 'DELETE', headers: apiHeaders() });
+        fetch(`/api/db/transactions/${id}`, { method: 'DELETE', headers: apiHeaders() })
+            .then(res => {
+                if (!res.ok) {
+                    set(() => ({ transactions: prev }));
+                    if (typeof window !== 'undefined') alert('삭제 실패! 다시 시도해주세요.');
+                }
+            })
+            .catch(() => {
+                set(() => ({ transactions: prev }));
+                if (typeof window !== 'undefined') alert('삭제 실패! 네트워크를 확인해주세요.');
+            });
     },
 
     updateFeeSettings: (newSettings) => {
@@ -294,17 +329,8 @@ export async function initializeStore(licenseCode: string): Promise<void> {
         _initialized: false,
     });
 
-    // 1단계: 로컬 코드별 캐시 우선 로드 (즉시 표시)
-    const local = loadLocalCache(code);
-    if (local) {
-        useAppStore.setState({
-            schedules: local.schedules ?? [],
-            clients: local.clients ?? [],
-            transactions: local.transactions ?? [],
-            feeSettings: local.feeSettings ?? { shift1: 150000, shift2: 150000, shift3: 160000, useShift3: true },
-            _initialized: true,
-        });
-    }
+    // 1단계: 캐시 사용 안 함 — Supabase가 항상 진실 (source of truth)
+    // 로컬 캐시로 먼저 뜨면 다른 이용권 데이터가 화면에 노출될 수 있음
 
     // 2단계: Supabase에서 최신 데이터 동기화 (신뢰할 수 있는 원본)
     const headers = { 'x-license-code': code };
