@@ -1092,18 +1092,8 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                     <div className="flex items-center gap-2">
                                         <span className="text-lg">💵</span>
                                         <div>
-                                            <p className="text-sm font-bold text-white">안 A — 현금/계좌이체 수금</p>
+                                            <p className="text-sm font-bold text-white">A 안 — 현금/계좌이체 수금</p>
                                             <p className="text-[10px] text-stone-400">딜러가 직접 수금 → 이용권 즉시 발급 → 본사에 정산 요청</p>
-                                        </div>
-                                    </div>
-                                </button>
-                                <button onClick={() => { setPayMethod('virtual_account'); setPaymentLink(''); }}
-                                    className={`p-3.5 rounded-2xl border text-left transition ${payMethod === 'virtual_account' ? 'border-blue-500 bg-blue-900/20' : 'border-stone-700 bg-stone-800'}`}>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-lg">🏦</span>
-                                        <div>
-                                            <p className="text-sm font-bold text-white">안 B — 가상계좌 발급</p>
-                                            <p className="text-[10px] text-stone-400">고객에게 가상계좌 번호 발송 → 입금 확인 후 코드 자동 발급</p>
                                         </div>
                                     </div>
                                 </button>
@@ -1112,7 +1102,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                     <div className="flex items-center gap-2">
                                         <span className="text-lg">📲</span>
                                         <div>
-                                            <p className="text-sm font-bold text-white">안 B-2 — 실시간 계좌이체</p>
+                                            <p className="text-sm font-bold text-white">B 안 — 실시간 계좌이체</p>
                                             <p className="text-[10px] text-stone-400">고객이 링크에서 실시간 이체 → 즉시 코드 발급</p>
                                         </div>
                                     </div>
