@@ -241,14 +241,19 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
     exportData: () => {
         const state = get();
+        const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().replace('Z', '+09:00');
+        const ownerName = typeof window !== 'undefined'
+            ? (localStorage.getItem(`caddy_user_name_${getCode()}`) || localStorage.getItem('caddy_user_name') || '')
+            : '';
         return JSON.stringify({
             schedules: state.schedules,
             clients: state.clients,
             transactions: state.transactions,
             feeSettings: state.feeSettings,
-            licenseCode: localStorage.getItem('caddy_license_key')?.trim().toUpperCase() ?? undefined,
+            licenseCode: typeof window !== 'undefined' ? (localStorage.getItem('caddy_license_key')?.trim().toUpperCase() ?? undefined) : undefined,
+            ownerName: ownerName || undefined,
             version: 2,
-            exportedAt: new Date().toISOString(),
+            exportedAt: kstNow,
         }, null, 2);
     },
 

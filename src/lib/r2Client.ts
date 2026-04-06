@@ -43,8 +43,9 @@ function dailyKey(licenseCode: string, date: string): string {
 export async function uploadBackup(licenseCode: string, data: unknown): Promise<void> {
   const client = getR2Client();
   const bucket = getBucketName();
-  const body   = JSON.stringify({ data, backedUpAt: new Date().toISOString() });
-  const today  = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const body   = JSON.stringify({ data, backedUpAt: kstNow.toISOString().replace('Z', '+09:00') });
+  const today  = kstNow.toISOString().slice(0, 10); // KST YYYY-MM-DD
 
   await Promise.all([
     client.send(new PutObjectCommand({
