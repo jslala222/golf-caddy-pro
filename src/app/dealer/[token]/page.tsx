@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PLANS, issueVoucher } from '@/lib/licenseUtils';
 import type { PlanType } from '@/lib/licenseUtils';
 import { supabase } from '@/lib/supabaseClient';
@@ -38,6 +38,12 @@ export default function DealerPage({ params }: { params: { token: string } }) {
 
     // 결제 링크
     const [paymentLink, setPaymentLink] = useState('');
+    const linkBoxRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (paymentLink && linkBoxRef.current) {
+            linkBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, [paymentLink]);
     const [linkCopied, setLinkCopied] = useState(false);
     const [issueError, setIssueError] = useState('');
 
@@ -350,7 +356,7 @@ export default function DealerPage({ params }: { params: { token: string } }) {
 
                 {/* 결제 링크 패널 */}
                 {paymentLink && (
-                    <div className="bg-stone-900 rounded-3xl p-5 space-y-3 border border-emerald-700">
+                    <div ref={linkBoxRef} className="bg-stone-900 rounded-3xl p-5 space-y-3 border border-emerald-700">
                         <p className="text-emerald-400 text-xs font-bold flex items-center gap-1.5">
                             <CheckCircle2 size={14} /> 결제 링크 생성 완료 — 카카오나 문자로 보내세요
                         </p>
