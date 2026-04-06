@@ -413,7 +413,7 @@ function ChangeContent() {
                 const s = schedules.find(x => x.id === expenseConfirm.id);
                 if (!s) return null;
                 return (
-                    <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
+                    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
                             <p className="text-lg font-black text-stone-900 mb-2">💸 가계부에 지출 추가?</p>
                             <p className="text-sm text-stone-500 mb-1">
