@@ -342,11 +342,14 @@ export default function LandingPage() {
 
             {/* 서비스 보장 */}
             <div className="mx-5 mb-8 bg-stone-900 border border-stone-700 rounded-2xl p-4 space-y-2">
-                {['이용권 코드 즉시 발급', '모든 기기에서 동일 환경 사용', '클라우드 자동백업 포함', '업데이트 평생 무료'].map((t, i) => (
+                {['이용권 코드 즉시 발급', '모든 기기에서 동일 환경 사용', '클라우드 자동백업 포함'].map((t, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs text-stone-300">
                         <CheckCircle2 size={14} className="text-emerald-500 shrink-0" /> {t}
                     </div>
                 ))}
+                <Link href="/test-pay" className="flex items-center gap-2 text-xs text-stone-500 hover:text-stone-300 transition">
+                    <CheckCircle2 size={14} className="text-emerald-500 shrink-0" /> 업데이트 평생 무료
+                </Link>
             </div>
 
             {/* ── 에러 모달 ── */}
