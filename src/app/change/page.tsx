@@ -154,11 +154,15 @@ function ChangeContent() {
         setAddDate(''); setAddShift('1'); setAddName(''); setAddMemo('');
     };
 
-    // 대기바꿈 감사비용 요약 (swapThanksAmount 기반, 가계부 추가 여부 무관)
+    // 대기바꿈 감사비용 요약 (filterYear/filterMonth 연동)
     const thisYear = new Date().getFullYear().toString();
     const thisMonth = String(new Date().getMonth() + 1).padStart(2, '0');
-    const totalThisYear = allSwapRecords.filter(s => s.swapThanksDate?.startsWith(thisYear)).reduce((sum, s) => sum + (s.swapThanksAmount || 0), 0);
-    const totalThisMonth = allSwapRecords.filter(s => s.swapThanksDate?.startsWith(`${thisYear}-${thisMonth}`)).reduce((sum, s) => sum + (s.swapThanksAmount || 0), 0);
+    const summaryYear = filterYear === 'all' ? thisYear : filterYear;
+    const summaryMonth = filterMonth === 'all' ? thisMonth : filterMonth;
+    const summaryMonthLabel = filterMonth === 'all' ? '이번 달' : `${parseInt(summaryMonth)}월`;
+    const summaryYearLabel = `${summaryYear}년`;
+    const totalSummaryMonth = allSwapRecords.filter(s => s.swapThanksDate?.startsWith(`${summaryYear}-${summaryMonth}`)).reduce((sum, s) => sum + (s.swapThanksAmount || 0), 0);
+    const totalSummaryYear = allSwapRecords.filter(s => s.swapThanksDate?.startsWith(summaryYear)).reduce((sum, s) => sum + (s.swapThanksAmount || 0), 0);
     const totalAll = allSwapRecords.reduce((sum, s) => sum + (s.swapThanksAmount || 0), 0);
 
     return (
@@ -215,13 +219,13 @@ function ChangeContent() {
                     <p className="text-xs font-bold text-stone-400 mb-2">🔄 대기바꿈 감사비용 현황</p>
                     <div className="flex gap-4">
                         <div className="flex-1 text-center">
-                            <p className="text-[10px] text-stone-400">이번 달</p>
-                            <p className="text-base font-black text-purple-700">{totalThisMonth > 0 ? totalThisMonth.toLocaleString('ko-KR') + '원' : '—'}</p>
+                            <p className="text-[10px] text-stone-400">{summaryMonthLabel}</p>
+                            <p className="text-base font-black text-purple-700">{totalSummaryMonth > 0 ? totalSummaryMonth.toLocaleString('ko-KR') + '원' : '—'}</p>
                         </div>
                         <div className="w-px bg-stone-200" />
                         <div className="flex-1 text-center">
-                            <p className="text-[10px] text-stone-400">{thisYear}년</p>
-                            <p className="text-base font-black text-purple-700">{totalThisYear > 0 ? totalThisYear.toLocaleString('ko-KR') + '원' : '—'}</p>
+                            <p className="text-[10px] text-stone-400">{summaryYearLabel}</p>
+                            <p className="text-base font-black text-purple-700">{totalSummaryYear > 0 ? totalSummaryYear.toLocaleString('ko-KR') + '원' : '—'}</p>
                         </div>
                         <div className="w-px bg-stone-200" />
                         <div className="flex-1 text-center">
