@@ -25,6 +25,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (updates.isRain    !== undefined) patch.is_rain   = updates.isRain;
   if (updates.swapWith  !== undefined) patch.swap_with  = updates.swapWith;
   if (updates.swapMemo  !== undefined) patch.swap_memo  = updates.swapMemo;
+  if (updates.swapThanks !== undefined) patch.swap_thanks = updates.swapThanks;
   if (updates.title     !== undefined) patch.title      = updates.title;
   if (updates.memo      !== undefined) patch.memo      = updates.memo;
 

@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, Users, Wallet, Settings, Home } from 'lucide-react';
+import { Calendar, Users, Wallet, Settings, Home, RefreshCw } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export function BottomNav() {
@@ -17,9 +17,9 @@ export function BottomNav() {
     const navItems = [
         { href: '/home', label: '홈', icon: Home, exact: true },
         { href: '/schedule', label: '근무', icon: Calendar },
+        { href: '/change', label: '대기바꿈', icon: RefreshCw },
         { href: '/clients', label: '고객', icon: Users },
         { href: '/money', label: '가계부', icon: Wallet },
-        { href: '/tax', label: '세금', icon: Wallet },
         { href: '/settings', label: '설정', icon: Settings },
     ];
 

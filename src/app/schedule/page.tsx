@@ -39,6 +39,7 @@ function ScheduleContent() {
     const [swapWith, setSwapWith] = useState('');
     const [swapMemo, setSwapMemo] = useState('');
     const [swapPopup, setSwapPopup] = useState<string | null>(null); // 팝업에 표시할 schedule id
+    const [calendarMonth, setCalendarMonth] = useState<Date>(new Date()); // 현재 캘린더 월
 
     // Transaction State
     const [isExpenseFormOpen, setIsExpenseFormOpen] = useState(false);
@@ -300,7 +301,7 @@ function ScheduleContent() {
 
             {/* Calendar View */}
             <div className="mb-6">
-                <Calendar schedules={schedules} selectedDate={date} />
+                <Calendar schedules={schedules} selectedDate={date} viewDate={calendarMonth} onMonthChange={setCalendarMonth} />
             </div>
 
             {/* My Turn Checker - 미구현으로 임시 숨김 */}
@@ -940,9 +941,12 @@ function ScheduleContent() {
 
             {/* 대기바꿈 통계 섹션 */}
             {(() => {
+                const currentMonthStr = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, '0')}`;
                 const swapRecords = schedules
-                    .filter(s => s.type === 'work' && s.swapWith)
+                    .filter(s => s.type === 'work' && s.swapWith && s.date.startsWith(currentMonthStr))
                     .sort((a, b) => b.date.localeCompare(a.date));
+
+                const allSwapCount = schedules.filter(s => s.type === 'work' && s.swapWith).length;
 
                 if (swapRecords.length === 0) return null;
 
@@ -1007,7 +1011,7 @@ function ScheduleContent() {
 
                         <h2 className="text-lg font-black text-stone-800 mb-4 flex items-center gap-2">
                             🔄 대기바꿈 기록
-                            <span className="text-sm font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded-full">{swapRecords.length}건</span>
+                            <span className="text-sm font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded-full">{currentMonthStr.slice(5)}월 {swapRecords.length}건</span>
                         </h2>
 
                         {/* 이름별 통계 */}
@@ -1046,6 +1050,12 @@ function ScheduleContent() {
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                        {/* 전체보기 버튼 */}
+                        <div className="mt-4 text-right">
+                            <a href="/change" className="text-xs text-purple-500 font-bold hover:text-purple-700 transition">
+                                전체 {allSwapCount}건 보기 →
+                            </a>
                         </div>
                     </div>
                 );

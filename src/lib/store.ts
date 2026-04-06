@@ -23,6 +23,7 @@ export interface Schedule {
     holes?: 18 | 9 | number;
     swapWith?: string;
     swapMemo?: string;
+    swapThanks?: string;
     createdAt?: string;
 }
 
