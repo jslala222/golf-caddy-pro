@@ -222,12 +222,12 @@ function SubscribeInner() {
               onClick={() => setSelectedTier('standard')}
               className={`p-4 rounded-2xl border-2 text-left transition-all ${
                 selectedTier === 'standard'
-                  ? 'border-blue-500 bg-blue-50'
+                  ? 'border-emerald-500 bg-emerald-50'
                   : 'border-stone-200 bg-white hover:border-stone-300'
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
-                <Shield size={16} className={selectedTier === 'standard' ? 'text-blue-500' : 'text-stone-400'} />
+                <Shield size={16} className={selectedTier === 'standard' ? 'text-emerald-500' : 'text-stone-400'} />
                 <span className="font-black text-sm">스탠다드</span>
               </div>
               <p className="text-[10px] text-stone-400 leading-relaxed">자동 백업 O<br />복구 수동</p>
@@ -236,20 +236,20 @@ function SubscribeInner() {
               onClick={() => setSelectedTier('premium')}
               className={`p-4 rounded-2xl border-2 text-left transition-all relative ${
                 selectedTier === 'premium'
-                  ? 'border-emerald-500 bg-emerald-50'
+                  ? 'border-amber-500 bg-amber-50'
                   : 'border-stone-200 bg-white hover:border-stone-300'
               }`}
             >
-              <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">추천</div>
+              <div className="absolute top-2 right-2 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">추천</div>
               <div className="flex items-center gap-2 mb-2">
-                <Star size={16} className={selectedTier === 'premium' ? 'text-emerald-500' : 'text-stone-400'} />
+                <Star size={16} className={selectedTier === 'premium' ? 'text-amber-500' : 'text-stone-400'} />
                 <span className="font-black text-sm">프리미엄</span>
               </div>
               <p className="text-[10px] text-stone-400 leading-relaxed">자동 백업 O<br />폰 바꿔도 자동 복구 ✅</p>
             </button>
           </div>
           {selectedTier === 'premium' && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 text-xs text-emerald-700">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700">
               💡 프리미엄: 폰 분실·기기 변경 시 코드 입력만 하면 <strong>데이터 자동 복구</strong>
             </div>
           )}
@@ -267,19 +267,19 @@ function SubscribeInner() {
                 onClick={() => setSelectedPlan(key)}
                 className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
                   isSelected
-                    ? 'border-blue-500 bg-blue-50'
+                    ? selectedTier === 'premium' ? 'border-amber-500 bg-amber-50' : 'border-emerald-500 bg-emerald-50'
                     : 'border-stone-200 bg-white hover:border-stone-300'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-stone-300'}`}>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? (selectedTier === 'premium' ? 'border-amber-500 bg-amber-500' : 'border-emerald-500 bg-emerald-500') : 'border-stone-300'}`}>
                     {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-stone-900">{label.period}</span>
                       {label.badge && (
-                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${selectedTier === 'premium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
                           {label.badge}
                         </span>
                       )}
@@ -301,11 +301,11 @@ function SubscribeInner() {
               onClick={() => setSelectedPayMethod('CARD')}
               className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-3 ${
                 selectedPayMethod === 'CARD'
-                  ? 'border-blue-500 bg-blue-50'
+                  ? 'border-emerald-500 bg-emerald-50'
                   : 'border-stone-200 bg-white hover:border-stone-300'
               }`}
             >
-              <CreditCard size={18} className={selectedPayMethod === 'CARD' ? 'text-blue-500' : 'text-stone-400'} />
+              <CreditCard size={18} className={selectedPayMethod === 'CARD' ? 'text-emerald-500' : 'text-stone-400'} />
               <div>
                 <p className="font-black text-sm">카드결제</p>
                 <p className="text-[10px] text-stone-400">신용·체크카드</p>
@@ -315,14 +315,13 @@ function SubscribeInner() {
               onClick={() => setSelectedPayMethod('TRANSFER')}
               className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-3 ${
                 selectedPayMethod === 'TRANSFER'
-                  ? 'border-emerald-500 bg-emerald-50'
+                  ? 'border-amber-500 bg-amber-50'
                   : 'border-stone-200 bg-white hover:border-stone-300'
               }`}
             >
-              <Banknote size={18} className={selectedPayMethod === 'TRANSFER' ? 'text-emerald-500' : 'text-stone-400'} />
+              <Banknote size={18} className={selectedPayMethod === 'TRANSFER' ? 'text-amber-500' : 'text-stone-400'} />
               <div>
                 <p className="font-black text-sm">실시간이체</p>
-                <p className="text-[10px] text-stone-400">수수료 절감</p>
               </div>
             </button>
           </div>
@@ -336,14 +335,14 @@ function SubscribeInner() {
             placeholder="이름"
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:border-blue-400 text-stone-900 placeholder-stone-400"
+            className="w-full px-4 py-3 border-2 border-stone-800 rounded-xl focus:outline-none focus:border-stone-600 text-stone-900 placeholder-stone-400"
           />
           <input
             type="tel"
             placeholder="연락처 (예: 010-0000-0000)"
             value={phone}
             onChange={handlePhoneChange}
-            className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:border-blue-400 text-stone-900 placeholder-stone-400"
+            className="w-full px-4 py-3 border-2 border-stone-800 rounded-xl focus:outline-none focus:border-stone-600 text-stone-900 placeholder-stone-400"
           />
         </section>
 
@@ -354,7 +353,7 @@ function SubscribeInner() {
         <button
           onClick={handlePay}
           disabled={loading}
-          className="w-full py-4 bg-blue-600 text-white font-black text-lg rounded-2xl hover:bg-blue-500 transition flex items-center justify-center gap-2 disabled:opacity-50"
+          className={`w-full py-4 text-white font-black text-lg rounded-2xl transition flex items-center justify-center gap-2 disabled:opacity-50 ${selectedTier === 'premium' ? 'bg-amber-500 hover:bg-amber-400' : 'bg-emerald-600 hover:bg-emerald-500'}`}
         >
           <CreditCard size={20} />
           {(selectedTier === 'premium' ? PORTONE_PRODUCTS_PREMIUM[selectedPlan].amount : PORTONE_PRODUCTS[selectedPlan].amount).toLocaleString('ko-KR')}원 결제하기
