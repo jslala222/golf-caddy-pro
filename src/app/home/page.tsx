@@ -172,15 +172,29 @@ export default function HomePage() {
     expected: { h18: 0, h36: 0, h54: 0, h9: 0, other: 0, total: 0 }
   };
 
+  // 날짜별 그룹핑: 같은 날 2 shift = 36홀(투), 3 shift = 54홀(쓰리)
+  const workByDate = new Map<string, { realized: boolean; shifts: typeof workSchedules }>();
   workSchedules.forEach(s => {
-    const isRealized = s.date <= today;
-    const target = isRealized ? roundStats.realized : roundStats.expected;
-    const holes = parseInt(String(s.holes || '18').replace(/[^0-9]/g, '')) || 18;
-    if (holes === 18) target.h18++;
-    else if (holes === 36) target.h36++;
-    else if (holes === 54) target.h54++;
-    else if (holes === 9) target.h9++;
-    else target.other++;
+    const existing = workByDate.get(s.date);
+    if (existing) {
+      existing.shifts.push(s);
+    } else {
+      workByDate.set(s.date, { realized: s.date <= today, shifts: [s] });
+    }
+  });
+  workByDate.forEach(({ realized, shifts }) => {
+    const target = realized ? roundStats.realized : roundStats.expected;
+    const shiftCount = shifts.length;
+    if (shiftCount >= 3) target.h54++;
+    else if (shiftCount === 2) target.h36++;
+    else {
+      const holes = parseInt(String(shifts[0].holes || '18').replace(/[^0-9]/g, '')) || 18;
+      if (holes === 18) target.h18++;
+      else if (holes === 36) target.h36++;
+      else if (holes === 54) target.h54++;
+      else if (holes === 9) target.h9++;
+      else target.other++;
+    }
     target.total++;
   });
 
@@ -323,7 +337,7 @@ export default function HomePage() {
       <section>
         <button
           onClick={openQuickModal}
-          className="w-full flex items-center justify-center gap-2 bg-emerald-50 border-2 border-emerald-200 border-dashed rounded-2xl py-4 text-emerald-700 font-bold text-sm hover:bg-emerald-100 active:scale-[.98] transition"
+          className="w-full flex items-center justify-center gap-2 bg-emerald-500 border-2 border-emerald-600 rounded-2xl py-4 text-white font-extrabold text-base shadow-md hover:bg-emerald-600 active:scale-[.98] transition"
         >
           <Plus size={18} />
           오늘 수입 입력
@@ -382,12 +396,28 @@ export default function HomePage() {
         const yearlyManualIncome = transactions.filter(t => t.type === 'income' && t.date.startsWith(yearStr)).reduce((acc, t) => acc + t.amount, 0);
         const yearlyExpense = transactions.filter(t => t.type === 'expense' && t.date.startsWith(yearStr)).reduce((acc, t) => acc + t.amount, 0);
         const yearlyNet = yearlyScheduleIncome + yearlyManualIncome - yearlyExpense;
-        const totalRounds = yearlyWork.length;
-        const h18 = yearlyWork.filter(s => (s.holes ?? 18) === 18).length;
-        const h36 = yearlyWork.filter(s => s.holes === 36).length;
-        const h54 = yearlyWork.filter(s => s.holes === 54).length;
-        const h9 = yearlyWork.filter(s => s.holes === 9).length;
-        const hOther = yearlyWork.filter(s => { const h = s.holes ?? 18; return h !== 18 && h !== 36 && h !== 54 && h !== 9; }).length;
+        // 날짜별 그룹핑: 같은 날 2 shift = 36홀(투), 3 shift = 54홀(쓰리)
+        const yearlyByDate = new Map<string, typeof yearlyWork>();
+        yearlyWork.forEach(s => {
+          const arr = yearlyByDate.get(s.date) ?? [];
+          arr.push(s);
+          yearlyByDate.set(s.date, arr);
+        });
+        const totalRounds = yearlyByDate.size;
+        let h18 = 0, h36 = 0, h54 = 0, h9 = 0, hOther = 0;
+        yearlyByDate.forEach(shifts => {
+          const shiftCount = shifts.length;
+          if (shiftCount >= 3) h54++;
+          else if (shiftCount === 2) h36++;
+          else {
+            const h = shifts[0].holes ?? 18;
+            if (h === 18) h18++;
+            else if (h === 36) h36++;
+            else if (h === 54) h54++;
+            else if (h === 9) h9++;
+            else hOther++;
+          }
+        });
         const holeItems = [
           { label: '18홀', count: h18 },
           ...(h36 > 0 ? [{ label: '36홀', count: h36 }] : []),
@@ -499,6 +529,7 @@ export default function HomePage() {
             const todayWork = schedules
               .filter(s => s.date === todayStr && s.type === 'work')
               .sort((a, b) => (a.shift ?? '1').localeCompare(b.shift ?? '1'));
+            const hasWork = todayWork.length > 0;
             const getCF = (s: any) => {
               if (s.caddyFee) return s.caddyFee;
               if (!feeSettings) return 150000;
@@ -507,44 +538,50 @@ export default function HomePage() {
               if (s.shift === '3') return feeSettings.shift3;
               return 150000;
             };
-            if (todayWork.length === 0) return (
-              <p className="text-xs text-stone-400 bg-stone-50 rounded-xl px-4 py-2">오늘 등록된 근무 일정이 없습니다.</p>
-            );
             return (
-              <div className="bg-emerald-50 rounded-2xl p-4 space-y-2">
-                <p className="text-xs font-bold text-emerald-700 mb-2">캐디피 (원) — 일정 자동</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {([1,2,3] as const).map(n => {
-                    const s = todayWork[n-1];
-                    return (
-                      <div key={n} className="text-center">
-                        <p className="text-[10px] text-stone-400 mb-1">{n}부</p>
-                        <p className={`font-bold text-sm ${s ? 'text-emerald-700' : 'text-stone-300'}`}>
-                          {s ? `₩${getCF(s).toLocaleString()}` : '—'}
-                        </p>
-                        {s?.title && <p className="text-[9px] text-stone-400 truncate">{s.title}</p>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <>
+                {!hasWork && (
+                  <p className="text-xs text-stone-400 bg-stone-50 rounded-xl px-4 py-2">오늘 등록된 근무 일정이 없습니다.</p>
+                )}
+                {hasWork && (
+                  <div className="bg-emerald-50 rounded-2xl p-4 space-y-2">
+                    <p className="text-xs font-bold text-emerald-700 mb-2">캐디피 (원) — 일정 자동</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([1,2,3] as const).map(n => {
+                        const s = todayWork[n-1];
+                        return (
+                          <div key={n} className="text-center">
+                            <p className="text-[10px] text-stone-400 mb-1">{n}부</p>
+                            <p className={`font-bold text-sm ${s ? 'text-emerald-700' : 'text-stone-300'}`}>
+                              {s ? `₩${getCF(s).toLocaleString()}` : '—'}
+                            </p>
+                            {s?.title && <p className="text-[9px] text-stone-400 truncate">{s.title}</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 팁·오버피 — 근무 있을 때만 표시 */}
+                {hasWork && (
+                  <div>
+                    <p className="text-xs font-bold text-stone-500 mb-2">팁·오버피 (원)</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([['1부', qTip1, setQTip1], ['2부', qTip2, setQTip2], ['3부', qTip3, setQTip3]] as [string, string, (v:string)=>void][]).map(([label, val, setter]) => (
+                        <div key={label}>
+                          <p className="text-[10px] text-stone-400 mb-1 text-center">{label}</p>
+                          <input type="text" inputMode="numeric" placeholder="0"
+                            value={val} onChange={e => setter(fmtInput(e.target.value))}
+                            className="w-full border border-stone-200 rounded-xl px-2 py-2 text-stone-900 font-bold text-right text-sm focus:outline-none focus:border-emerald-400" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             );
           })()}
-
-          {/* 팁·오버피 */}
-          <div>
-            <p className="text-xs font-bold text-stone-500 mb-2">팁·오버피 (원)</p>
-            <div className="grid grid-cols-3 gap-2">
-              {([['1부', qTip1, setQTip1], ['2부', qTip2, setQTip2], ['3부', qTip3, setQTip3]] as [string, string, (v:string)=>void][]).map(([label, val, setter]) => (
-                <div key={label}>
-                  <p className="text-[10px] text-stone-400 mb-1 text-center">{label}</p>
-                  <input type="text" inputMode="numeric" placeholder="0"
-                    value={val} onChange={e => setter(fmtInput(e.target.value))}
-                    className="w-full border border-stone-200 rounded-xl px-2 py-2 text-stone-900 font-bold text-right text-sm focus:outline-none focus:border-emerald-400" />
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* 기타수입 */}
           <div>

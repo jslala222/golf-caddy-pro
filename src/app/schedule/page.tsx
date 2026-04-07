@@ -826,7 +826,20 @@ function ScheduleContent() {
                                     })()}
 
                                     {isRain && (
-                                        <div className="animate-in slide-in-from-top-2">
+                                        <div className="animate-in slide-in-from-top-2 space-y-2">
+                                            {/* 빠른 선택 버튼 */}
+                                            <div className="flex gap-2">
+                                                {[9, 27, 36, 54].map(h => (
+                                                    <button
+                                                        key={h}
+                                                        type="button"
+                                                        onClick={() => setCustomHoles(String(h))}
+                                                        className={`flex-1 py-2 rounded-xl text-sm font-bold border transition ${customHoles === String(h) ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-stone-200 text-stone-600 hover:border-blue-300'}`}
+                                                    >
+                                                        {h}홀
+                                                    </button>
+                                                ))}
+                                            </div>
                                             <div className="relative">
                                                 <input
                                                     type="text"
@@ -839,13 +852,13 @@ function ScheduleContent() {
                                                             setCustomHoles(val);
                                                         }
                                                     }}
-                                                    placeholder="직접 입력 (예: 9, 27)"
+                                                    placeholder="직접 입력 (예: 9, 27, 36)"
                                                     className="w-full p-4 bg-blue-50 border-2 border-blue-200 rounded-2xl text-lg font-bold focus:outline-none focus:border-blue-500 text-blue-700"
                                                     maxLength={2}
                                                 />
                                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-400 font-bold">홀</span>
                                             </div>
-                                            <p className="mt-2 text-[10px] text-stone-400 ml-1 italic">* 18홀이 아닌 경우(9, 27홀 등)에만 켜주세요.</p>
+                                            <p className="mt-2 text-[10px] text-stone-400 ml-1 italic">* 18홀이 아닌 경우에만 켜주세요.</p>
                                         </div>
                                     )}
 
