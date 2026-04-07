@@ -134,6 +134,30 @@ export default function SettingsPage() {
         setPushLoading(false);
     }
 
+    const handleTestPush = async () => {
+        setPushLoading(true);
+        setPushMsg('');
+        try {
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.getSubscription();
+            if (!sub) { setPushMsg('구독 정보가 없습니다. 알림을 다시 켜주세요.'); setPushLoading(false); return; }
+            const res = await fetch('/api/push/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subscription: sub.toJSON() }),
+            });
+            if (res.ok) {
+                setPushMsg('✅ 테스트 알림을 보냈습니다! 잠시 후 알림을 확인하세요.');
+            } else {
+                const err = await res.json();
+                setPushMsg(`❌ 발송 실패: ${err.detail ?? err.error}`);
+            }
+        } catch {
+            setPushMsg('❌ 오류가 발생했습니다.');
+        }
+        setPushLoading(false);
+    };
+
     const handleDisablePush = async () => {
         setPushLoading(true);
         setPushMsg('');
@@ -484,6 +508,13 @@ export default function SettingsPage() {
                                                 {pushLoading ? '처리 중...' : '🔄 기기 재등록'}
                                             </button>
                                         </div>
+                                        <button
+                                            onClick={handleTestPush}
+                                            disabled={pushLoading}
+                                            className="w-full py-2 bg-blue-500 text-white font-bold rounded-2xl text-sm disabled:opacity-50 active:scale-[.98] transition"
+                                        >
+                                            {pushLoading ? '발송 중...' : '🔔 테스트 알림 보내기'}
+                                        </button>
                                     </>
                                 ) : (
                                     <>

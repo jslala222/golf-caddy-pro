@@ -16,7 +16,10 @@
 ### 배포 규칙
 - **배포는 항상 `https://caddy-pink.vercel.app/` 에만 한다** (특별히 지정하지 않는 한)
 - 배포 레포: `new_origin` = `caddy_pro_enterprise.git` → `git push new_origin master`
-- `golf-caddy-pro.git` (origin)은 기존 테스터용 구버전 — 절대 건드리지 않는다
+- `golf-caddy-pro.git` (origin)은 기존 테스터용 구버전 — **절대 건드리지 않는다**
+- **`git push` 시 반드시 `new_origin master` 만 사용한다. `origin` 또는 다른 remote에 push하는 것은 금지**
+- 배포 = `npm run build` 성공 확인 → `git add .` → `git commit` → `git push new_origin master` 순서 고정
+- **`deploy.ps1` 스크립트**: `.\deploy.ps1 "커밋 메시지"` 한 줄로 빌드→커밋→배포 가능
 
 ## 프로젝트 기본 정보
 

@@ -1,8 +1,9 @@
 /**
  * GET /api/cron/alarm
- * Vercel Cron이 5분마다 호출 → 알람 시간 도달한 일정 조회 → Web Push 발송
- * vercel.json의 crons 설정과 연동
+ * Cron 호출 → 알람 시간 도달한 일정 조회 → Web Push 발송
  */
+export const dynamic = 'force-dynamic'; // 빌드 시 정적 프리렌더링 방지
+
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import webpush from 'web-push';
