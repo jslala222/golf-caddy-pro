@@ -42,7 +42,10 @@ export default function SettingsPage() {
     });
     const [customAlarm, setCustomAlarm] = useState('');
     const [alarmUnit, setAlarmUnit] = useState<'분' | '시간'>('분');
-    const [kakaoLinked, setKakaoLinked] = useState(false);
+    const [kakaoLinked, setKakaoLinked] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return localStorage.getItem('caddy_kakao_linked') === '1';
+    });
     const [kakaoHour, setKakaoHour] = useState(6);
     const [kakaoHourSaving, setKakaoHourSaving] = useState(false);
 
@@ -54,6 +57,7 @@ export default function SettingsPage() {
             localStorage.setItem('caddy_kakao_linked', '1');
             window.history.replaceState({}, '', '/settings');
         } else if (params.get('kakao') === 'error') {
+            alert('카카오 연동에 실패했습니다. 다시 시도해주세요.');
             window.history.replaceState({}, '', '/settings');
         } else {
             setKakaoLinked(localStorage.getItem('caddy_kakao_linked') === '1');
@@ -336,65 +340,9 @@ export default function SettingsPage() {
                     <div className="w-1 h-6 bg-orange-500 rounded-full mr-2"></div> 약속 알림 설정
                 </h2>
                 <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-4">
-                    <p className="text-sm text-stone-500">개인 일정 등록 시 약속 몇 분 전에 알림을 받을지 설정합니다.</p>
-
-                    {/* 알람 시간 선택 */}
-                    <div className="grid grid-cols-3 gap-2">
-                        {ALARM_OPTIONS.map(opt => (
-                            <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => handleSaveAlarm(opt.value)}
-                                className={`py-3 rounded-2xl text-sm font-bold border transition ${alarmMinutes === opt.value ? 'bg-orange-500 border-orange-500 text-white' : 'bg-stone-50 border-stone-200 text-stone-600 hover:border-orange-300'}`}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
-                        {/* 사용자 지정 — 분/시간 단위 선택 가능 */}
-                        <div className={`col-span-3 flex gap-2 items-center border rounded-2xl px-3 py-2 ${![0,30,60,120,180].includes(alarmMinutes) ? 'border-orange-400 bg-orange-50' : 'border-stone-200'}`}>
-                            <Bell size={16} className="text-stone-400 flex-shrink-0" />
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                placeholder={alarmUnit === '분' ? '예) 10, 45, 90' : '예) 1, 2, 3'}
-                                value={customAlarm}
-                                onChange={e => setCustomAlarm(e.target.value.replace(/[^0-9]/g, ''))}
-                                className="flex-1 text-sm font-bold bg-transparent outline-none text-stone-700 min-w-0"
-                            />
-                            {/* 분/시간 단위 토글 */}
-                            <button
-                                type="button"
-                                onClick={() => { setAlarmUnit(u => u === '분' ? '시간' : '분'); setCustomAlarm(''); }}
-                                className="text-xs font-bold px-2 py-1 rounded-lg border border-stone-300 bg-white text-stone-600 flex-shrink-0"
-                            >
-                                {alarmUnit}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const v = parseInt(customAlarm);
-                                    if (v > 0) {
-                                        const mins = alarmUnit === '시간' ? v * 60 : v;
-                                        handleSaveAlarm(mins);
-                                        setCustomAlarm('');
-                                    }
-                                }}
-                                className="text-xs font-bold text-orange-500 px-2 py-1 rounded-lg hover:bg-orange-50 flex-shrink-0"
-                            >
-                                저장
-                            </button>
-                        </div>
-                    </div>
-
-                    {alarmMinutes > 0 && (
-                        <p className="text-xs text-orange-600 font-semibold bg-orange-50 rounded-xl px-3 py-2">
-                            현재 설정: 약속 <strong>{formatAlarmLabel(alarmMinutes)}</strong> 알림
-                        </p>
-                    )}
-
                     {/* 카카오톡 알림 */}
-                    <div className="border-t border-stone-100 pt-4 space-y-3">
-                        <p className="text-xs font-bold text-stone-500">카카오톡 알림 (프리미엄)</p>
+                    <div className="space-y-3">
+                        <p className="text-xs font-bold text-stone-500">카카오톡으로 매일 아침 일정 알림</p>
                         {kakaoLinked ? (
                             <>
                                 <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm bg-emerald-50 rounded-xl px-3 py-2">
