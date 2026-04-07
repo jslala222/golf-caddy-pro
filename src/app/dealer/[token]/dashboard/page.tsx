@@ -1195,8 +1195,8 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
 
                         {/* 이용권 종류 */}
                         <section className="bg-stone-900 rounded-3xl p-5 space-y-3">
-                            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-                                <BadgeCheck size={16} /> 이용권 종류
+                            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                                <Tag size={16} /> 요금제 선택
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <button onClick={() => setIssueTier('standard')}
@@ -1217,8 +1217,8 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
 
                         {/* 요금제 */}
                         <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
-                            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-                                <Tag size={16} /> 요금제 선택
+                            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                                <BadgeCheck size={16} /> 이용권 종류
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                                 {(Object.entries(PLANS) as [PlanType, typeof PLANS[PlanType]][]).map(([key, p]) => (
