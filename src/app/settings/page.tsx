@@ -71,6 +71,22 @@ export default function SettingsPage() {
     const handleRequestPush = async () => {
         setPushLoading(true);
         setPushMsg('');
+
+        // iOS 감지 — 홈화면 추가 없이는 Push 불가
+        const ua = navigator.userAgent;
+        const isIOS = /iphone|ipad|ipod/i.test(ua);
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+            || (navigator as { standalone?: boolean }).standalone === true;
+        if (isIOS && !isStandalone) {
+            setPushAlertModal({
+                title: '홈화면 추가가 필요해요',
+                desc: '아이폰은 홈화면에 앱을 추가해야 알림을 받을 수 있어요.',
+                guide: '방법: Safari 하단 공유 버튼(□↑) → "홈 화면에 추가" → 홈화면 아이콘으로 열기 → 다시 알림 켜기',
+            });
+            setPushLoading(false);
+            return;
+        }
+
         try {
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
@@ -83,21 +99,26 @@ export default function SettingsPage() {
                 return;
             }
             setPushGranted(true);
-            // SW가 아직 없으면 직접 등록
-            if (!navigator.serviceWorker.controller) {
-                try {
-                    await navigator.serviceWorker.register('/sw.js');
-                } catch { /* 무시 */ }
-            }
-            // SW ready 타임아웃 20초
-            const reg = await Promise.race([
-                navigator.serviceWorker.ready,
-                new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error('timeout')), 20000)
-                ),
-            ]);
+
+            // SW 직접 등록 후 해당 registration 객체 사용 (ready 타임아웃 우회)
             const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
             if (!vapidKey) { setPushMsg('설정 오류 — 관리자에게 문의해주세요.'); setPushLoading(false); return; }
+
+            let reg = await navigator.serviceWorker.getRegistration('/');
+            if (!reg) {
+                reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+            }
+            // 활성화 대기 (installing → activated)
+            if (reg.installing || reg.waiting) {
+                await new Promise<void>((resolve) => {
+                    const sw = reg!.installing ?? reg!.waiting!;
+                    sw.addEventListener('statechange', function handler() {
+                        if (sw.state === 'activated') { sw.removeEventListener('statechange', handler); resolve(); }
+                    });
+                    setTimeout(resolve, 5000); // 최대 5초 대기
+                });
+            }
+
             // 기존 구독이 있으면 재사용, 없으면 신규 생성
             let sub = await reg.pushManager.getSubscription();
             if (!sub) {
@@ -117,19 +138,11 @@ export default function SettingsPage() {
             setPushMsg('✅ 알림 설정 완료! 약속 시간 전에 알림을 보내드립니다.');
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : '';
-            if (msg === 'timeout') {
-                setPushAlertModal({
-                    title: '알림 설정이 안 되네요',
-                    desc: '일반 브라우저(크롬, 사파리)에서는 알림이 잘 안 될 수 있어요.',
-                    guide: '해결방법: 이 앱을 홈화면에 추가한 뒤, 홈화면 아이콘으로 열어서 다시 시도해 주세요.',
-                });
-            } else {
-                setPushAlertModal({
-                    title: '알림 설정 중 문제가 생겼어요',
-                    desc: '알 수 없는 오류가 발생했습니다.',
-                    guide: '홈화면에 앱을 추가한 뒤 다시 시도해 주세요.',
-                });
-            }
+            setPushAlertModal({
+                title: '알림 설정 중 문제가 생겼어요',
+                desc: `오류: ${msg || '알 수 없는 오류'}`,
+                guide: '크롬 브라우저에서 다시 시도해 주세요.',
+            });
         }
         setPushLoading(false);
     }
@@ -138,12 +151,13 @@ export default function SettingsPage() {
         setPushLoading(true);
         setPushMsg('');
         try {
-            const reg = await navigator.serviceWorker.ready;
+            let reg = await navigator.serviceWorker.getRegistration('/');
+            if (!reg) reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+
             let sub = await reg.pushManager.getSubscription();
-            // 구독이 없으면 자동으로 구독 신청
             if (!sub) {
                 const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-                if (!vapidKey) { setPushMsg('❌ 설정 오류 — 관리자에게 문의해주세요.'); setPushLoading(false); return; }
+                if (!vapidKey) { setPushMsg('❌ 설정 오류'); setPushLoading(false); return; }
                 sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidKey });
                 const licenseCode = localStorage.getItem('caddy_license_key');
                 await fetch('/api/push/subscribe', {
