@@ -72,6 +72,38 @@ export async function POST(request: NextRequest) {
         console.error('[payment/complete] 금액 불일치:', payment.amount?.total, '≠', expectedAmount);
         return NextResponse.json({ error: '결제 금액이 일치하지 않습니다.' }, { status: 400 });
       }
+
+      // ── 실시간계좌이체 현금영수증 자동 자진발급 ────────────────
+      // 고객이 현금영수증 선택 안 했을 때 + 10만원 이상 → 국세청 자진발급 번호로 자동 발급
+      const isTransfer = payment.method?.type === 'Transfer';
+      const hasReceipt = !!payment.cashReceipt;
+      const totalAmount: number = payment.amount?.total ?? 0;
+
+      if (isTransfer && !hasReceipt && totalAmount >= 100_000) {
+        try {
+          const receiptRes = await fetch(`https://api.portone.io/payments/${paymentId}/cash-receipts`, {
+            method: 'POST',
+            headers: {
+              Authorization: `PortOne ${portoneSecret}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: 'PERSONAL',
+              identifier: '0100001234',       // 국세청 지정 미제공 자진발급 번호
+              identifierType: 'MOBILE_NUMBER',
+            }),
+          });
+          if (!receiptRes.ok) {
+            const errBody = await receiptRes.text();
+            console.warn('[payment/complete] 현금영수증 자진발급 실패:', receiptRes.status, errBody);
+          } else {
+            console.log('[payment/complete] 현금영수증 자진발급 완료:', paymentId);
+          }
+        } catch (receiptErr) {
+          // 현금영수증 실패해도 이용권 발급은 계속 진행
+          console.warn('[payment/complete] 현금영수증 자진발급 오류:', receiptErr);
+        }
+      }
     } catch (e) {
       console.error('[payment/complete] 검증 오류:', e);
       return NextResponse.json({ error: '결제 검증 중 오류가 발생했습니다.' }, { status: 500 });

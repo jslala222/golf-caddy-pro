@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>딜러 영수증 · 세무처리 구조 기획서</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    background: #f0f4f8;
+    color: #1e293b;
+    line-height: 1.7;
+    padding: 30px 20px 60px;
+  }
+  .page-title {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .page-title h1 {
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+  .page-title .subtitle {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin-top: 6px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .badge-date { background: #e2e8f0; color: #475569; }
+  .badge-ver  { background: #dbeafe; color: #1d4ed8; }
+
+  /* 섹션 카드 */
+  .section {
+    background: #fff;
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 26px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  }
+  .section-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .icon { font-size: 1.2rem; }
+
+  /* 문제 파악 */
+  .gap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media(max-width:600px){ .gap-grid { grid-template-columns: 1fr; } }
+  .gap-item {
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .gap-ok  { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .gap-bad { background: #fff1f2; border-left: 4px solid #f43f5e; }
+  .gap-item .label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .gap-ok .label  { color: #16a34a; }
+  .gap-bad .label { color: #be123c; }
+  .gap-item p { font-size: 0.9rem; }
+
+  /* 안 A / B 탭 영역 */
+  .plan-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 0;
+  }
+  .plan-tab {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px 10px 0 0;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: default;
+    border: 2px solid transparent;
+    border-bottom: none;
+  }
+  .plan-tab.a { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
+  .plan-tab.b { background: #f0fdf4; border-color: #22c55e; color: #15803d; }
+
+  .plan-body {
+    border-radius: 0 0 12px 12px;
+    padding: 24px 26px 20px;
+    margin-bottom: 20px;
+  }
+  .plan-body.a { background: #eff6ff; border: 2px solid #3b82f6; border-top: none; }
+  .plan-body.b { background: #f0fdf4; border: 2px solid #22c55e; border-top: none; }
+
+  .plan-subtitle {
+    font-size: 1rem;
+    font-weight: 800;
+    margin-bottom: 14px;
+    color: #0f172a;
+  }
+  .plan-detail { font-size: 0.9rem; margin-bottom: 14px; }
+  .plan-detail ul { padding-left: 20px; }
+  .plan-detail li { padding: 3px 0; }
+
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  @media(max-width:500px){ .pros-cons { grid-template-columns: 1fr; } }
+  .pros, .cons {
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.87rem;
+  }
+  .pros { background: #dcfce7; }
+  .cons { background: #fee2e2; }
+  .pros .pc-title { font-weight: 700; color: #166534; margin-bottom: 6px; }
+  .cons .pc-title { font-weight: 700; color: #9f1239; margin-bottom: 6px; }
+  .pros li, .cons li { padding: 2px 0; margin-left: 16px; }
+
+  /* 흐름도 */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 14px 0;
+    font-size: 0.88rem;
+  }
+  .flow-box {
+    background: #fff;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .flow-arrow {
+    color: #94a3b8;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  .flow-box.highlight-a { border-color: #3b82f6; background: #dbeafe; color: #1e40af; }
+  .flow-box.highlight-b { border-color: #22c55e; background: #bbf7d0; color: #14532d; }
+  .flow-box.highlight-r { border-color: #f97316; background: #fed7aa; color: #7c2d12; }
+
+  /* 계산 예시 */
+  .calc-box {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.88rem;
+    line-height: 1.9;
+    margin: 14px 0;
+  }
+  .calc-box .comment { color: #64748b; }
+  .calc-box .num { color: #34d399; }
+  .calc-box .key { color: #93c5fd; }
+
+  /* 비교표 */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    margin-top: 8px;
+  }
+  .compare-table th {
+    background: #1e293b;
+    color: #f8fafc;
+    padding: 10px 14px;
+    text-align: center;
+    font-weight: 700;
+  }
+  .compare-table th:first-child { text-align: left; border-radius: 8px 0 0 0; }
+  .compare-table th:last-child  { border-radius: 0 8px 0 0; }
+  .compare-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: center;
+  }
+  .compare-table td:first-child { text-align: left; font-weight: 600; }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table tr:nth-child(even) td { background: #f8fafc; }
+  .t-a { color: #1d4ed8; font-weight: 700; }
+  .t-b { color: #15803d; font-weight: 700; }
+  .t-good { color: #16a34a; }
+  .t-bad  { color: #dc2626; }
+
+  /* 실무 절차 */
+  .step-list { list-style: none; padding: 0; }
+  .step-list li {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px dashed #e2e8f0;
+  }
+  .step-list li:last-child { border-bottom: none; }
+  .step-num {
+    min-width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .num-a { background: #3b82f6; }
+  .num-b { background: #22c55e; }
+  .step-content .step-title { font-weight: 700; font-size: 0.9rem; }
+  .step-content .step-desc  { font-size: 0.84rem; color: #475569; margin-top: 2px; }
+
+  /* 경고 박스 */
+  .warn-box {
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 14px;
+    font-size: 0.88rem;
+  }
+  .warn-box.red    { background: #fff1f2; border-left: 4px solid #f43f5e; }
+  .warn-box.yellow { background: #fefce8; border-left: 4px solid #eab308; }
+  .warn-box.blue   { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .warn-box strong { display: block; font-weight: 700; margin-bottom: 4px; }
+
+  /* 결론 */
+  .conclusion {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    color: #f8fafc;
+    border-radius: 14px;
+    padding: 30px 32px;
+    margin-bottom: 26px;
+  }
+  .conclusion h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin-bottom: 18px;
+    color: #fbbf24;
+  }
+  .conc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media(max-width:600px){ .conc-grid { grid-template-columns: 1fr; } }
+  .conc-card {
+    background: rgba(255,255,255,.08);
+    border-radius: 10px;
+    padding: 16px 18px;
+    border: 1px solid rgba(255,255,255,.15);
+  }
+  .conc-card .cc-title {
+    font-weight: 800;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .conc-card .cc-title.a { color: #93c5fd; }
+  .conc-card .cc-title.b { color: #86efac; }
+  .conc-card ul { padding-left: 18px; font-size: 0.87rem; color: #cbd5e1; }
+  .conc-card li { padding: 2px 0; }
+
+  .final-note {
+    background: rgba(251,191,36,.1);
+    border: 1px solid rgba(251,191,36,.4);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-top: 18px;
+    font-size: 0.88rem;
+    color: #fef9c3;
+  }
+  .final-note strong { color: #fbbf24; }
+
+  /* 푸터 */
+  footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- 제목 -->
+<div class="page-title">
+  <h1>딜러 결제 · 영수증 · 세무처리 구조 기획서</h1>
+  <div class="subtitle">
+    <span class="badge badge-date">2026-04-07</span>
+    <span class="badge badge-ver">Caddy Manager Pro</span>
+    안 A (사업자 딜러) + 안 B (프리랜서 3.3%) 병행 구조 설계
+  </div>
+</div>
+
+<!-- 1. 현재 구조 및 문제 파악 -->
+<div class="section">
+  <div class="section-title"><span class="icon">🔍</span> 현재 구조 / 문제 파악</div>
+  <div class="gap-grid">
+    <div class="gap-item gap-ok">
+      <div class="label">✅ 본사 직접 결제 (문제 없음)</div>
+      <p>카드단말기 → 자동 카드영수증 발행<br>세무 처리 완전히 명확</p>
+    </div>
+    <div class="gap-item gap-bad">
+      <div class="label">❌ 딜러 수금 (처리 불명확)</div>
+      <p>현금 or 계좌이체 수금 → 영수증 없음<br>딜러 신분 불명확 → 원천징수 의무 미정</p>
+    </div>
+    <div class="gap-item gap-bad">
+      <div class="label">❌ 딜러 법적 신분 미정</div>
+      <p>사업자 보유 여부에 따라 처리 방식 완전히 상이<br>무처리 시 탈세 리스크 발생 가능</p>
+    </div>
+    <div class="gap-item gap-bad">
+      <div class="label">❌ 본사-딜러 정산 구조 미정</div>
+      <p>딜러 수수료 지급 기준·방식 불명확<br>지급명세서 제출 의무 누락 가능</p>
+    </div>
+  </div>
+</div>
+
+<!-- 2. 안 A -->
+<div class="section">
+  <div class="section-title"><span class="icon">🔵</span> 안 A — 사업자 딜러 (세금계산서 구조)</div>
+
+  <div class="plan-tabs">
+    <div class="plan-tab a">안 A: 딜러가 사업자등록증 보유 (개인사업자 or 법인)</div>
+  </div>
+  <div class="plan-body a">
+    <div class="plan-subtitle">기본 개념</div>
+    <div class="plan-detail">
+      딜러가 사업자로서 <strong>직접 고객에게 세금계산서 or 현금영수증</strong>을 발행하고,
+      본사에 수수료 명목 세금계산서를 역발행하는 구조.
+    </div>
+
+    <div class="plan-subtitle">결제 흐름</div>
+    <div class="flow">
+      <div class="flow-box">고객</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight-a">딜러 계좌/카드단말</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">딜러가 세금계산서 발행</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight-r">딜러 → 본사 정산</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">본사 수수료 비용처리</div>
+    </div>
+
+    <div class="plan-subtitle">세무 처리 상세</div>
+    <div class="plan-detail">
+      <ul>
+        <li>고객 영수증: <strong>딜러 명의로 현금영수증 or 세금계산서 발행</strong></li>
+        <li>딜러 → 본사 정산: 딜러가 공급한 서비스에 대해 <strong>역발행 세금계산서</strong></li>
+        <li>본사는 딜러 수수료를 <strong>매입 비용으로 처리</strong> (부가세 공제 가능)</li>
+        <li>딜러는 자신의 사업부가세 신고 의무 별도 존재 (분기별)</li>
+      </ul>
+    </div>
+
+    <div class="pros-cons">
+      <div class="pros">
+        <div class="pc-title">👍 장점</div>
+        <ul>
+          <li>세무 구조 매우 명확</li>
+          <li>본사 리스크 최소화</li>
+          <li>부가세 매입 공제 가능</li>
+          <li>딜러가 세금 책임 직접 부담</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="pc-title">👎 단점</div>
+        <ul>
+          <li>딜러 사업자등록 필수 → 진입장벽↑</li>
+          <li>딜러별 세금계산서 교환 관리 복잡</li>
+          <li>딜러가 부가세 신고 안 하면 리스크</li>
+          <li>영세 딜러 확보 어려워질 수 있음</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 안 A 실무 절차 -->
+  <div class="plan-subtitle" style="margin-top:16px; font-size:0.95rem; font-weight:800;">📋 안 A 실무 절차</div>
+  <ul class="step-list" style="margin-top:10px;">
+    <li>
+      <span class="step-num num-a">1</span>
+      <div class="step-content">
+        <div class="step-title">딜러 사업자등록증 사본 수취</div>
+        <div class="step-desc">계약 전 사업자등록 여부 확인 필수. 개인사업자/법인 모두 가능</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num num-a">2</span>
+      <div class="step-content">
+        <div class="step-title">딜러-본사 간 공급계약서 체결</div>
+        <div class="step-desc">서비스 단가, 수수료율, 정산주기(주간/월간) 명시</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num num-a">3</span>
+      <div class="step-content">
+        <div class="step-title">딜러가 고객 영수증 직접 발행</div>
+        <div class="step-desc">현금영수증(홈택스) or 세금계산서(전자세금계산서) — 딜러 명의</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num num-a">4</span>
+      <div class="step-content">
+        <div class="step-title">월 정산 시 세금계산서 교환</div>
+        <div class="step-desc">딜러 → 본사 방향으로 수수료 세금계산서 발행 후 입금</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num num-a">5</span>
+      <div class="step-content">
+        <div class="step-title">본사 장부 매입 비용 처리</div>
+        <div class="step-desc">부가세 신고 시 딜러 수수료 매입세액 공제 적용</div>
+      </div>
+    </li>
+  </ul>
+</div>
+
+<!-- 3. 안 B -->
+<div class="section">
+  <div class="section-title"><span class="icon">🟢</span> 안 B — 프리랜서 딜러 (3.3% 원천징수 구조)</div>
+
+  <div class="plan-tabs">
+    <div class="plan-tab b">안 B: 딜러 사업자 없음 → 사업소득자(프리랜서)로 분류, 3.3% 원천징수</div>
+  </div>
+  <div class="plan-body b">
+    <div class="plan-subtitle">기본 개념</div>
+    <div class="plan-detail">
+      딜러를 <strong>사업소득자(인적용역 제공자)</strong>로 분류.
+      본사가 수수료 지급 시 <strong>3.3% 원천징수</strong> 후 지급.
+      고객 영수증은 <strong>본사 명의</strong>로 발행.
+    </div>
+
+    <div class="plan-subtitle">결제 흐름</div>
+    <div class="flow">
+      <div class="flow-box">고객</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight-b">본사 계좌/카드단말</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight-r">본사가 영수증 발행</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">딜러 수수료 정산</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight-b">3.3% 원천징수 후 지급</div>
+    </div>
+
+    <div class="plan-subtitle">원천징수 계산 예시</div>
+    <div class="calc-box">
+<span class="comment"># 딜러 수수료 정산 예시 (월 정산)</span>
+<span class="key">고객 결제금액   </span>: <span class="num">1,000,000</span>원
+<span class="key">딜러 수수료율   </span>: <span class="num">30%</span>
+<span class="key">딜러 수수료 합계</span>: <span class="num">300,000</span>원
+
+<span class="comment">──────────────────────────────</span>
+<span class="key">원천징수 (3.3%)</span>: <span class="num">-9,900</span>원  <span class="comment">← 본사가 징수 후 홈택스 신고</span>
+<span class="key">딜러 실수령액   </span>: <span class="num">290,100</span>원  <span class="comment">← 딜러 계좌 입금</span>
+<span class="comment">──────────────────────────────</span>
+<span class="comment"># 딜러 연소득 330만원 이하 → 종합소득세 부담 거의 없음</span>
+    </div>
+
+    <div class="plan-subtitle">세무 처리 상세</div>
+    <div class="plan-detail">
+      <ul>
+        <li>고객 영수증: <strong>본사 명의로 현금영수증 or 카드전표</strong> 자동 발행</li>
+        <li>딜러 수수료: 매월 3.3% 원천징수 후 지급 → <strong>원천징수이행상황신고서</strong> 제출 (매월 10일)</li>
+        <li>다음해 3월 내 <strong>사업소득 지급명세서</strong> 제출 (딜러별 인적사항 포함)</li>
+        <li>딜러는 5월 종합소득세 신고 시 3.3% 기납부 세액으로 공제 적용</li>
+      </ul>
+    </div>
+
+    <div class="pros-cons">
+      <div class="pros">
+        <div class="pc-title">👍 장점</div>
+        <ul>
+          <li>딜러 사업자 불필요 → 진입장벽 최저</li>
+          <li>영업직 프리랜서로 합법 운영 가능</li>
+          <li>고객 영수증 본사가 일원화 관리</li>
+          <li>국내 가장 보편적인 구조</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="pc-title">👎 단점</div>
+        <ul>
+          <li>본사가 원천징수 신고 의무 부담</li>
+          <li>딜러별 지급명세서 매년 제출 필요</li>
+          <li>딜러가 고객 현금 직수금 시 탈세 리스크</li>
+          <li>딜러 수입 많으면 종합소득세 부담 가능</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 안 B 실무 절차 -->
+  <div class="plan-subtitle" style="margin-top:16px; font-size:0.95rem; font-weight:800;">📋 안 B 실무 절차</div>
+  <ul class="step-list" style="margin-top:10px;">
+    <li>
+      <span class="step-num num-b">1</span>
+      <div class="step-content">
+        <div class="step-title">딜러와 프리랜서 용역계약서 체결</div>
+        <div class="step-desc">수수료율, 정산주기, 원천징수 동의 조항 포함 필수</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num num-b">2</span>
+      <div class="step-content">
+        <div class="step-title">딜러 주민등록번호 or 사업자번호 수취</div>
+        <div class="step-desc">지급명세서 제출 시 인적사항 필요. 개인정보 보관 주의</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num num-b">3</span>
+      <div class="step-content">
+        <div class="step-title">고객 결제 → 반드시 본사 명의로 수령</div>
+        <div class="step-desc">딜러가 직접 현금 수령 후 전달 방식은 탈세 리스크. 본사 계좌/카드단말 필수</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num num-b">4</span>
+      <div class="step-content">
+        <div class="step-title">월 정산 시 3.3% 공제 후 지급</div>
+        <div class="step-desc">지급 명세 내부 기록 유지 (딜러명, 주민번호, 수수료액, 징수세액)</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num num-b">5</span>
+      <div class="step-content">
+        <div class="step-title">매월 10일 — 원천징수이행상황신고서 제출</div>
+        <div class="step-desc">홈택스 → 원천세 신고 → 사업소득 (A03 코드) 항목으로 신고</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num num-b">6</span>
+      <div class="step-content">
+        <div class="step-title">다음해 3월 — 사업소득 지급명세서 제출</div>
+        <div class="step-desc">홈택스 → 지급명세서 → 개인 사업소득 제출. 미제출 시 2% 가산세</div>
+      </div>
+    </li>
+  </ul>
+
+  <div class="warn-box red" style="margin-top:20px;">
+    <strong>⚠️ 핵심 주의사항 — 딜러 직접 현금수령 금지</strong>
+    딜러가 고객에게 현금 직접 수령 후 본사에 입금하는 구조는
+    <strong>딜러 → 고객 간 영수증 미발행 = 탈세</strong>로 이어질 수 있음.
+    반드시 <strong>본사 계좌 or 본사 카드단말기</strong>로 고객 결제 받을 것.
+  </div>
+</div>
+
+<!-- 4. 비교표 -->
+<div class="section">
+  <div class="section-title"><span class="icon">📊</span> 안 A vs 안 B 비교표</div>
+  <div style="overflow-x:auto;">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th class="t-a">안 A (사업자 딜러)</th>
+          <th class="t-b">안 B (프리랜서 3.3%) ⭐</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>딜러 사업자등록 필요</td>
+          <td class="t-bad">✅ 필수</td>
+          <td class="t-good">❌ 불필요</td>
+        </tr>
+        <tr>
+          <td>고객 영수증 발행 주체</td>
+          <td>딜러 직접 발행</td>
+          <td><strong>본사 일괄 발행</strong></td>
+        </tr>
+        <tr>
+          <td>원천징수 의무</td>
+          <td class="t-good">없음</td>
+          <td>3.3% (본사 부담)</td>
+        </tr>
+        <tr>
+          <td>본사 세무 부담</td>
+          <td class="t-good">낮음</td>
+          <td>중간 (신고 의무)</td>
+        </tr>
+        <tr>
+          <td>딜러 진입 장벽</td>
+          <td class="t-bad">높음</td>
+          <td class="t-good">낮음</td>
+        </tr>
+        <tr>
+          <td>부가세 공제 가능 여부</td>
+          <td class="t-good">✅ 가능</td>
+          <td>❌ 불가</td>
+        </tr>
+        <tr>
+          <td>법적 리스크</td>
+          <td class="t-good">낮음</td>
+          <td class="t-good">낮음 (올바로 운영 시)</td>
+        </tr>
+        <tr>
+          <td>실무 운영 난이도</td>
+          <td>중간</td>
+          <td class="t-good">쉬움</td>
+        </tr>
+        <tr>
+          <td>딜러 확보 용이성</td>
+          <td class="t-bad">어려움</td>
+          <td class="t-good">쉬움</td>
+        </tr>
+        <tr>
+          <td>국내 활용 빈도</td>
+          <td>중간</td>
+          <td class="t-good">매우 높음 (일반적)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 5. 결론 -->
+<div class="conclusion">
+  <h2>⭐ 결론 — A · B 병행 구조 채택 권장</h2>
+  <div class="conc-grid">
+    <div class="conc-card">
+      <div class="cc-title a">🔵 안 A 적용 대상</div>
+      <ul>
+        <li>기존 사업자 보유 딜러</li>
+        <li>규모 있는 대리점 파트너</li>
+        <li>법인 or 개인사업자 형태로 운영 중인 곳</li>
+        <li>부가세 매입 공제 원하는 경우</li>
+        <li>처리: 세금계산서 교환 + 본사 매입비용 처리</li>
+      </ul>
+    </div>
+    <div class="conc-card">
+      <div class="cc-title b">🟢 안 B 적용 대상 (주력 구조)</div>
+      <ul>
+        <li>사업자 없는 개인 딜러 (대부분)</li>
+        <li>신규 영업직 프리랜서 딜러</li>
+        <li>부업 형태 소규모 딜러</li>
+        <li>처리: 3.3% 원천징수 + 본사 영수증 발행</li>
+        <li>매월 원천세 신고 + 연 1회 지급명세서</li>
+      </ul>
+    </div>
+  </div>
+  <div class="final-note">
+    <strong>💡 핵심 원칙</strong>
+    딜러 신규 계약 시 <strong>사업자등록 여부 확인 → A 또는 B 구조 자동 분기</strong>.
+    어떤 경우든 고객 결제는 <strong>본사 명의로 수령</strong>하고 영수증은 본사가 발행하는 것을 원칙으로 함.
+    딜러 수수료 지급 시 A는 세금계산서 수취, B는 3.3% 원천징수 후 지급.
+    <br><br>
+    <strong>⚠️ 세무사 확인 권장</strong>: 딜러 수가 늘어나기 전 세무사 1회 상담으로 지급명세서 누락 가산세(2%) 방지 필수.
+  </div>
+</div>
+
+<!-- 추가 참고 -->
+<div class="section">
+  <div class="section-title"><span class="icon">📌</span> 추가 참고 — 특수고용직 vs 프리랜서 차이</div>
+  <div style="font-size:0.9rem; line-height:1.8;">
+    <p style="margin-bottom:12px;">
+      <strong>"특수고용직"</strong>은 근로기준법상 근로자는 아니지만 특정 고용관계(보험설계사, 학습지교사 등)에 적용되는 분류로,
+      <strong>딜러(영업 수수료 기반)에는 해당되지 않음.</strong>
+    </p>
+    <div class="warn-box yellow">
+      <strong>딜러 = 사업소득자(인적용역 제공자) 분류가 정확</strong>
+      소득세법상 사업소득 중 인적용역(기타 자유직업소득)으로 분류 → 3.3% 원천징수 적용 (소득세 3% + 지방소득세 0.3%)
+    </div>
+    <div class="warn-box blue" style="margin-top:10px;">
+      <strong>원천징수 신고 코드: A03 (사업소득 — 인적용역)</strong>
+      홈택스에서 원천세 신고 시 소득 구분 코드 A03 선택.
+      연간 지급액이 소액이라도 반드시 지급명세서 제출 의무 있음.
+    </div>
+  </div>
+</div>
+
+<!-- 6. 딜러 시스템 외부 수금 대처 -->
+<div class="section">
+  <div class="section-title"><span class="icon">🚨</span> 딜러가 시스템 밖에서 현금/계좌이체로 수금할 때 — 대처 방안</div>
+
+  <div class="gap-item gap-bad" style="border-radius:10px; padding:16px 18px; margin-bottom:20px;">
+    <div class="label">❌ 핵심 문제</div>
+    <p style="font-size:0.9rem;">
+      딜러가 <strong>우리 시스템(포트원) 외부</strong>에서 고객에게 현금 or 타인 계좌로 수금하면<br>
+      → 포트원 webhook이 실행되지 않음 → 서버에 아무것도 안 들어옴 → 영수증 발행 구조 무력화<br>
+      → 딜러가 사업자임에도 고객에게 세금계산서/현금영수증 미발행 시 <strong>탈세 리스크 발생</strong>
+    </p>
+  </div>
+
+  <!-- 대처 방법 1 -->
+  <div style="margin-bottom:20px;">
+    <div class="plan-subtitle" style="font-size:1rem; font-weight:800; margin-bottom:10px;">🛡️ 방법 1 — 딜러 계약서에 책임 명시 (즉시 가능)</div>
+    <div class="plan-detail">
+      딜러가 고객에게 현금 수령하는 행위 자체는 기술적으로 막을 수 없음.<br>
+      <strong>계약서에 아래 조항 삽입 → 본사 면책</strong>:
+    </div>
+    <div class="calc-box" style="margin-top:10px;">
+<span class="comment"># 딜러 계약서 필수 삽입 조항</span>
+<span class="key">조항:</span> 딜러가 고객으로부터 직접 현금 or 계좌이체로 수금 시,
+       고객에 대한 세금계산서/현금영수증 발급 의무는
+       <span class="num">전적으로 딜러에게 있음</span>.
+       이로 인한 세무·법적 책임에 대해 본사는 면책.
+    </div>
+    <div class="pros-cons" style="margin-top:10px;">
+      <div class="pros">
+        <div class="pc-title">👍 장점</div>
+        <ul><li>즉시 적용 가능</li><li>추가 개발 없음</li><li>본사 법적 보호</li></ul>
+      </div>
+      <div class="cons">
+        <div class="pc-title">👎 단점</div>
+        <ul><li>딜러가 지키지 않으면 통제 불가</li><li>사후 대응만 가능</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 대처 방법 2 -->
+  <div style="margin-bottom:20px;">
+    <div class="plan-subtitle" style="font-size:1rem; font-weight:800; margin-bottom:10px;">⭐ 방법 2 — 딜러 토큰 선충전 구조 (근본적 해결)</div>
+    <div class="plan-detail">
+      딜러가 <strong>고객에게 코드를 발급하려면 반드시 본사에 먼저 충전</strong>해야 하는 구조.<br>
+      딜러가 고객에게 얼마를 받든 우리는 이미 딜러에게서 결제 완료 → 세무 처리 완료.
+    </div>
+    <div class="flow" style="margin:14px 0;">
+      <div class="flow-box highlight-a">딜러가 본사에 선결제 충전</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight-r">이 시점에 영수증 처리 완료 ✅</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">딜러가 토큰으로 고객 코드 발급</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight-b">고객-딜러 간 결제는 딜러 책임</div>
+    </div>
+    <div class="calc-box">
+<span class="comment"># 핵심 원칙</span>
+<span class="key">본사 입장:</span> 딜러에게 선충전 받을 때 영수증 처리 완료
+<span class="key">딜러 입장:</span> 고객에게 얼마 받든 자유 (단, 딜러 사업자면 세금계산서 발행 의무)
+<span class="key">리스크  :</span> 본사 → 0 / 딜러 → 딜러가 직접 부담
+    </div>
+    <div class="warn-box blue" style="margin-top:10px;">
+      <strong>현재 기획된 딜러 토큰 충전 기능 = 이 구조의 핵심</strong>
+      딜러 코드 발급 경로를 <strong>토큰 충전 → 발급</strong>으로 일원화하면 완전 해결.
+      참고: <code>기획_딜러_수수료_토큰.html</code>
+    </div>
+    <div class="pros-cons" style="margin-top:10px;">
+      <div class="pros">
+        <div class="pc-title">👍 장점</div>
+        <ul><li>근본적 구조 해결</li><li>본사 세무 리스크 0</li><li>딜러 수금 방식 자유</li></ul>
+      </div>
+      <div class="cons">
+        <div class="pc-title">👎 단점</div>
+        <ul><li>딜러 토큰 충전 시스템 구현 필요</li><li>딜러 선충전 부담 발생 가능</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 대처 방법 3 -->
+  <div style="margin-bottom:20px;">
+    <div class="plan-subtitle" style="font-size:1rem; font-weight:800; margin-bottom:10px;">🔒 방법 3 — 이용권 코드 발급 채널 통제</div>
+    <div class="plan-detail">
+      딜러가 고객 코드를 발급받으려면 <strong>반드시 우리 딜러 포털(시스템)을 통해야 함</strong>.<br>
+      코드 자체는 본사가 쥐고 있으므로, 발급 기록이 DB에 모두 남음 → 추적 가능.
+    </div>
+    <div class="warn-box yellow">
+      <strong>현재 이미 적용되어 있는 구조</strong>
+      딜러 대시보드에서만 코드 발급 가능. 단, 딜러가 코드 발급 후 고객에게 현금 수령하는 것은 막을 수 없음.
+    </div>
+  </div>
+
+  <!-- 최종 대처 비교표 -->
+  <div style="overflow-x:auto; margin-top:10px;">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>방법</th>
+          <th>공수</th>
+          <th>효과</th>
+          <th>본사 리스크</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>계약서 명시</td>
+          <td class="t-good">즉시</td>
+          <td>본사 면책</td>
+          <td class="t-good">없음</td>
+        </tr>
+        <tr>
+          <td><strong>딜러 선충전 구조 ⭐</strong></td>
+          <td>중간</td>
+          <td class="t-good"><strong>근본 해결</strong></td>
+          <td class="t-good">없음</td>
+        </tr>
+        <tr>
+          <td>코드 발급 채널 통제</td>
+          <td class="t-good">낮음</td>
+          <td>추적 가능</td>
+          <td>낮음</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="warn-box red" style="margin-top:20px;">
+    <strong>⭐ 최종 권장: 방법 1 + 방법 2 병행</strong>
+    계약서로 즉시 본사를 법적으로 보호하고,
+    딜러 토큰 선충전 구조를 완성하면 구조적으로도 완전 해결됨.
+    방법 3은 현재 이미 적용 중.
+  </div>
+</div>
+
+<footer>
+  Caddy Manager Pro 내부 기획문서 · 2026-04-07 · 법적 효력 없음 — 실제 집행 전 세무사 확인 필수
+</footer>
+
+</body>
+</html>

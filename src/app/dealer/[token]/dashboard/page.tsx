@@ -79,7 +79,7 @@ interface Settlement {
     created_at: string;
 }
 
-type DealerTab = 'issue' | 'earnings' | 'customers' | 'settlement' | 'credits';
+type DealerTab = 'issue' | 'earnings' | 'customers' | 'settlement' | 'credits' | 'receipt';
 
 // ── 컴포넌트 ──────────────────────────────────────────────────────
 export default function DealerDashboardPage({ params }: { params: { token: string } }) {
@@ -166,6 +166,14 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [settlements, setSettlements] = useState<Settlement[]>([]);
     const [settlementsLoading, setSettlementsLoading] = useState(false);
     const [requestingSettlement, setRequestingSettlement] = useState(false);
+
+    // 현금영수증 발행
+    const [receiptType, setReceiptType] = useState<'PERSONAL' | 'CORPORATE'>('PERSONAL');
+    const [receiptIdentifier, setReceiptIdentifier] = useState('');
+    const [receiptAmount, setReceiptAmount] = useState('');
+    const [receiptOrderName, setReceiptOrderName] = useState('Caddy Manager Pro 이용권');
+    const [isIssuingReceipt, setIsIssuingReceipt] = useState(false);
+    const [receiptResult, setReceiptResult] = useState<{ success: boolean; message: string; receiptUrl?: string | null } | null>(null);
 
     useEffect(() => { setDays(PLANS[plan].days); }, [plan]);
 
@@ -614,7 +622,42 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         { key: 'earnings',   label: '내 수익',   icon: <TrendingUp size={14} /> },
         { key: 'customers',  label: '내 고객',   icon: <Users size={14} /> },
         { key: 'settlement', label: '정산요청',  icon: <Receipt size={14} /> },
+        { key: 'receipt',    label: '현금영수증', icon: <BadgeCheck size={14} /> },
     ];
+
+    // ── 현금영수증 발행 핸들러 ──────────────────────────────────
+    const handleIssueReceipt = async () => {
+        const amountNum = parseInt(receiptAmount.replace(/,/g, ''), 10);
+        if (!receiptIdentifier.trim()) { setIssueError('전화번호 또는 사업자번호를 입력하세요.'); return; }
+        if (!amountNum || amountNum <= 0) { setIssueError('금액을 올바르게 입력하세요.'); return; }
+        setIsIssuingReceipt(true);
+        setReceiptResult(null);
+        try {
+            const res = await fetch('/api/dealer/cash-receipt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    dealerToken: token,
+                    amount: amountNum,
+                    type: receiptType,
+                    identifier: receiptIdentifier,
+                    orderName: receiptOrderName || 'Caddy Manager Pro 이용권',
+                }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setReceiptResult({ success: true, message: '현금영수증이 발행되었습니다!', receiptUrl: data.receiptUrl });
+                setReceiptIdentifier('');
+                setReceiptAmount('');
+            } else {
+                setReceiptResult({ success: false, message: data.error || '발행 실패' });
+            }
+        } catch {
+            setReceiptResult({ success: false, message: '네트워크 오류가 발생했습니다.' });
+        } finally {
+            setIsIssuingReceipt(false);
+        }
+    };
 
     // ── 로딩 ──
     if (loading) {
@@ -1901,6 +1944,121 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                 })}
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* ── 현금영수증 발행 탭 ── */}
+                {activeTab === 'receipt' && (
+                    <div className="space-y-5">
+                        <h2 className="text-white font-bold text-sm flex items-center gap-2"><BadgeCheck size={16} className="text-emerald-400" /> 현금영수증 발행</h2>
+
+                        {/* 결과 표시 */}
+                        {receiptResult && (
+                            <div className={`rounded-3xl p-5 text-center space-y-3 ${receiptResult.success ? 'bg-emerald-900/20 border border-emerald-700' : 'bg-red-900/20 border border-red-700'}`}>
+                                <div className="text-4xl">{receiptResult.success ? '✅' : '❌'}</div>
+                                <p className={`font-black text-lg ${receiptResult.success ? 'text-emerald-300' : 'text-red-300'}`}>{receiptResult.message}</p>
+                                {receiptResult.receiptUrl && (
+                                    <a href={receiptResult.receiptUrl} target="_blank" rel="noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-xs text-blue-400 underline">
+                                        <ExternalLink size={12} /> 영수증 확인
+                                    </a>
+                                )}
+                                <button onClick={() => setReceiptResult(null)}
+                                    className="w-full py-2.5 bg-stone-800 rounded-2xl text-stone-300 text-sm font-bold">닫기</button>
+                            </div>
+                        )}
+
+                        {/* 영수증 종류 선택 */}
+                        <div className="bg-stone-900 rounded-3xl p-5 space-y-4">
+                            <p className="text-stone-400 text-xs font-bold uppercase tracking-widest">영수증 종류</p>
+                            <div className="flex gap-2">
+                                <button onClick={() => { setReceiptType('PERSONAL'); setReceiptIdentifier(''); }}
+                                    className={`flex-1 py-3 rounded-2xl font-bold text-sm transition ${receiptType === 'PERSONAL' ? 'bg-emerald-600 text-white' : 'bg-stone-800 text-stone-400'}`}>
+                                    👤 소득공제용
+                                </button>
+                                <button onClick={() => { setReceiptType('CORPORATE'); setReceiptIdentifier(''); }}
+                                    className={`flex-1 py-3 rounded-2xl font-bold text-sm transition ${receiptType === 'CORPORATE' ? 'bg-blue-600 text-white' : 'bg-stone-800 text-stone-400'}`}>
+                                    🏢 지출증빙용
+                                </button>
+                            </div>
+                            <p className="text-stone-500 text-[10px]">
+                                {receiptType === 'PERSONAL' ? '소득공제용: 고객 휴대폰번호 입력' : '지출증빙용: 고객 사업자등록번호 10자리 입력'}
+                            </p>
+                        </div>
+
+                        {/* 입력 폼 */}
+                        <div className="bg-stone-900 rounded-3xl p-5 space-y-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">
+                                    {receiptType === 'PERSONAL' ? '고객 휴대폰번호' : '사업자등록번호'} <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    value={receiptIdentifier}
+                                    onChange={e => {
+                                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                                        if (receiptType === 'PERSONAL') {
+                                            // 전화번호 자동 하이픈
+                                            let formatted = raw;
+                                            if (raw.length > 7) formatted = raw.slice(0,3) + '-' + raw.slice(3,7) + '-' + raw.slice(7,11);
+                                            else if (raw.length > 3) formatted = raw.slice(0,3) + '-' + raw.slice(3);
+                                            setReceiptIdentifier(formatted);
+                                        } else {
+                                            // 사업자번호 XXX-XX-XXXXX
+                                            let formatted = raw;
+                                            if (raw.length > 7) formatted = raw.slice(0,3) + '-' + raw.slice(3,5) + '-' + raw.slice(5,10);
+                                            else if (raw.length > 3) formatted = raw.slice(0,3) + '-' + raw.slice(3);
+                                            setReceiptIdentifier(formatted);
+                                        }
+                                    }}
+                                    type="tel"
+                                    placeholder={receiptType === 'PERSONAL' ? '010-0000-0000' : '000-00-00000'}
+                                    maxLength={receiptType === 'PERSONAL' ? 13 : 12}
+                                    className="w-full bg-stone-800 text-white rounded-2xl px-4 py-3.5 text-sm font-mono placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">거래금액 (원) <span className="text-red-400">*</span></label>
+                                <input
+                                    value={receiptAmount}
+                                    onChange={e => {
+                                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                                        setReceiptAmount(raw ? Number(raw).toLocaleString() : '');
+                                    }}
+                                    type="text"
+                                    inputMode="numeric"
+                                    placeholder="129,000"
+                                    className="w-full bg-stone-800 text-white rounded-2xl px-4 py-3.5 text-sm font-mono placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">상품명</label>
+                                <input
+                                    value={receiptOrderName}
+                                    onChange={e => setReceiptOrderName(e.target.value)}
+                                    type="text"
+                                    placeholder="Caddy Manager Pro 이용권"
+                                    className="w-full bg-stone-800 text-white rounded-2xl px-4 py-3.5 text-sm placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleIssueReceipt}
+                            disabled={isIssuingReceipt || !receiptIdentifier || !receiptAmount}
+                            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition text-base">
+                            {isIssuingReceipt
+                                ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                : <BadgeCheck size={20} />}
+                            {isIssuingReceipt ? '발행 중...' : '현금영수증 발행'}
+                        </button>
+
+                        <div className="bg-stone-900 rounded-2xl p-4 text-xs text-stone-400 leading-relaxed space-y-1">
+                            <p className="font-bold text-stone-300 mb-1">안내</p>
+                            <p>• 소득공제용: 고객 휴대폰번호로 국세청 자동 전송</p>
+                            <p>• 지출증빙용: 법인/사업자가 부가세 공제용으로 사용</p>
+                            <p>• 발행 후 국세청 홈택스에서 확인 가능합니다</p>
+                            <p>• 현금·계좌이체로 받은 거래에 한해 발행하세요</p>
+                        </div>
                     </div>
                 )}
 
