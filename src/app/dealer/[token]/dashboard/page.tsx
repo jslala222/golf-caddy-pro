@@ -577,7 +577,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const handleExtend = async () => {
         if (!renewResult?.id || !dealer) return;
         // 크레딧 확인
-        const tier = (renewResult.tier ?? 'standard') as 'standard' | 'premium';
+        const tier = issueTier;
         const creditCol = CREDIT_COL[tier][plan];
         const currentCredit = dealer[creditCol as keyof typeof dealer] as number ?? 0;
         if (currentCredit < 1) {
@@ -1493,8 +1493,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                         );
                                     })()}
                                     <button onClick={() => {
-                                            const tier = (renewResult?.tier ?? 'standard') as 'standard' | 'premium';
-                                            const creditCol = CREDIT_COL[tier][plan];
+                                            const creditCol = CREDIT_COL[issueTier][plan];
                                             const avail = dealer ? ((dealer[creditCol as keyof DealerInfo] as number) ?? 0) : 0;
                                             const base = renewResult?.expiresAt && new Date(renewResult.expiresAt) > new Date() ? new Date(renewResult.expiresAt) : new Date();
                                             const newExpiresAt = new Date(base.getTime() + days * 86_400_000).toISOString();
