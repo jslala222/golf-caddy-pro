@@ -167,17 +167,18 @@ export default function MoneyPage() {
 
         filteredSchedules.forEach(s => {
             const isFuture = s.date > today;
+            if (isFuture) return; // 미래 예정 근무는 가계부 내역에서 제외
             history.push({
                 id: s.id,
                 date: s.date,
                 type: 'income',
                 amount: getCaddyFee(s) + (s.overFee || 0),
-                memo: `${s.title || '근무'}${isFuture ? ' (예정)' : ' (완료)'}`,
+                memo: `${s.title || '근무'} (완료)`,
                 isSchedule: true,
                 category: 'work',
                 shift: s.shift,
                 holes: s.holes || 18,
-                isFuture,
+                isFuture: false,
             });
         });
 
