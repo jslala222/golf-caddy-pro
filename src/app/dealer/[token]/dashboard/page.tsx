@@ -1193,23 +1193,6 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                             </div>
                         </section>
 
-                        {/* 요금제 */}
-                        <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
-                            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-                                <Tag size={16} /> 요금제 선택
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                {(Object.entries(PLANS) as [PlanType, typeof PLANS[PlanType]][]).map(([key, p]) => (
-                                    <button key={key} onClick={() => setPlan(key)}
-                                        className={`p-3 rounded-2xl border text-center transition ${plan === key ? 'border-blue-500 bg-blue-900/30' : 'border-stone-700 bg-stone-800'}`}>
-                                        <p className="text-xs font-bold text-stone-300">{p.label}</p>
-                                        <p className="text-[10px] text-stone-500 mt-0.5">{p.days}일</p>
-                                        <p className="text-[11px] font-bold text-emerald-400 mt-1">₩{CONSUMER_PRICE[issueTier][key].toLocaleString()}</p>
-                                    </button>
-                                ))}
-                            </div>
-                        </section>
-
                         {/* 이용권 종류 */}
                         <section className="bg-stone-900 rounded-3xl p-5 space-y-3">
                             <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
@@ -1229,6 +1212,23 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                     <p className="text-[10px] text-stone-500 mt-0.5">자동 복구 ✅</p>
                                     <p className="text-[11px] font-bold text-purple-400 mt-1">₩{CONSUMER_PRICE.premium[plan].toLocaleString()}</p>
                                 </button>
+                            </div>
+                        </section>
+
+                        {/* 요금제 */}
+                        <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
+                            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                                <Tag size={16} /> 요금제 선택
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                                {(Object.entries(PLANS) as [PlanType, typeof PLANS[PlanType]][]).map(([key, p]) => (
+                                    <button key={key} onClick={() => setPlan(key)}
+                                        className={`p-3 rounded-2xl border text-center transition ${plan === key ? 'border-blue-500 bg-blue-900/30' : 'border-stone-700 bg-stone-800'}`}>
+                                        <p className="text-xs font-bold text-stone-300">{p.label}</p>
+                                        <p className="text-[10px] text-stone-500 mt-0.5">{p.days}일</p>
+                                        <p className="text-[11px] font-bold text-emerald-400 mt-1">₩{CONSUMER_PRICE[issueTier][key].toLocaleString()}</p>
+                                    </button>
+                                ))}
                             </div>
                         </section>
 
