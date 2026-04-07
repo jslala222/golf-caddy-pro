@@ -201,6 +201,7 @@ export default function SettingsPage() {
     };
 
     return (
+        <>
         <div className="p-6 space-y-8">
             <h1 className="text-2xl font-bold text-stone-900 flex items-center">
                 <Settings className="mr-2 text-stone-600" /> 설정
@@ -460,5 +461,6 @@ export default function SettingsPage() {
                 </div>
             );
         })()}
+        </>
     );
 }
