@@ -517,6 +517,22 @@ bd875afa30bbddea5939e8dc62789c77
 
 =======================================
 
+kakao 개발자
+
+
+Caddy매니저프로
+
+REST API 
+
+
+c6043987a83c168737cf80c4bea93e4a
+
+
+카카오 로그인 리다이렉트 URI
+
+https://caddy-pink.vercel.app/api/auth/kakao/callback
+
+
 
 
 
