@@ -100,7 +100,7 @@ export default function SettingsPage() {
             }
             setPushGranted(true);
 
-            // SW 직접 등록 후 해당 registration 객체 사용 (ready 타임아웃 우회)
+            // SW 등록 + active 될 때까지 대기
             const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
             if (!vapidKey) { setPushMsg('설정 오류 — 관리자에게 문의해주세요.'); setPushLoading(false); return; }
 
@@ -108,14 +108,14 @@ export default function SettingsPage() {
             if (!reg) {
                 reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
             }
-            // 활성화 대기 (installing → activated)
-            if (reg.installing || reg.waiting) {
-                await new Promise<void>((resolve) => {
-                    const sw = reg!.installing ?? reg!.waiting!;
-                    sw.addEventListener('statechange', function handler() {
-                        if (sw.state === 'activated') { sw.removeEventListener('statechange', handler); resolve(); }
-                    });
-                    setTimeout(resolve, 5000); // 최대 5초 대기
+            // active 상태가 될 때까지 100ms 간격으로 폴링 (최대 15초)
+            if (!reg.active) {
+                await new Promise<void>((resolve, reject) => {
+                    const deadline = Date.now() + 15000;
+                    const poll = setInterval(() => {
+                        if (reg!.active) { clearInterval(poll); resolve(); return; }
+                        if (Date.now() > deadline) { clearInterval(poll); reject(new Error('SW 활성화 시간 초과')); }
+                    }, 100);
                 });
             }
 
@@ -153,6 +153,15 @@ export default function SettingsPage() {
         try {
             let reg = await navigator.serviceWorker.getRegistration('/');
             if (!reg) reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+            if (!reg.active) {
+                await new Promise<void>((resolve, reject) => {
+                    const deadline = Date.now() + 15000;
+                    const poll = setInterval(() => {
+                        if (reg!.active) { clearInterval(poll); resolve(); return; }
+                        if (Date.now() > deadline) { clearInterval(poll); reject(new Error('SW 활성화 시간 초과')); }
+                    }, 100);
+                });
+            }
 
             let sub = await reg.pushManager.getSubscription();
             if (!sub) {
