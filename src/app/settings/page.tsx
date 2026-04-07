@@ -27,11 +27,21 @@ export default function SettingsPage() {
         { label: '2시간 전', value: 120 },
         { label: '3시간 전', value: 180 },
     ];
+    // 분 수를 사람이 읽기 좋은 문자열로 변환 (60 → 1시간, 90 → 1시간 30분)
+    const formatAlarmLabel = (minutes: number): string => {
+        if (minutes <= 0) return '';
+        if (minutes < 60) return `${minutes}분 전`;
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+        if (m === 0) return `${h}시간 전`;
+        return `${h}시간 ${m}분 전`;
+    };
     const [alarmMinutes, setAlarmMinutes] = useState<number>(() => {
         if (typeof window === 'undefined') return 60;
         return parseInt(localStorage.getItem('caddy_alarm_minutes') ?? '60', 10);
     });
     const [customAlarm, setCustomAlarm] = useState('');
+    const [alarmUnit, setAlarmUnit] = useState<'분' | '시간'>('분');
     const [pushSupported, setPushSupported] = useState(false);
     const [pushGranted, setPushGranted] = useState(false);
     const [pushLoading, setPushLoading] = useState(false);
@@ -336,21 +346,36 @@ export default function SettingsPage() {
                                 {opt.label}
                             </button>
                         ))}
-                        {/* 사용자 지정 */}
+                        {/* 사용자 지정 — 분/시간 단위 선택 가능 */}
                         <div className={`col-span-3 flex gap-2 items-center border rounded-2xl px-3 py-2 ${![0,30,60,120,180].includes(alarmMinutes) ? 'border-orange-400 bg-orange-50' : 'border-stone-200'}`}>
                             <Bell size={16} className="text-stone-400 flex-shrink-0" />
                             <input
                                 type="text"
                                 inputMode="numeric"
-                                placeholder="직접 입력 (분)"
+                                placeholder={alarmUnit === '분' ? '예) 10, 45, 90' : '예) 1, 2, 3'}
                                 value={customAlarm}
                                 onChange={e => setCustomAlarm(e.target.value.replace(/[^0-9]/g, ''))}
-                                className="flex-1 text-sm font-bold bg-transparent outline-none text-stone-700"
+                                className="flex-1 text-sm font-bold bg-transparent outline-none text-stone-700 min-w-0"
                             />
+                            {/* 분/시간 단위 토글 */}
                             <button
                                 type="button"
-                                onClick={() => { const m = parseInt(customAlarm); if (m > 0) handleSaveAlarm(m); }}
-                                className="text-xs font-bold text-orange-500 px-2 py-1 rounded-lg hover:bg-orange-50"
+                                onClick={() => { setAlarmUnit(u => u === '분' ? '시간' : '분'); setCustomAlarm(''); }}
+                                className="text-xs font-bold px-2 py-1 rounded-lg border border-stone-300 bg-white text-stone-600 flex-shrink-0"
+                            >
+                                {alarmUnit}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const v = parseInt(customAlarm);
+                                    if (v > 0) {
+                                        const mins = alarmUnit === '시간' ? v * 60 : v;
+                                        handleSaveAlarm(mins);
+                                        setCustomAlarm('');
+                                    }
+                                }}
+                                className="text-xs font-bold text-orange-500 px-2 py-1 rounded-lg hover:bg-orange-50 flex-shrink-0"
                             >
                                 저장
                             </button>
@@ -359,7 +384,7 @@ export default function SettingsPage() {
 
                     {alarmMinutes > 0 && (
                         <p className="text-xs text-orange-600 font-semibold bg-orange-50 rounded-xl px-3 py-2">
-                            현재 설정: 약속 <strong>{alarmMinutes}분 전</strong> 알림
+                            현재 설정: 약속 <strong>{formatAlarmLabel(alarmMinutes)}</strong> 알림
                         </p>
                     )}
 
@@ -369,8 +394,17 @@ export default function SettingsPage() {
                         {!pushSupported ? (
                             <p className="text-xs text-stone-400">이 브라우저는 푸시 알림을 지원하지 않습니다.<br/>홈화면에 앱을 추가 후 다시 시도해주세요.</p>
                         ) : pushGranted ? (
-                            <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm bg-emerald-50 rounded-xl px-3 py-2">
-                                <Check size={16} /> 알림 허용됨 — 알람이 울립니다
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm bg-emerald-50 rounded-xl px-3 py-2">
+                                    <Check size={16} /> 알림 허용됨 — 알람이 울립니다
+                                </div>
+                                <button
+                                    onClick={handleRequestPush}
+                                    disabled={pushLoading}
+                                    className="w-full py-2 border border-stone-200 text-stone-500 font-bold rounded-2xl text-xs disabled:opacity-50 active:scale-[.98] transition"
+                                >
+                                    {pushLoading ? '처리 중...' : '🔄 기기 변경 시 재등록'}
+                                </button>
                             </div>
                         ) : (
                             <button
