@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B안 — 컴팩트 허브</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { background:#0f1117; font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif; min-height:100vh; display:flex; justify-content:center; }
+.w { width:430px; max-width:100%; background:#0f1117; min-height:100vh; padding-bottom:60px; }
+
+/* ── 헤더 ── */
+.hdr { background:#17192a; padding:24px 20px 18px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #1e2132; }
+.hdr-left { }
+.hdr-sub { font-size:10px; font-weight:700; color:#4f6bae; letter-spacing:.12em; text-transform:uppercase; }
+.hdr-title { font-size:21px; font-weight:900; color:#f8fafc; margin-top:3px; }
+.hdr-right { text-align:right; }
+.hdr-bal { font-size:10px; color:#6b7280; }
+.hdr-bal-num { font-size:18px; font-weight:900; color:#38bdf8; }
+
+/* ── 크레딧 잔량 ── */
+.credit-section { padding:18px 20px 6px; }
+.section-title { font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:.1em; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.section-title span { flex:1; border-top:1px solid #1e2132; }
+
+.credit-tabs { display:flex; gap:6px; margin-bottom:10px; }
+.credit-tab { padding:6px 14px; border-radius:99px; border:1.5px solid #1e2132; background:#17192a; font-size:11px; font-weight:700; color:#6b7280; cursor:pointer; transition:.2s; }
+.credit-tab.active-s { border-color:#38bdf8; background:rgba(56,189,248,.08); color:#38bdf8; }
+.credit-tab.active-p { border-color:#fbbf24; background:rgba(251,191,36,.08); color:#fbbf24; }
+
+.credit-chips { display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; scrollbar-width:none; }
+.credit-chips::-webkit-scrollbar { display:none; }
+.credit-chip { flex-shrink:0; display:flex; flex-direction:column; align-items:center; background:#17192a; border:1.5px solid #1e2132; border-radius:16px; padding:14px 18px; min-width:90px; text-align:center; transition:.2s; }
+.credit-chip.has-std { border-color:#0e4c73; background:#081929; }
+.credit-chip.has-prem { border-color:#713f12; background:#1c0f00; }
+.chip-num { font-size:30px; font-weight:900; line-height:1; }
+.has-std .chip-num { color:#38bdf8; }
+.has-prem .chip-num { color:#fbbf24; }
+.chip-num.empty { color:#334155; font-size:22px; }
+.chip-label { font-size:11px; font-weight:700; color:#64748b; margin-top:5px; }
+.chip-badge { font-size:9px; font-weight:800; padding:2px 6px; border-radius:99px; margin-top:4px; }
+.chip-badge.b-std { background:#0c2d44; color:#38bdf8; }
+.chip-badge.b-prem { background:#2d1a00; color:#fbbf24; }
+.chip-badge.b-zero { background:#1e2132; color:#374151; }
+
+/* ── 구매 섹션 ── */
+.buy-section { padding:18px 20px; }
+
+/* 카드식 티어 선택 */
+.tier-cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.tier-card { border:2px solid #1e2132; border-radius:18px; padding:16px 14px; cursor:pointer; background:#17192a; transition:.2s; position:relative; overflow:hidden; }
+.tier-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.tier-card.tc-std::before { background:linear-gradient(90deg,#0369a1,#38bdf8); }
+.tier-card.tc-prem::before { background:linear-gradient(90deg,#b45309,#fbbf24); }
+.tier-card.sel-std { border-color:#38bdf8; background:#081929; }
+.tier-card.sel-prem { border-color:#fbbf24; background:#1c0f00; }
+.tc-icon { font-size:22px; margin-bottom:6px; }
+.tc-name { font-size:14px; font-weight:800; color:#e2e8f0; }
+.tc-desc { font-size:10px; color:#64748b; margin-top:3px; }
+.tc-check { position:absolute; top:12px; right:12px; width:18px; height:18px; border-radius:50%; border:2px solid #334155; display:flex; align-items:center; justify-content:center; }
+.sel-std .tc-check { background:#38bdf8; border-color:#38bdf8; }
+.sel-prem .tc-check { background:#fbbf24; border-color:#fbbf24; }
+.tc-check::after { content:'✓'; font-size:10px; font-weight:900; color:#000; display:none; }
+.sel-std .tc-check::after, .sel-prem .tc-check::after { display:block; }
+
+/* 기간 선택 */
+.plan-label { font-size:11px; font-weight:700; color:#64748b; letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px; }
+.plan-pills { display:flex; gap:8px; margin-bottom:16px; }
+.plan-pill { flex:1; padding:12px 6px; border:1.5px solid #1e2132; border-radius:14px; background:#17192a; cursor:pointer; text-align:center; transition:.2s; }
+.plan-pill.sel { border-color:#38bdf8; background:rgba(56,189,248,.1); }
+.plan-pill.sel-p { border-color:#fbbf24; background:rgba(251,191,36,.1); }
+.pp-name { font-size:12px; font-weight:800; color:#cbd5e1; }
+.pp-price { font-size:11px; font-weight:700; color:#10b981; margin-top:3px; }
+.pp-save { font-size:9px; color:#ef4444; font-weight:700; background:#3f0d0d; border-radius:4px; padding:1px 4px; display:inline-block; margin-top:3px; }
+
+/* 수량 */
+.qty-box { display:flex; align-items:center; justify-content:space-between; background:#17192a; border:1.5px solid #1e2132; border-radius:16px; padding:14px 16px; margin-bottom:14px; }
+.qty-info { }
+.qty-title { font-size:12px; font-weight:700; color:#94a3b8; }
+.qty-subtotal { font-size:11px; color:#64748b; margin-top:2px; }
+.qty-ctrl { display:flex; align-items:center; gap:10px; }
+.qb { width:34px; height:34px; border-radius:10px; border:1.5px solid #2d3748; background:#0f1117; color:#e2e8f0; font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.qb:active { background:#1e2132; }
+.qn { font-size:20px; font-weight:900; color:#fff; min-width:30px; text-align:center; }
+
+.add-btn { width:100%; padding:15px; border:none; border-radius:15px; font-size:14px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:.15s; }
+.ab-std { background:linear-gradient(135deg,#0369a1 0%,#38bdf8 100%); color:#fff; }
+.ab-prem { background:linear-gradient(135deg,#92400e 0%,#fbbf24 100%); color:#000; }
+.add-btn:active { opacity:.85; transform:scale(.98); }
+
+/* ── 장바구니 ── */
+.cart-section { padding:0 20px 20px; }
+.cart-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.cart-ttl { font-size:14px; font-weight:900; color:#f8fafc; display:flex; align-items:center; gap:8px; }
+.cnt-badge { background:#6366f1; color:#fff; font-size:11px; font-weight:800; padding:2px 7px; border-radius:99px; }
+.clr-btn { font-size:11px; color:#ef4444; background:none; border:none; cursor:pointer; font-weight:700; }
+
+.sum-chips { display:flex; gap:6px; margin-bottom:12px; }
+.sum-chip { padding:5px 10px; border-radius:99px; font-size:11px; font-weight:800; }
+.sum-chip-s { background:#0c2d44; color:#38bdf8; border:1px solid #0e4c73; }
+.sum-chip-p { background:#2d1a00; color:#fbbf24; border:1px solid #713f12; }
+
+.cart-items { display:flex; flex-direction:column; gap:5px; }
+.ci { display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:13px; }
+.ci-s { background:#081929; border:1px solid #0e3d5c; }
+.ci-p { background:#1c0f00; border:1px solid #5c3b00; }
+.ci-ico { font-size:16px; flex-shrink:0; }
+.ci-info { flex:1; }
+.ci-nm { font-size:13px; font-weight:700; color:#e2e8f0; }
+.ci-pr { font-size:10px; color:#64748b; margin-top:2px; }
+.ci-profit { font-size:10px; color:#10b981; }
+.ci-q { font-size:17px; font-weight:900; color:#94a3b8; min-width:24px; text-align:center; }
+.ci-x { background:none; border:none; color:#374151; cursor:pointer; font-size:14px; padding:2px 4px; }
+
+.receipt { background:#17192a; border:1px solid #1e2132; border-radius:18px; padding:16px; margin-top:10px; }
+.rcp-row { display:flex; justify-content:space-between; font-size:12px; color:#64748b; padding:3px 0; }
+.rcp-row span:last-child { color:#94a3b8; font-weight:600; }
+.rcp-row.striked span:last-child { text-decoration:line-through; color:#374151; }
+.rcp-divider { height:1px; background:#1e2132; margin:8px 0; }
+.rcp-total { display:flex; justify-content:space-between; align-items:flex-end; }
+.rcp-total-l { font-size:14px; font-weight:800; color:#f8fafc; }
+.rcp-total-r { text-align:right; }
+.rcp-amt { font-size:24px; font-weight:900; color:#fff; }
+.rcp-save { font-size:11px; color:#10b981; font-weight:700; margin-top:2px; }
+
+.pay-methods { display:flex; gap:8px; margin-top:12px; }
+.pm { flex:1; padding:10px 8px; border-radius:12px; border:1.5px solid #1e2132; background:#0f1117; text-align:center; cursor:pointer; transition:.2s; }
+.pm.active { border-color:#6366f1; background:rgba(99,102,241,.1); }
+.pm-icon { font-size:18px; margin-bottom:2px; }
+.pm-txt { font-size:10px; font-weight:700; color:#64748b; }
+.pm.active .pm-txt { color:#818cf8; }
+
+.pay-btn2 { width:100%; padding:17px; border:none; border-radius:16px; background:linear-gradient(90deg,#4f46e5,#7c3aed); color:#fff; font-size:16px; font-weight:900; cursor:pointer; margin-top:10px; transition:.15s; }
+.pay-btn2:active { opacity:.85; }
+</style>
+</head>
+<body>
+<div class="w">
+
+  <!-- 헤더 -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-sub">크레딧 구매</div>
+      <div class="hdr-title">충전 센터</div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-bal">총 보유 크레딧</div>
+      <div class="hdr-bal-num">20장</div>
+    </div>
+  </div>
+
+  <!-- 크레딧 잔량 -->
+  <div class="credit-section">
+    <div class="section-title">현재 잔량 <span></span></div>
+
+    <div class="credit-tabs">
+      <div class="credit-tab active-s" onclick="this.className='credit-tab active-s';document.querySelectorAll('.credit-tab')[1].className='credit-tab'">🔷 스탠다드</div>
+      <div class="credit-tab" onclick="this.className='credit-tab active-p';document.querySelectorAll('.credit-tab')[0].className='credit-tab'">⭐ 프리미엄</div>
+    </div>
+
+    <div class="credit-chips">
+      <div class="credit-chip has-std">
+        <div class="chip-num">10</div>
+        <div class="chip-label">1개월</div>
+        <div class="chip-badge b-std">스탠다드</div>
+      </div>
+      <div class="credit-chip">
+        <div class="chip-num empty">0</div>
+        <div class="chip-label">6개월</div>
+        <div class="chip-badge b-zero">없음</div>
+      </div>
+      <div class="credit-chip">
+        <div class="chip-num empty">0</div>
+        <div class="chip-label">1년</div>
+        <div class="chip-badge b-zero">없음</div>
+      </div>
+      <div class="credit-chip has-prem">
+        <div class="chip-num">10</div>
+        <div class="chip-label">1개월P</div>
+        <div class="chip-badge b-prem">프리미엄</div>
+      </div>
+      <div class="credit-chip">
+        <div class="chip-num empty">0</div>
+        <div class="chip-label">6개월P</div>
+        <div class="chip-badge b-zero">없음</div>
+      </div>
+      <div class="credit-chip">
+        <div class="chip-num empty">0</div>
+        <div class="chip-label">1년P</div>
+        <div class="chip-badge b-zero">없음</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 구매 섹션 -->
+  <div class="buy-section">
+    <div class="section-title">구매 설정 <span></span></div>
+
+    <!-- 티어 카드 -->
+    <div class="tier-cards">
+      <div class="tier-card tc-std sel-std" id="tc-s" onclick="selectTier('s')">
+        <div class="tc-check"></div>
+        <div class="tc-icon">🔷</div>
+        <div class="tc-name">스탠다드</div>
+        <div class="tc-desc">수동 복구</div>
+      </div>
+      <div class="tier-card tc-prem" id="tc-p" onclick="selectTier('p')">
+        <div class="tc-check"></div>
+        <div class="tc-icon">⭐</div>
+        <div class="tc-name">프리미엄</div>
+        <div class="tc-desc">자동 복구 ✅</div>
+      </div>
+    </div>
+
+    <!-- 기간 -->
+    <div class="plan-label">기간 선택</div>
+    <div class="plan-pills">
+      <div class="plan-pill sel" id="pp-m" onclick="selectPlan('m')">
+        <div class="pp-name">1개월</div>
+        <div class="pp-price" id="pr-m">₩7,000</div>
+        <div class="pp-save">-22%</div>
+      </div>
+      <div class="plan-pill" id="pp-6" onclick="selectPlan('6')">
+        <div class="pp-name">6개월</div>
+        <div class="pp-price" id="pr-6">₩40,000</div>
+        <div class="pp-save">-27%</div>
+      </div>
+      <div class="plan-pill" id="pp-y" onclick="selectPlan('y')">
+        <div class="pp-name">1년</div>
+        <div class="pp-price" id="pr-y">₩70,000</div>
+        <div class="pp-save">-29%</div>
+      </div>
+    </div>
+
+    <!-- 수량 -->
+    <div class="qty-box">
+      <div class="qty-info">
+        <div class="qty-title">수량</div>
+        <div class="qty-subtotal">1 × ₩7,000 = <strong id="sub-total" style="color:#38bdf8">₩7,000</strong></div>
+      </div>
+      <div class="qty-ctrl">
+        <button class="qb" onclick="adjQty(-1)">−</button>
+        <div class="qn" id="qty-n">1</div>
+        <button class="qb" onclick="adjQty(1)">+</button>
+      </div>
+    </div>
+
+    <button class="add-btn ab-std" id="ab" onclick="alert('담겼습니다!')">
+      🛒 장바구니 담기
+    </button>
+  </div>
+
+  <!-- 장바구니 -->
+  <div class="cart-section">
+    <div class="section-title">장바구니 <span></span></div>
+    <div class="cart-head">
+      <div class="cart-ttl">담긴 상품 <span class="cnt-badge">6</span></div>
+      <button class="clr-btn">전체 비우기</button>
+    </div>
+
+    <div class="sum-chips">
+      <div class="sum-chip sum-chip-s">🔷 스탠다드 3장</div>
+      <div class="sum-chip sum-chip-p">⭐ 프리미엄 3장</div>
+    </div>
+
+    <div class="cart-items">
+      <div class="ci ci-s"><div class="ci-ico">🔷</div><div class="ci-info"><div class="ci-nm">1개월 스탠다드</div><div class="ci-pr">₩7,000 · 소비자가 ₩9,900</div><div class="ci-profit">+₩2,900</div></div><div class="ci-q">×1</div><button class="ci-x">✕</button></div>
+      <div class="ci ci-s"><div class="ci-ico">🔷</div><div class="ci-info"><div class="ci-nm">6개월 스탠다드</div><div class="ci-pr">₩40,000 · 소비자가 ₩55,000</div><div class="ci-profit">+₩15,000</div></div><div class="ci-q">×1</div><button class="ci-x">✕</button></div>
+      <div class="ci ci-s"><div class="ci-ico">🔷</div><div class="ci-info"><div class="ci-nm">1년 스탠다드</div><div class="ci-pr">₩70,000 · 소비자가 ₩99,000</div><div class="ci-profit">+₩29,000</div></div><div class="ci-q">×1</div><button class="ci-x">✕</button></div>
+      <div class="ci ci-p"><div class="ci-ico">⭐</div><div class="ci-info"><div class="ci-nm">6개월 프리미엄</div><div class="ci-pr">₩50,000 · 소비자가 ₩69,000</div><div class="ci-profit">+₩19,000</div></div><div class="ci-q">×1</div><button class="ci-x">✕</button></div>
+      <div class="ci ci-p"><div class="ci-ico">⭐</div><div class="ci-info"><div class="ci-nm">1년 프리미엄</div><div class="ci-pr">₩100,000 · 소비자가 ₩129,000</div><div class="ci-profit">+₩29,000</div></div><div class="ci-q">×1</div><button class="ci-x">✕</button></div>
+      <div class="ci ci-p"><div class="ci-ico">⭐</div><div class="ci-info"><div class="ci-nm">1개월 프리미엄</div><div class="ci-pr">₩10,000 · 소비자가 ₩12,900</div><div class="ci-profit">+₩2,900</div></div><div class="ci-q">×1</div><button class="ci-x">✕</button></div>
+    </div>
+
+    <div class="receipt">
+      <div class="rcp-row striked"><span>소비자가 합계</span><span>₩374,800</span></div>
+      <div class="rcp-row"><span>내 구매가</span><span>₩277,000</span></div>
+      <div class="rcp-divider"></div>
+      <div class="rcp-total">
+        <div class="rcp-total-l">결제금액</div>
+        <div class="rcp-total-r">
+          <div class="rcp-amt">₩277,000</div>
+          <div class="rcp-save">🎉 ₩97,800 절약 (26%)</div>
+        </div>
+      </div>
+      <div class="pay-methods">
+        <div class="pm active"><div class="pm-icon">🏦</div><div class="pm-txt">실시간 계좌이체</div></div>
+        <div class="pm"><div class="pm-icon">💳</div><div class="pm-txt">카드 결제</div></div>
+      </div>
+      <button class="pay-btn2">💳 ₩277,000 결제하기</button>
+    </div>
+  </div>
+
+</div>
+<script>
+let curTier='s', curPlan='m', curQty=1;
+const prices = { s:{m:7000,'6':40000,y:70000}, p:{m:10000,'6':50000,y:100000} };
+function selectTier(t) {
+  curTier=t;
+  document.getElementById('tc-s').className = 'tier-card tc-std' + (t==='s'?' sel-std':'');
+  document.getElementById('tc-p').className = 'tier-card tc-prem' + (t==='p'?' sel-prem':'');
+  const p=prices[t];
+  document.getElementById('pr-m').textContent='₩'+p.m.toLocaleString();
+  document.getElementById('pr-6').textContent='₩'+p['6'].toLocaleString();
+  document.getElementById('pr-y').textContent='₩'+p.y.toLocaleString();
+  const ab=document.getElementById('ab');
+  ab.className='add-btn '+(t==='s'?'ab-std':'ab-prem');
+  updateSel(); updateSub();
+}
+function selectPlan(p) {
+  curPlan=p;
+  ['m','6','y'].forEach(k=>{
+    const el=document.getElementById('pp-'+k);
+    el.className='plan-pill'+(k===p?(curTier==='s'?' sel':' sel-p'):'');
+  });
+  updateSub();
+}
+function adjQty(d) { curQty=Math.max(1,Math.min(50,curQty+d)); document.getElementById('qty-n').textContent=curQty; updateSub(); }
+function updateSel() {
+  ['m','6','y'].forEach(k=>{
+    const el=document.getElementById('pp-'+k);
+    el.className='plan-pill'+(k===curPlan?(curTier==='s'?' sel':' sel-p'):'');
+  });
+}
+function updateSub() {
+  const unit=prices[curTier][curPlan];
+  const t=unit*curQty;
+  document.getElementById('sub-total').textContent='₩'+t.toLocaleString();
+}
+</script>
+</body>
+</html>

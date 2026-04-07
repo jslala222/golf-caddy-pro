@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C안 — 글래스모피즘</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  background: #0a0a0a;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(99,102,241,.35) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 70%, rgba(168,85,247,.25) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(20,184,166,.15) 0%, transparent 60%);
+  min-height:100vh;
+  font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;
+  display:flex; justify-content:center;
+}
+.w { width:430px; max-width:100%; min-height:100vh; padding-bottom:60px; }
+
+/* Glass mixin */
+.glass { background:rgba(255,255,255,.04); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,.08); }
+.glass-strong { background:rgba(255,255,255,.07); backdrop-filter:blur(40px); -webkit-backdrop-filter:blur(40px); border:1px solid rgba(255,255,255,.12); }
+
+/* ── 헤더 ── */
+.hdr { padding:28px 20px 20px; }
+.hdr-pill { display:inline-flex; align-items:center; gap:6px; font-size:10px; font-weight:700; color:rgba(255,255,255,.5); background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:99px; padding:4px 10px; margin-bottom:8px; text-transform:uppercase; letter-spacing:.1em; }
+.hdr-title { font-size:26px; font-weight:900; color:#fff; text-shadow:0 0 30px rgba(99,102,241,.6); }
+.hdr-sub { font-size:12px; color:rgba(255,255,255,.4); margin-top:4px; }
+
+/* ── 잔량 카드들 ── */
+.credit-section { padding:0 16px 16px; }
+.bal-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.bal-card { glass; border-radius:18px; padding:14px 10px; text-align:center; position:relative; overflow:hidden; }
+.bal-card::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; }
+.bc-std { background:rgba(56,189,248,.06); border:1px solid rgba(56,189,248,.2); }
+.bc-std-has { background:rgba(56,189,248,.15); border:1px solid rgba(56,189,248,.4); box-shadow:0 0 20px rgba(56,189,248,.15); }
+.bc-prem { background:rgba(251,191,36,.06); border:1px solid rgba(251,191,36,.15); }
+.bc-prem-has { background:rgba(251,191,36,.15); border:1px solid rgba(251,191,36,.5); box-shadow:0 0 20px rgba(251,191,36,.2); }
+.bal-num { font-size:28px; font-weight:900; line-height:1; }
+.bc-std .bal-num, .bc-std-has .bal-num { color:#38bdf8; }
+.bc-prem .bal-num, .bc-prem-has .bal-num { color:#fbbf24; }
+.bal-zero { color:rgba(255,255,255,.2) !important; }
+.bal-period { font-size:11px; color:rgba(255,255,255,.4); margin-top:5px; font-weight:600; }
+.bal-type { font-size:9px; font-weight:800; margin-top:3px; }
+.bc-std .bal-type, .bc-std-has .bal-type { color:rgba(56,189,248,.6); }
+.bc-prem .bal-type, .bc-prem-has .bal-type { color:rgba(251,191,36,.6); }
+
+.section-label { font-size:10px; font-weight:800; color:rgba(255,255,255,.3); letter-spacing:.12em; text-transform:uppercase; padding:0 4px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.section-label::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.06); }
+.section-label.s-prem { margin-top:12px; }
+
+/* ── 구매 섹션 ── */
+.buy-section { padding:0 16px 16px; }
+.glass-card { border-radius:22px; padding:16px; margin-bottom:12px; }
+
+/* 티어 선택 - 슬라이더 토글 */
+.tier-switch { display:flex; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:4px; gap:4px; }
+.ts-btn { flex:1; padding:12px; border-radius:14px; border:none; cursor:pointer; font-size:13px; font-weight:800; transition:.25s; background:transparent; color:rgba(255,255,255,.4); }
+.ts-btn.ts-std { background:linear-gradient(135deg,rgba(56,189,248,.3),rgba(6,182,212,.3)); color:#38bdf8; border:1px solid rgba(56,189,248,.3); text-shadow:0 0 10px rgba(56,189,248,.5); }
+.ts-btn.ts-prem { background:linear-gradient(135deg,rgba(251,191,36,.3),rgba(245,158,11,.3)); color:#fbbf24; border:1px solid rgba(251,191,36,.3); text-shadow:0 0 10px rgba(251,191,36,.5); }
+
+/* 기간 카드 */
+.plan-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.pc { border-radius:16px; padding:14px 10px; cursor:pointer; text-align:center; transition:.2s; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); }
+.pc.pc-sel-s { background:rgba(56,189,248,.15); border:1px solid rgba(56,189,248,.4); box-shadow:0 0 16px rgba(56,189,248,.15); }
+.pc.pc-sel-p { background:rgba(251,191,36,.15); border:1px solid rgba(251,191,36,.4); box-shadow:0 0 16px rgba(251,191,36,.15); }
+.pc-period { font-size:12px; font-weight:800; color:rgba(255,255,255,.8); }
+.pc-days { font-size:10px; color:rgba(255,255,255,.3); margin-top:2px; }
+.pc-price { font-size:12px; font-weight:700; color:#34d399; margin-top:5px; }
+.pc-disc { font-size:9px; font-weight:800; background:rgba(239,68,68,.2); color:#f87171; border:1px solid rgba(239,68,68,.3); border-radius:4px; padding:1px 5px; margin-top:3px; display:inline-block; }
+
+/* 수량 */
+.qty-glass { display:flex; align-items:center; padding:14px 16px; border-radius:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); }
+.qty-lbl { flex:1; font-size:13px; color:rgba(255,255,255,.5); font-weight:700; }
+.qty-sub { font-size:11px; color:rgba(255,255,255,.3); margin-top:2px; }
+.qty-ctrl { display:flex; align-items:center; gap:12px; }
+.qb { width:34px; height:34px; border-radius:10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.8); font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.qb:active { background:rgba(255,255,255,.15); }
+.qnum { font-size:22px; font-weight:900; color:#fff; min-width:32px; text-align:center; }
+
+/* 담기 버튼 */
+.add-glow { width:100%; padding:16px; border:none; border-radius:16px; font-size:15px; font-weight:900; cursor:pointer; transition:.2s; position:relative; overflow:hidden; }
+.ag-std { background:linear-gradient(135deg,#0369a1,#0ea5e9,#38bdf8); color:#fff; box-shadow:0 8px 32px rgba(56,189,248,.35); }
+.ag-prem { background:linear-gradient(135deg,#92400e,#d97706,#fbbf24); color:#000; box-shadow:0 8px 32px rgba(251,191,36,.35); }
+.add-glow:active { transform:scale(.97); }
+.add-glow::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent); transform:translateX(-100%); transition:.5s; }
+.add-glow:hover::before { transform:translateX(100%); }
+
+/* ── 장바구니 ── */
+.cart-section { padding:0 16px; }
+.cart-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.cart-ttl { font-size:16px; font-weight:900; color:#fff; display:flex; align-items:center; gap:8px; }
+.cnt { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; font-size:11px; font-weight:900; border-radius:50%; }
+.clr { background:none; border:none; font-size:11px; color:rgba(239,68,68,.7); cursor:pointer; font-weight:700; }
+
+.tag-row { display:flex; gap:6px; margin-bottom:12px; }
+.tg { padding:5px 10px; border-radius:99px; font-size:11px; font-weight:800; }
+.tg-s { background:rgba(56,189,248,.1); border:1px solid rgba(56,189,248,.3); color:#38bdf8; }
+.tg-p { background:rgba(251,191,36,.1); border:1px solid rgba(251,191,36,.3); color:#fbbf24; }
+
+.ci-list { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+.ci { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:14px; }
+.ci.is-s { background:rgba(56,189,248,.07); border:1px solid rgba(56,189,248,.15); }
+.ci.is-p { background:rgba(251,191,36,.07); border:1px solid rgba(251,191,36,.15); }
+.ci-ico { font-size:18px; flex-shrink:0; }
+.ci-info { flex:1; }
+.ci-nm { font-size:13px; font-weight:700; color:rgba(255,255,255,.9); }
+.ci-pr { font-size:10px; color:rgba(255,255,255,.3); margin-top:2px; }
+.ci-ng { font-size:10px; color:#34d399; }
+.ci-q { font-size:16px; font-weight:900; color:rgba(255,255,255,.5); min-width:24px; text-align:center; }
+.ci-del { background:none; border:none; color:rgba(255,255,255,.15); cursor:pointer; font-size:14px; padding:2px 4px; }
+
+/* 결제 카드 */
+.pay-glass { border-radius:22px; padding:18px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); backdrop-filter:blur(20px); }
+.pay-row { display:flex; justify-content:space-between; font-size:12px; padding:3px 0; }
+.pay-row .l { color:rgba(255,255,255,.4); }
+.pay-row .r { color:rgba(255,255,255,.7); font-weight:600; }
+.pay-row .r.cross { text-decoration:line-through; color:rgba(255,255,255,.2); }
+.pay-sep { height:1px; background:rgba(255,255,255,.06); margin:10px 0; }
+.pay-total-row { display:flex; align-items:center; justify-content:space-between; }
+.ptl { font-size:14px; font-weight:800; color:rgba(255,255,255,.8); }
+.ptr { text-align:right; }
+.pt-amt { font-size:26px; font-weight:900; color:#fff; text-shadow:0 0 20px rgba(255,255,255,.3); }
+.pt-save { font-size:11px; color:#34d399; font-weight:700; margin-top:2px; }
+
+.pm-row { display:flex; gap:8px; margin-top:14px; }
+.pm { flex:1; padding:10px 8px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); text-align:center; cursor:pointer; transition:.2s; }
+.pm.sel { background:rgba(99,102,241,.15); border-color:rgba(99,102,241,.4); }
+.pm-ico { font-size:18px; }
+.pm-lbl { font-size:10px; font-weight:700; color:rgba(255,255,255,.4); margin-top:2px; }
+.pm.sel .pm-lbl { color:#818cf8; }
+
+.pay-btn-glow { width:100%; padding:18px; border:none; border-radius:18px; font-size:16px; font-weight:900; cursor:pointer; margin-top:12px; transition:.2s; background:linear-gradient(135deg,#4f46e5,#7c3aed,#9333ea); color:#fff; box-shadow:0 12px 40px rgba(99,102,241,.5); }
+.pay-btn-glow:active { transform:scale(.98); }
+</style>
+</head>
+<body>
+<div class="w">
+
+  <!-- 헤더 -->
+  <div class="hdr">
+    <div class="hdr-pill">💳 크레딧 구매</div>
+    <div class="hdr-title">충전하기</div>
+    <div class="hdr-sub">크레딧을 구매하고 이용권을 바로 발급하세요</div>
+  </div>
+
+  <!-- 크레딧 잔량 -->
+  <div class="credit-section">
+    <div class="section-label">🔷 스탠다드 잔량</div>
+    <div class="bal-grid">
+      <div class="bc-std-has">
+        <div class="bal-num">10</div>
+        <div class="bal-period">1개월</div>
+        <div class="bal-type">STD</div>
+      </div>
+      <div class="bc-std">
+        <div class="bal-num bal-zero">0</div>
+        <div class="bal-period">6개월</div>
+        <div class="bal-type">STD</div>
+      </div>
+      <div class="bc-std">
+        <div class="bal-num bal-zero">0</div>
+        <div class="bal-period">1년</div>
+        <div class="bal-type">STD</div>
+      </div>
+    </div>
+    <div class="section-label s-prem">⭐ 프리미엄 잔량</div>
+    <div class="bal-grid">
+      <div class="bc-prem-has">
+        <div class="bal-num">10</div>
+        <div class="bal-period">1개월</div>
+        <div class="bal-type">PREM</div>
+      </div>
+      <div class="bc-prem">
+        <div class="bal-num bal-zero">0</div>
+        <div class="bal-period">6개월</div>
+        <div class="bal-type">PREM</div>
+      </div>
+      <div class="bc-prem">
+        <div class="bal-num bal-zero">0</div>
+        <div class="bal-period">1년</div>
+        <div class="bal-type">PREM</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 구매 섹션 -->
+  <div class="buy-section">
+    <div class="section-label" style="margin-bottom:12px">크레딧 선택</div>
+
+    <div class="glass-card" style="border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04)">
+      <!-- 티어 스위치 -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">이용권 종류</div>
+        <div class="tier-switch">
+          <button class="ts-btn ts-std" id="tsb-s" onclick="stTier('s')">🔷 스탠다드</button>
+          <button class="ts-btn" id="tsb-p" onclick="stTier('p')">⭐ 프리미엄</button>
+        </div>
+      </div>
+
+      <!-- 기간 -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">기간</div>
+        <div class="plan-cards">
+          <div class="pc pc-sel-s" id="pc-m" onclick="stPlan('m')">
+            <div class="pc-period">1개월</div>
+            <div class="pc-days">30일</div>
+            <div class="pc-price" id="pcpr-m">₩7,000</div>
+            <div class="pc-disc">-22%</div>
+          </div>
+          <div class="pc" id="pc-6" onclick="stPlan('6')">
+            <div class="pc-period">6개월</div>
+            <div class="pc-days">180일</div>
+            <div class="pc-price" id="pcpr-6">₩40,000</div>
+            <div class="pc-disc">-27%</div>
+          </div>
+          <div class="pc" id="pc-y" onclick="stPlan('y')">
+            <div class="pc-period">1년</div>
+            <div class="pc-days">365일</div>
+            <div class="pc-price" id="pcpr-y">₩70,000</div>
+            <div class="pc-disc">-29%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 수량 -->
+      <div class="qty-glass" style="margin-bottom:14px">
+        <div class="qty-lbl">
+          <div>수량</div>
+          <div class="qty-sub" id="qty-sub-c">1장 × ₩7,000 = ₩7,000</div>
+        </div>
+        <div class="qty-ctrl">
+          <button class="qb" onclick="adjQ(-1)">−</button>
+          <div class="qnum" id="qn-c">1</div>
+          <button class="qb" onclick="adjQ(1)">+</button>
+        </div>
+      </div>
+
+      <button class="add-glow ag-std" id="ag-btn" onclick="alert('담겼습니다!')">
+        🛒 장바구니 담기
+      </button>
+    </div>
+  </div>
+
+  <!-- 장바구니 -->
+  <div class="cart-section">
+    <div class="section-label" style="margin-bottom:12px">장바구니</div>
+    <div class="cart-hdr">
+      <div class="cart-ttl">담긴 상품 <span class="cnt">6</span></div>
+      <button class="clr">전체 비우기</button>
+    </div>
+    <div class="tag-row">
+      <span class="tg tg-s">🔷 스탠다드 3장</span>
+      <span class="tg tg-p">⭐ 프리미엄 3장</span>
+    </div>
+    <div class="ci-list">
+      <div class="ci is-s"><div class="ci-ico">🔷</div><div class="ci-info"><div class="ci-nm">1개월 스탠다드</div><div class="ci-pr">공급가 ₩7,000 · 소비자가 ₩9,900</div><div class="ci-ng">차익 +₩2,900</div></div><div class="ci-q">×1</div><button class="ci-del">✕</button></div>
+      <div class="ci is-s"><div class="ci-ico">🔷</div><div class="ci-info"><div class="ci-nm">6개월 스탠다드</div><div class="ci-pr">공급가 ₩40,000 · 소비자가 ₩55,000</div><div class="ci-ng">차익 +₩15,000</div></div><div class="ci-q">×1</div><button class="ci-del">✕</button></div>
+      <div class="ci is-s"><div class="ci-ico">🔷</div><div class="ci-info"><div class="ci-nm">1년 스탠다드</div><div class="ci-pr">공급가 ₩70,000 · 소비자가 ₩99,000</div><div class="ci-ng">차익 +₩29,000</div></div><div class="ci-q">×1</div><button class="ci-del">✕</button></div>
+      <div class="ci is-p"><div class="ci-ico">⭐</div><div class="ci-info"><div class="ci-nm">6개월 프리미엄</div><div class="ci-pr">공급가 ₩50,000 · 소비자가 ₩69,000</div><div class="ci-ng">차익 +₩19,000</div></div><div class="ci-q">×1</div><button class="ci-del">✕</button></div>
+      <div class="ci is-p"><div class="ci-ico">⭐</div><div class="ci-info"><div class="ci-nm">1년 프리미엄</div><div class="ci-pr">공급가 ₩100,000 · 소비자가 ₩129,000</div><div class="ci-ng">차익 +₩29,000</div></div><div class="ci-q">×1</div><button class="ci-del">✕</button></div>
+      <div class="ci is-p"><div class="ci-ico">⭐</div><div class="ci-info"><div class="ci-nm">1개월 프리미엄</div><div class="ci-pr">공급가 ₩10,000 · 소비자가 ₩12,900</div><div class="ci-ng">차익 +₩2,900</div></div><div class="ci-q">×1</div><button class="ci-del">✕</button></div>
+    </div>
+    <div class="pay-glass">
+      <div class="pay-row"><span class="l">소비자가 합계</span><span class="r cross">₩374,800</span></div>
+      <div class="pay-row"><span class="l">내 구매가</span><span class="r">₩277,000</span></div>
+      <div class="pay-sep"></div>
+      <div class="pay-total-row">
+        <div class="ptl">결제금액</div>
+        <div class="ptr">
+          <div class="pt-amt">₩277,000</div>
+          <div class="pt-save">🎉 ₩97,800 절약 (26%)</div>
+        </div>
+      </div>
+      <div class="pm-row">
+        <div class="pm sel"><div class="pm-ico">🏦</div><div class="pm-lbl">실시간계좌</div></div>
+        <div class="pm"><div class="pm-ico">💳</div><div class="pm-lbl">카드결제</div></div>
+      </div>
+      <button class="pay-btn-glow">✨ ₩277,000 결제하기</button>
+    </div>
+  </div>
+
+</div>
+<script>
+let ct='s', cp='m', cq=1;
+const pr={s:{m:7000,'6':40000,y:70000},p:{m:10000,'6':50000,y:100000}};
+function stTier(t){
+  ct=t;
+  document.getElementById('tsb-s').className='ts-btn'+(t==='s'?' ts-std':'');
+  document.getElementById('tsb-p').className='ts-btn'+(t==='p'?' ts-prem':'');
+  const p=pr[t];
+  document.getElementById('pcpr-m').textContent='₩'+p.m.toLocaleString();
+  document.getElementById('pcpr-6').textContent='₩'+p['6'].toLocaleString();
+  document.getElementById('pcpr-y').textContent='₩'+p.y.toLocaleString();
+  document.getElementById('ag-btn').className='add-glow '+(t==='s'?'ag-std':'ag-prem');
+  updPlan(); updSub();
+}
+function stPlan(p){
+  cp=p;
+  ['m','6','y'].forEach(k=>{
+    document.getElementById('pc-'+k).className='pc'+(k===p?(ct==='s'?' pc-sel-s':' pc-sel-p'):'');
+  });
+  updSub();
+}
+function adjQ(d){cq=Math.max(1,Math.min(50,cq+d));document.getElementById('qn-c').textContent=cq;updSub();}
+function updPlan(){['m','6','y'].forEach(k=>{document.getElementById('pc-'+k).className='pc'+(k===cp?(ct==='s'?' pc-sel-s':' pc-sel-p'):'');});}
+function updSub(){const u=pr[ct][cp];document.getElementById('qty-sub-c').textContent=`${cq}장 × ₩${u.toLocaleString()} = ₩${(u*cq).toLocaleString()}`;}
+</script>
+</body>
+</html>

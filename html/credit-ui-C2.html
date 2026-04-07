@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C안 개선 — 글래스모피즘 v2</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  background: #060810;
+  background-image:
+    radial-gradient(ellipse 55% 45% at 15% 15%, rgba(16,185,129,.28) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 70%, rgba(168,85,247,.22) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 35% at 50% 45%, rgba(251,191,36,.10) 0%, transparent 55%);
+  min-height:100vh;
+  font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;
+  display:flex; justify-content:center;
+}
+.w { width:430px; max-width:100%; min-height:100vh; padding-bottom:80px; }
+
+/* ──────────────────────────────
+   헤더
+────────────────────────────── */
+.hdr { padding:32px 20px 18px; }
+.hdr-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:10px; font-weight:700; color:rgba(255,255,255,.45);
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+  border-radius:99px; padding:4px 12px; margin-bottom:10px;
+  text-transform:uppercase; letter-spacing:.12em;
+}
+.hdr-title {
+  font-size:28px; font-weight:900; color:#fff;
+  text-shadow:0 0 40px rgba(16,185,129,.55);
+  letter-spacing:-.5px;
+}
+.hdr-sub { font-size:12px; color:rgba(255,255,255,.35); margin-top:5px; }
+
+/* ──────────────────────────────
+   보유량 배너
+────────────────────────────── */
+.hold-banner {
+  margin:0 16px 20px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.09);
+  backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
+  border-radius:20px; padding:16px 20px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.hold-left { display:flex; flex-direction:column; gap:4px; }
+.hold-label { font-size:10px; font-weight:700; color:rgba(255,255,255,.35); letter-spacing:.1em; text-transform:uppercase; }
+.hold-row { display:flex; align-items:baseline; gap:8px; }
+.hold-num { font-size:32px; font-weight:900; color:#fff; line-height:1; }
+.hold-unit { font-size:14px; font-weight:700; color:rgba(255,255,255,.5); }
+.hold-right { display:flex; gap:8px; }
+.hold-chip { display:flex; flex-direction:column; align-items:center; padding:8px 12px; border-radius:14px; gap:3px; }
+.hold-chip-s { background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.3); }
+.hold-chip-p { background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.3); }
+.hc-num { font-size:20px; font-weight:900; line-height:1; }
+.hold-chip-s .hc-num { color:#34d399; }
+.hold-chip-p .hc-num { color:#fbbf24; }
+.hc-lbl { font-size:9px; font-weight:700; }
+.hold-chip-s .hc-lbl { color:rgba(52,211,153,.65); }
+.hold-chip-p .hc-lbl { color:rgba(251,191,36,.65); }
+
+/* ──────────────────────────────
+   섹션 라벨
+────────────────────────────── */
+.sec-lbl {
+  font-size:10px; font-weight:800; color:rgba(255,255,255,.28);
+  letter-spacing:.13em; text-transform:uppercase;
+  padding:0 4px; margin-bottom:10px;
+  display:flex; align-items:center; gap:8px;
+}
+.sec-lbl::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.06); }
+.sec-lbl.slm { margin-top:14px; }
+
+/* ──────────────────────────────
+   잔량 그리드
+────────────────────────────── */
+.credit-section { padding:0 16px 6px; }
+.bal-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.bal-card { border-radius:18px; padding:14px 10px; text-align:center; position:relative; overflow:hidden; transition:.2s; }
+
+/* 스탠다드 — 초록 계열 */
+.bc-std     { background:rgba(16,185,129,.05); border:1px solid rgba(16,185,129,.18); }
+.bc-std-has { background:rgba(16,185,129,.14); border:1px solid rgba(16,185,129,.5); box-shadow:0 0 24px rgba(16,185,129,.18); }
+.bc-std     .bal-num, .bc-std-has .bal-num { color:#34d399; }
+.bc-std     .bal-type, .bc-std-has .bal-type { color:rgba(52,211,153,.6); }
+
+/* 프리미엄 — 금색 */
+.bc-prem     { background:rgba(251,191,36,.05); border:1px solid rgba(251,191,36,.15); }
+.bc-prem-has { background:rgba(251,191,36,.14); border:1px solid rgba(251,191,36,.55); box-shadow:0 0 24px rgba(251,191,36,.22); }
+.bc-prem     .bal-num, .bc-prem-has .bal-num { color:#fbbf24; }
+.bc-prem     .bal-type, .bc-prem-has .bal-type { color:rgba(251,191,36,.6); }
+
+.bal-num  { font-size:30px; font-weight:900; line-height:1; }
+.bal-zero { color:rgba(255,255,255,.18) !important; font-size:22px !important; }
+.bal-period { font-size:11px; color:rgba(255,255,255,.38); margin-top:5px; font-weight:600; }
+.bal-type   { font-size:9px; font-weight:800; margin-top:3px; }
+
+/* ──────────────────────────────
+   구매 섹션
+────────────────────────────── */
+.buy-section { padding:20px 16px 0; }
+.glass-card {
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  border-radius:24px; padding:18px; margin-bottom:14px;
+}
+.sub-label {
+  font-size:10px; font-weight:700; color:rgba(255,255,255,.3);
+  letter-spacing:.1em; text-transform:uppercase; margin-bottom:10px;
+}
+
+/* 티어 스위치 */
+.tier-switch {
+  display:flex; gap:5px;
+  background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.07);
+  border-radius:18px; padding:4px;
+}
+.ts-btn {
+  flex:1; padding:12px; border-radius:14px; border:none; cursor:pointer;
+  font-size:13px; font-weight:800; transition:.25s;
+  background:transparent; color:rgba(255,255,255,.35);
+}
+/* 스탠다드 선택 — 초록 */
+.ts-btn.ts-std {
+  background:linear-gradient(135deg,rgba(16,185,129,.35),rgba(5,150,105,.35));
+  color:#34d399; border:1px solid rgba(16,185,129,.35);
+  text-shadow:0 0 12px rgba(52,211,153,.5);
+}
+/* 프리미엄 선택 — 금색 */
+.ts-btn.ts-prem {
+  background:linear-gradient(135deg,rgba(251,191,36,.35),rgba(245,158,11,.35));
+  color:#fbbf24; border:1px solid rgba(251,191,36,.35);
+  text-shadow:0 0 12px rgba(251,191,36,.5);
+}
+
+/* 기간 카드 */
+.plan-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.pc {
+  border-radius:16px; padding:14px 8px; cursor:pointer; text-align:center;
+  transition:.25s; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07);
+}
+/* 스탠다드 선택 기간 — 초록 */
+.pc.pc-sel-s {
+  background:rgba(16,185,129,.15); border:1px solid rgba(16,185,129,.5);
+  box-shadow:0 0 18px rgba(16,185,129,.15);
+}
+/* 프리미엄 선택 기간 — 금색 */
+.pc.pc-sel-p {
+  background:rgba(251,191,36,.15); border:1px solid rgba(251,191,36,.5);
+  box-shadow:0 0 18px rgba(251,191,36,.15);
+}
+.pc-period { font-size:12px; font-weight:800; color:rgba(255,255,255,.8); }
+.pc-days   { font-size:10px; color:rgba(255,255,255,.28); margin-top:2px; }
+.pc-price  { font-size:12px; font-weight:700; color:#34d399; margin-top:5px; }
+.pc-disc   {
+  font-size:9px; font-weight:800;
+  background:rgba(239,68,68,.18); color:#f87171;
+  border:1px solid rgba(239,68,68,.25); border-radius:4px;
+  padding:1px 5px; margin-top:3px; display:inline-block;
+}
+
+/* 수량 */
+.qty-glass {
+  display:flex; align-items:center; padding:14px 16px;
+  border-radius:16px; background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+}
+.qty-lbl  { flex:1; font-size:13px; color:rgba(255,255,255,.45); font-weight:700; }
+.qty-sub  { font-size:11px; color:rgba(255,255,255,.28); margin-top:3px; }
+.qty-ctrl { display:flex; align-items:center; gap:12px; }
+.qb {
+  width:36px; height:36px; border-radius:11px;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.8); font-size:18px; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.qb:active { background:rgba(255,255,255,.16); }
+.qnum { font-size:22px; font-weight:900; color:#fff; min-width:32px; text-align:center; }
+
+/* 담기 버튼 — 스탠다드(초록) / 프리미엄(금색) */
+.add-glow {
+  width:100%; padding:17px; border:none; border-radius:18px;
+  font-size:15px; font-weight:900; cursor:pointer; transition:.2s;
+  position:relative; overflow:hidden;
+}
+.ag-std  { background:linear-gradient(135deg,#065f46,#059669,#34d399); color:#fff; box-shadow:0 8px 32px rgba(16,185,129,.4); }
+.ag-prem { background:linear-gradient(135deg,#92400e,#d97706,#fbbf24); color:#000; box-shadow:0 8px 32px rgba(251,191,36,.35); }
+.add-glow:active { transform:scale(.97); }
+.add-glow::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);
+  transform:translateX(-100%); transition:.5s;
+}
+.add-glow:hover::before { transform:translateX(100%); }
+
+/* ──────────────────────────────
+   장바구니
+────────────────────────────── */
+.cart-section { padding:0 16px; }
+.cart-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.cart-ttl {
+  font-size:16px; font-weight:900; color:#fff;
+  display:flex; align-items:center; gap:8px;
+}
+.cnt {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff; font-size:11px; font-weight:900; border-radius:50%;
+}
+.clr { background:none; border:none; font-size:11px; color:rgba(239,68,68,.6); cursor:pointer; font-weight:700; }
+
+.tag-row { display:flex; gap:6px; margin-bottom:12px; }
+/* 스탠다드 태그 — 초록 */
+.tg-s { padding:5px 10px; border-radius:99px; font-size:11px; font-weight:800; background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.3); color:#34d399; }
+.tg-p { padding:5px 10px; border-radius:99px; font-size:11px; font-weight:800; background:rgba(251,191,36,.1); border:1px solid rgba(251,191,36,.3); color:#fbbf24; }
+
+.ci-list { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+.ci { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:16px; }
+/* 스탠다드 아이템 — 초록 */
+.ci.is-s { background:rgba(16,185,129,.07); border:1px solid rgba(16,185,129,.18); }
+.ci.is-p { background:rgba(251,191,36,.07); border:1px solid rgba(251,191,36,.18); }
+.ci-ico  { font-size:18px; flex-shrink:0; }
+.ci-info { flex:1; }
+.ci-nm   { font-size:13px; font-weight:700; color:rgba(255,255,255,.9); }
+.ci-pr   { font-size:10px; color:rgba(255,255,255,.28); margin-top:2px; }
+.ci-ng   { font-size:10px; font-weight:700; margin-top:1px; }
+/* 차익 색상도 초록 */
+.ci.is-s .ci-ng { color:#34d399; }
+.ci.is-p .ci-ng { color:#fbbf24; }
+.ci-q    { font-size:16px; font-weight:900; color:rgba(255,255,255,.45); min-width:24px; text-align:center; }
+.ci-del  { background:none; border:none; color:rgba(255,255,255,.15); cursor:pointer; font-size:14px; padding:2px 4px; }
+.ci-del:hover { color:rgba(239,68,68,.7); }
+
+/* 결제 카드 */
+.pay-glass {
+  border-radius:24px; padding:18px;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+}
+.pay-row { display:flex; justify-content:space-between; font-size:12px; padding:4px 0; }
+.pay-row .l { color:rgba(255,255,255,.38); }
+.pay-row .r { color:rgba(255,255,255,.7); font-weight:600; }
+.pay-row .r.cross { text-decoration:line-through; color:rgba(255,255,255,.2); }
+.pay-sep { height:1px; background:rgba(255,255,255,.07); margin:10px 0; }
+.pay-total-row { display:flex; align-items:center; justify-content:space-between; }
+.ptl { font-size:14px; font-weight:800; color:rgba(255,255,255,.8); }
+.ptr { text-align:right; }
+.pt-amt  { font-size:28px; font-weight:900; color:#fff; text-shadow:0 0 20px rgba(255,255,255,.3); }
+.pt-save { font-size:11px; color:#34d399; font-weight:700; margin-top:3px; }
+
+.pm-row { display:flex; gap:8px; margin-top:14px; }
+.pm { flex:1; padding:10px 8px; border-radius:14px; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.06); text-align:center; cursor:pointer; transition:.2s; }
+.pm.sel { background:rgba(99,102,241,.15); border-color:rgba(99,102,241,.5); }
+.pm-ico  { font-size:18px; }
+.pm-lbl  { font-size:10px; font-weight:700; color:rgba(255,255,255,.35); margin-top:2px; }
+.pm.sel .pm-lbl { color:#818cf8; }
+.pm:not(.sel) { opacity:.7; }
+.pm:not(.sel):hover { opacity:1; }
+
+/* 결제 버튼 — 보라 그라데이션 */
+.pay-btn-glow {
+  width:100%; padding:18px; border:none; border-radius:18px;
+  font-size:16px; font-weight:900; cursor:pointer; margin-top:12px; transition:.2s;
+  background:linear-gradient(135deg,#4f46e5,#7c3aed,#9333ea);
+  color:#fff; box-shadow:0 12px 40px rgba(99,102,241,.5);
+}
+.pay-btn-glow:active { transform:scale(.98); }
+
+/* 안내문 */
+.info-txt { font-size:11px; color:rgba(255,255,255,.25); line-height:1.7; padding:14px 2px 0; }
+.info-txt li { list-style:none; padding-left:10px; position:relative; }
+.info-txt li::before { content:'·'; position:absolute; left:0; }
+</style>
+</head>
+<body>
+<div class="w">
+
+  <!-- ── 헤더 ── -->
+  <div class="hdr">
+    <div class="hdr-pill">💳 크레딧 구매</div>
+    <div class="hdr-title">충전하기</div>
+    <div class="hdr-sub">크레딧을 구매하고 이용권을 바로 발급하세요</div>
+  </div>
+
+  <!-- ── 총 보유량 배너 ── -->
+  <div class="hold-banner">
+    <div class="hold-left">
+      <div class="hold-label">크레딧 보유량</div>
+      <div class="hold-row">
+        <div class="hold-num" id="total-hold">20</div>
+        <div class="hold-unit">장</div>
+      </div>
+    </div>
+    <div class="hold-right">
+      <!-- 스탠다드 -->
+      <div class="hold-chip hold-chip-s">
+        <div class="hc-num" id="hold-s-num">10</div>
+        <div class="hc-lbl">🟢 스탠다드</div>
+      </div>
+      <!-- 프리미엄 -->
+      <div class="hold-chip hold-chip-p">
+        <div class="hc-num" id="hold-p-num">10</div>
+        <div class="hc-lbl">⭐ 프리미엄</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 크레딧 잔량 세부 ── -->
+  <div class="credit-section">
+
+    <div class="sec-lbl">🟢 스탠다드 잔량</div>
+    <div class="bal-grid" style="margin-bottom:0">
+      <div class="bc-std-has" style="border-radius:18px; padding:14px 10px; text-align:center; position:relative;">
+        <div class="bal-num">10</div>
+        <div class="bal-period">1개월</div>
+        <div class="bal-type">STD</div>
+      </div>
+      <div class="bc-std" style="border-radius:18px; padding:14px 10px; text-align:center;">
+        <div class="bal-num bal-zero">0</div>
+        <div class="bal-period">6개월</div>
+        <div class="bal-type">STD</div>
+      </div>
+      <div class="bc-std" style="border-radius:18px; padding:14px 10px; text-align:center;">
+        <div class="bal-num bal-zero">0</div>
+        <div class="bal-period">1년</div>
+        <div class="bal-type">STD</div>
+      </div>
+    </div>
+
+    <div class="sec-lbl slm">⭐ 프리미엄 잔량</div>
+    <div class="bal-grid">
+      <div class="bc-prem-has" style="border-radius:18px; padding:14px 10px; text-align:center; position:relative;">
+        <div class="bal-num">10</div>
+        <div class="bal-period">1개월</div>
+        <div class="bal-type">PREM</div>
+      </div>
+      <div class="bc-prem" style="border-radius:18px; padding:14px 10px; text-align:center;">
+        <div class="bal-num bal-zero">0</div>
+        <div class="bal-period">6개월</div>
+        <div class="bal-type">PREM</div>
+      </div>
+      <div class="bc-prem" style="border-radius:18px; padding:14px 10px; text-align:center;">
+        <div class="bal-num bal-zero">0</div>
+        <div class="bal-period">1년</div>
+        <div class="bal-type">PREM</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── 구매 섹션 ── -->
+  <div class="buy-section">
+    <div class="sec-lbl">크레딧 선택</div>
+
+    <div class="glass-card">
+      <!-- 이용권 종류 -->
+      <div style="margin-bottom:16px">
+        <div class="sub-label">이용권 종류</div>
+        <div class="tier-switch">
+          <button class="ts-btn ts-std" id="tsb-s" onclick="stTier('s')">🟢 스탠다드</button>
+          <button class="ts-btn"        id="tsb-p" onclick="stTier('p')">⭐ 프리미엄</button>
+        </div>
+      </div>
+
+      <!-- 기간 -->
+      <div style="margin-bottom:16px">
+        <div class="sub-label">기간</div>
+        <div class="plan-cards">
+          <div class="pc pc-sel-s" id="pc-m" onclick="stPlan('m')">
+            <div class="pc-period">1개월</div>
+            <div class="pc-days">30일</div>
+            <div class="pc-price" id="pcpr-m">₩7,000</div>
+            <div class="pc-disc">-22%</div>
+          </div>
+          <div class="pc" id="pc-6" onclick="stPlan('6')">
+            <div class="pc-period">6개월</div>
+            <div class="pc-days">180일</div>
+            <div class="pc-price" id="pcpr-6">₩40,000</div>
+            <div class="pc-disc">-27%</div>
+          </div>
+          <div class="pc" id="pc-y" onclick="stPlan('y')">
+            <div class="pc-period">1년</div>
+            <div class="pc-days">365일</div>
+            <div class="pc-price" id="pcpr-y">₩70,000</div>
+            <div class="pc-disc">-29%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 수량 -->
+      <div class="qty-glass" style="margin-bottom:16px">
+        <div class="qty-lbl">
+          <div>수량</div>
+          <div class="qty-sub" id="qty-sub-c">1장 × ₩7,000 = ₩7,000</div>
+        </div>
+        <div class="qty-ctrl">
+          <button class="qb" onclick="adjQ(-1)">−</button>
+          <div class="qnum" id="qn-c">1</div>
+          <button class="qb" onclick="adjQ(1)">+</button>
+        </div>
+      </div>
+
+      <button class="add-glow ag-std" id="ag-btn" onclick="alert('장바구니에 담겼습니다!')">
+        🛒 장바구니 담기
+      </button>
+    </div>
+  </div>
+
+  <!-- ── 장바구니 ── -->
+  <div class="cart-section">
+    <div class="sec-lbl" style="margin-bottom:12px">장바구니</div>
+    <div class="cart-hdr">
+      <div class="cart-ttl">담긴 상품 <span class="cnt">6</span></div>
+      <button class="clr">전체 비우기</button>
+    </div>
+    <div class="tag-row">
+      <span class="tg-s">🟢 스탠다드 3장</span>
+      <span class="tg-p">⭐ 프리미엄 3장</span>
+    </div>
+
+    <div class="ci-list">
+      <div class="ci is-s">
+        <div class="ci-ico">🟢</div>
+        <div class="ci-info">
+          <div class="ci-nm">1개월 스탠다드</div>
+          <div class="ci-pr">공급가 ₩7,000 / 소비자가 ₩9,900</div>
+          <div class="ci-ng">차익 +₩2,900</div>
+        </div>
+        <div class="ci-q">×1</div>
+        <button class="ci-del">✕</button>
+      </div>
+      <div class="ci is-s">
+        <div class="ci-ico">🟢</div>
+        <div class="ci-info">
+          <div class="ci-nm">6개월 스탠다드</div>
+          <div class="ci-pr">공급가 ₩40,000 / 소비자가 ₩55,000</div>
+          <div class="ci-ng">차익 +₩15,000</div>
+        </div>
+        <div class="ci-q">×1</div>
+        <button class="ci-del">✕</button>
+      </div>
+      <div class="ci is-s">
+        <div class="ci-ico">🟢</div>
+        <div class="ci-info">
+          <div class="ci-nm">1년 스탠다드</div>
+          <div class="ci-pr">공급가 ₩70,000 / 소비자가 ₩99,000</div>
+          <div class="ci-ng">차익 +₩29,000</div>
+        </div>
+        <div class="ci-q">×1</div>
+        <button class="ci-del">✕</button>
+      </div>
+      <div class="ci is-p">
+        <div class="ci-ico">⭐</div>
+        <div class="ci-info">
+          <div class="ci-nm">6개월 프리미엄</div>
+          <div class="ci-pr">공급가 ₩50,000 / 소비자가 ₩69,000</div>
+          <div class="ci-ng">차익 +₩19,000</div>
+        </div>
+        <div class="ci-q">×1</div>
+        <button class="ci-del">✕</button>
+      </div>
+      <div class="ci is-p">
+        <div class="ci-ico">⭐</div>
+        <div class="ci-info">
+          <div class="ci-nm">1년 프리미엄</div>
+          <div class="ci-pr">공급가 ₩100,000 / 소비자가 ₩129,000</div>
+          <div class="ci-ng">차익 +₩29,000</div>
+        </div>
+        <div class="ci-q">×1</div>
+        <button class="ci-del">✕</button>
+      </div>
+      <div class="ci is-p">
+        <div class="ci-ico">⭐</div>
+        <div class="ci-info">
+          <div class="ci-nm">1개월 프리미엄</div>
+          <div class="ci-pr">공급가 ₩10,000 / 소비자가 ₩12,900</div>
+          <div class="ci-ng">차익 +₩2,900</div>
+        </div>
+        <div class="ci-q">×1</div>
+        <button class="ci-del">✕</button>
+      </div>
+    </div>
+
+    <div class="pay-glass">
+      <div class="pay-row"><span class="l">소비자가 합계</span><span class="r cross">₩374,800</span></div>
+      <div class="pay-row"><span class="l">내 구매가</span><span class="r">₩277,000</span></div>
+      <div class="pay-sep"></div>
+      <div class="pay-total-row">
+        <div class="ptl">결제금액</div>
+        <div class="ptr">
+          <div class="pt-amt">₩277,000</div>
+          <div class="pt-save">🎉 ₩97,800 절약 (26%)</div>
+        </div>
+      </div>
+      <div class="pm-row">
+        <div class="pm sel" id="pm-bank" onclick="selPM('bank')">
+          <div class="pm-ico">🏦</div>
+          <div class="pm-lbl">실시간계좌</div>
+        </div>
+        <div class="pm" id="pm-card" onclick="selPM('card')">
+          <div class="pm-ico">💳</div>
+          <div class="pm-lbl">카드결제</div>
+        </div>
+      </div>
+      <button class="pay-btn-glow">✨ ₩277,000 결제하기</button>
+    </div>
+
+    <ul class="info-txt">
+      <li>여러 종류 담기 → 한 번에 결제</li>
+      <li>크레딧 구매 후 고객에게 즉시 발급 가능</li>
+      <li>실시간 계좌이체 : 수수료 없음 · 즉시 충전</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+let ct = 's', cp = 'm', cq = 1;
+const pr = {
+  s: { m:7000, '6':40000, y:70000 },
+  p: { m:10000, '6':50000, y:100000 }
+};
+
+function stTier(t) {
+  ct = t;
+  document.getElementById('tsb-s').className = 'ts-btn' + (t==='s' ? ' ts-std' : '');
+  document.getElementById('tsb-p').className = 'ts-btn' + (t==='p' ? ' ts-prem' : '');
+  // 가격 업데이트
+  const p = pr[t];
+  document.getElementById('pcpr-m').textContent = '₩' + p.m.toLocaleString();
+  document.getElementById('pcpr-6').textContent = '₩' + p['6'].toLocaleString();
+  document.getElementById('pcpr-y').textContent = '₩' + p.y.toLocaleString();
+  // 버튼 색상
+  document.getElementById('ag-btn').className = 'add-glow ' + (t==='s' ? 'ag-std' : 'ag-prem');
+  updPlanUI(); updSub();
+}
+
+function stPlan(p) {
+  cp = p;
+  updPlanUI(); updSub();
+}
+
+function adjQ(d) {
+  cq = Math.max(1, Math.min(50, cq + d));
+  document.getElementById('qn-c').textContent = cq;
+  updSub();
+}
+
+function updPlanUI() {
+  ['m','6','y'].forEach(k => {
+    const id = 'pc-' + k;
+    const sel = k === cp ? (ct === 's' ? ' pc-sel-s' : ' pc-sel-p') : '';
+    document.getElementById(id).className = 'pc' + sel;
+  });
+}
+
+function updSub() {
+  const u = pr[ct][cp];
+  const tot = u * cq;
+  document.getElementById('qty-sub-c').textContent =
+    `${cq}장 × ₩${u.toLocaleString()} = ₩${tot.toLocaleString()}`;
+}
+
+function selPM(m) {
+  document.getElementById('pm-bank').className = 'pm' + (m==='bank' ? ' sel' : '');
+  document.getElementById('pm-card').className = 'pm' + (m==='card' ? ' sel' : '');
+}
+</script>
+</body>
+</html>

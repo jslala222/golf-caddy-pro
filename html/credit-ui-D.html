@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D안 — 대시보드 스타일</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { background:#101014; font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif; min-height:100vh; display:flex; justify-content:center; }
+.w { width:430px; max-width:100%; min-height:100vh; padding-bottom:60px; }
+
+/* ── 상단 배너 ── */
+.banner { background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#1e1b4b 100%); padding:24px 20px 20px; border-bottom:2px solid #4338ca; }
+.banner-row { display:flex; align-items:center; justify-content:space-between; }
+.banner-left h2 { font-size:20px; font-weight:900; color:#fff; }
+.banner-left p { font-size:11px; color:#a5b4fc; margin-top:3px; }
+.total-badge { background:rgba(99,102,241,.3); border:1px solid #4338ca; border-radius:14px; padding:10px 14px; text-align:center; }
+.tb-num { font-size:24px; font-weight:900; color:#818cf8; }
+.tb-lbl { font-size:10px; color:#6366f1; font-weight:700; }
+
+/* ── 잔량 보드 ── */
+.board { padding:16px; }
+.board-card { background:#16161e; border:1px solid #1e1e2e; border-radius:20px; overflow:hidden; margin-bottom:12px; }
+.board-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px 10px; border-bottom:1px solid #1e1e2e; }
+.bh-title { font-size:12px; font-weight:800; display:flex; align-items:center; gap:6px; }
+.bh-title.std { color:#38bdf8; }
+.bh-title.prem { color:#fbbf24; }
+.bh-total { font-size:11px; font-weight:700; }
+.bh-total.std { color:#38bdf8; }
+.bh-total.prem { color:#fbbf24; }
+.board-rows { display:grid; grid-template-columns:1fr 1fr 1fr; }
+.br-cell { padding:14px 12px; text-align:center; border-right:1px solid #1e1e2e; }
+.br-cell:last-child { border-right:none; }
+.br-num { font-size:26px; font-weight:900; line-height:1; }
+.br-num.std-n { color:#38bdf8; }
+.br-num.prem-n { color:#fbbf24; }
+.br-num.nul { color:#2d2d3a; font-size:20px; }
+.br-period { font-size:11px; color:#4b5563; margin-top:4px; font-weight:600; }
+.br-bar { height:3px; background:#1e1e2e; border-radius:2px; margin-top:6px; overflow:hidden; }
+.br-bar-fill { height:100%; border-radius:2px; }
+.br-bar-fill.sf { background:#38bdf8; }
+.br-bar-fill.pf { background:#fbbf24; }
+
+/* ── 구매 섹션 ── */
+.buy { padding:0 16px 16px; }
+.panel { background:#16161e; border:1px solid #1e1e2e; border-radius:20px; padding:16px; margin-bottom:12px; }
+.panel-title { font-size:10px; font-weight:800; color:#4b5563; letter-spacing:.12em; text-transform:uppercase; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+.panel-title::after { content:''; flex:1; height:1px; background:#1e1e2e; }
+
+/* 티어 */
+.tier-row { display:flex; gap:8px; }
+.tier-opt { flex:1; padding:14px 10px; border-radius:14px; border:1.5px solid #1e1e2e; background:#0d0d14; cursor:pointer; display:flex; align-items:center; gap:10px; transition:.2s; }
+.tier-opt.t-sel-s { border-color:#38bdf8; background:rgba(56,189,248,.06); }
+.tier-opt.t-sel-p { border-color:#fbbf24; background:rgba(251,191,36,.06); }
+.tier-ico { font-size:20px; flex-shrink:0; }
+.tier-txt .tn { font-size:13px; font-weight:800; color:#e2e8f0; }
+.tier-txt .td { font-size:10px; color:#4b5563; margin-top:2px; }
+.tier-radio { width:18px; height:18px; border-radius:50%; border:2px solid #2d2d3a; margin-left:auto; flex-shrink:0; }
+.t-sel-s .tier-radio { background:#38bdf8; border-color:#38bdf8; box-shadow:0 0 8px rgba(56,189,248,.5); }
+.t-sel-p .tier-radio { background:#fbbf24; border-color:#fbbf24; box-shadow:0 0 8px rgba(251,191,36,.5); }
+
+/* 기간 */
+.plan-row { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.plan-opt { padding:12px 6px; border-radius:14px; border:1.5px solid #1e1e2e; background:#0d0d14; cursor:pointer; text-align:center; transition:.2s; }
+.plan-opt.ps { border-color:#38bdf8; background:rgba(56,189,248,.07); }
+.plan-opt.pp { border-color:#fbbf24; background:rgba(251,191,36,.07); }
+.po-name { font-size:12px; font-weight:800; color:#cbd5e1; }
+.po-days { font-size:10px; color:#374151; margin-top:2px; }
+.po-price { font-size:12px; font-weight:700; color:#34d399; margin-top:5px; }
+.po-tag { display:inline-block; font-size:9px; font-weight:800; background:#3f1010; color:#f87171; border-radius:4px; padding:1px 5px; margin-top:3px; }
+
+/* 수량 */
+.qty-panel { display:flex; align-items:center; gap:16px; }
+.qty-info { flex:1; }
+.qi-title { font-size:12px; font-weight:700; color:#94a3b8; }
+.qi-sub { font-size:11px; color:#374151; margin-top:3px; }
+.qty-controls { display:flex; align-items:center; gap:12px; }
+.qc-btn { width:36px; height:36px; border-radius:10px; border:1px solid #2d2d3a; background:#0d0d14; color:#e2e8f0; font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.qc-btn:active { background:#1a1a24; }
+.qc-num { font-size:22px; font-weight:900; color:#fff; min-width:32px; text-align:center; }
+
+/* 버튼 */
+.action-btn { width:100%; padding:16px; border:none; border-radius:16px; font-size:15px; font-weight:900; cursor:pointer; transition:.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+.ab-s { background:linear-gradient(90deg,#1d4ed8,#38bdf8); color:#fff; box-shadow:0 4px 20px rgba(56,189,248,.25); }
+.ab-p { background:linear-gradient(90deg,#92400e,#fbbf24); color:#000; box-shadow:0 4px 20px rgba(251,191,36,.25); }
+.action-btn:active { transform:scale(.98); }
+
+/* ── 장바구니 ── */
+.cart { padding:0 16px; }
+.cart-panel { background:#16161e; border:1px solid #1e1e2e; border-radius:20px; overflow:hidden; }
+
+.cart-top { padding:14px 16px 12px; border-bottom:1px solid #1e1e2e; display:flex; align-items:center; justify-content:space-between; }
+.ct-left { display:flex; align-items:center; gap:8px; }
+.ct-title { font-size:15px; font-weight:900; color:#f8fafc; }
+.ct-badge { background:#4338ca; color:#c7d2fe; font-size:11px; font-weight:800; padding:2px 7px; border-radius:6px; }
+.ct-tags { display:flex; gap:6px; }
+.ct-tag { font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
+.ct-tag-s { background:#0c2d44; color:#38bdf8; }
+.ct-tag-p { background:#2d1a00; color:#fbbf24; }
+.ct-clr { background:none; border:none; font-size:11px; color:#dc2626; cursor:pointer; font-weight:700; }
+
+.ci-row { display:flex; align-items:center; gap:10px; padding:11px 16px; border-bottom:1px solid #0d0d14; }
+.ci-row:last-child { border-bottom:none; }
+.ci-ico { font-size:15px; flex-shrink:0; width:26px; text-align:center; }
+.ci-body { flex:1; }
+.ci-title-r { font-size:13px; font-weight:700; color:#e2e8f0; }
+.ci-detail { font-size:10px; color:#374151; margin-top:2px; display:flex; gap:6px; }
+.ci-detail .profit { color:#10b981; }
+.ci-right { text-align:right; }
+.ci-qty-r { font-size:12px; font-weight:700; color:#6b7280; }
+.ci-price-r { font-size:13px; font-weight:800; color:#94a3b8; }
+.ci-del-r { background:none; border:none; color:#2d2d3a; cursor:pointer; font-size:13px; margin-top:3px; display:block; margin-left:auto; }
+
+.cart-foot { padding:14px 16px; border-top:2px solid #1e1e2e; background:#0d0d14; }
+.cf-rows { margin-bottom:12px; }
+.cf-r { display:flex; justify-content:space-between; font-size:12px; color:#4b5563; padding:3px 0; }
+.cf-r span:last-child { color:#6b7280; font-weight:600; }
+.cf-r.cf-total { padding-top:10px; border-top:1px solid #1e1e2e; margin-top:6px; }
+.cf-r.cf-total span:first-child { font-size:14px; font-weight:800; color:#f8fafc; }
+.cf-r.cf-total span:last-child { font-size:22px; font-weight:900; color:#fff; }
+.cf-save { text-align:right; font-size:11px; color:#10b981; font-weight:700; margin-top:2px; }
+
+.pm-row { display:flex; gap:8px; margin-bottom:10px; }
+.pm-opt { flex:1; padding:10px; border-radius:12px; border:1.5px solid #1e1e2e; background:#0d0d14; cursor:pointer; text-align:center; transition:.2s; }
+.pm-opt.pm-sel { border-color:#4338ca; background:rgba(67,56,202,.1); }
+.pm-ico2 { font-size:18px; }
+.pm-lbl2 { font-size:10px; font-weight:700; color:#4b5563; margin-top:3px; }
+.pm-opt.pm-sel .pm-lbl2 { color:#818cf8; }
+
+.final-btn { width:100%; padding:17px; border:none; border-radius:16px; background:linear-gradient(135deg,#3730a3,#4f46e5,#6366f1); color:#fff; font-size:16px; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 24px rgba(79,70,229,.4); transition:.2s; }
+.final-btn:active { transform:scale(.99); }
+</style>
+</head>
+<body>
+<div class="w">
+
+  <!-- 배너 -->
+  <div class="banner">
+    <div class="banner-row">
+      <div class="banner-left">
+        <h2>크레딧 구매</h2>
+        <p>충전 후 이용권을 즉시 발급하세요</p>
+      </div>
+      <div class="total-badge">
+        <div class="tb-num">20</div>
+        <div class="tb-lbl">총 보유</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 잔량 보드 -->
+  <div class="board">
+    <!-- 스탠다드 -->
+    <div class="board-card">
+      <div class="board-header">
+        <div class="bh-title std">🔷 스탠다드</div>
+        <div class="bh-total std">잔량 10장</div>
+      </div>
+      <div class="board-rows">
+        <div class="br-cell">
+          <div class="br-num std-n">10</div>
+          <div class="br-period">1개월</div>
+          <div class="br-bar"><div class="br-bar-fill sf" style="width:100%"></div></div>
+        </div>
+        <div class="br-cell">
+          <div class="br-num nul">0</div>
+          <div class="br-period">6개월</div>
+          <div class="br-bar"><div class="br-bar-fill sf" style="width:0%"></div></div>
+        </div>
+        <div class="br-cell">
+          <div class="br-num nul">0</div>
+          <div class="br-period">1년</div>
+          <div class="br-bar"><div class="br-bar-fill sf" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+    <!-- 프리미엄 -->
+    <div class="board-card">
+      <div class="board-header">
+        <div class="bh-title prem">⭐ 프리미엄</div>
+        <div class="bh-total prem">잔량 10장</div>
+      </div>
+      <div class="board-rows">
+        <div class="br-cell">
+          <div class="br-num prem-n">10</div>
+          <div class="br-period">1개월</div>
+          <div class="br-bar"><div class="br-bar-fill pf" style="width:100%"></div></div>
+        </div>
+        <div class="br-cell">
+          <div class="br-num nul">0</div>
+          <div class="br-period">6개월</div>
+          <div class="br-bar"><div class="br-bar-fill pf" style="width:0%"></div></div>
+        </div>
+        <div class="br-cell">
+          <div class="br-num nul">0</div>
+          <div class="br-period">1년</div>
+          <div class="br-bar"><div class="br-bar-fill pf" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 구매 -->
+  <div class="buy">
+    <div class="panel">
+      <div class="panel-title">이용권 종류</div>
+      <div class="tier-row">
+        <div class="tier-opt t-sel-s" id="to-s" onclick="dTier('s')">
+          <div class="tier-ico">🔷</div>
+          <div class="tier-txt"><div class="tn">스탠다드</div><div class="td">수동 복구</div></div>
+          <div class="tier-radio"></div>
+        </div>
+        <div class="tier-opt" id="to-p" onclick="dTier('p')">
+          <div class="tier-ico">⭐</div>
+          <div class="tier-txt"><div class="tn">프리미엄</div><div class="td">자동 복구 ✅</div></div>
+          <div class="tier-radio"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">기간 선택</div>
+      <div class="plan-row">
+        <div class="plan-opt ps" id="do-m" onclick="dPlan('m')">
+          <div class="po-name">1개월</div>
+          <div class="po-days">30일</div>
+          <div class="po-price" id="dpr-m">₩7,000</div>
+          <div class="po-tag">-22%</div>
+        </div>
+        <div class="plan-opt" id="do-6" onclick="dPlan('6')">
+          <div class="po-name">6개월</div>
+          <div class="po-days">180일</div>
+          <div class="po-price" id="dpr-6">₩40,000</div>
+          <div class="po-tag">-27%</div>
+        </div>
+        <div class="plan-opt" id="do-y" onclick="dPlan('y')">
+          <div class="po-name">1년</div>
+          <div class="po-days">365일</div>
+          <div class="po-price" id="dpr-y">₩70,000</div>
+          <div class="po-tag">-29%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">수량</div>
+      <div class="qty-panel">
+        <div class="qty-info">
+          <div class="qi-title">수량 조절</div>
+          <div class="qi-sub" id="d-sub">1장 × ₩7,000 = ₩7,000</div>
+        </div>
+        <div class="qty-controls">
+          <button class="qc-btn" onclick="dAdj(-1)">−</button>
+          <div class="qc-num" id="d-qty">1</div>
+          <button class="qc-btn" onclick="dAdj(1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="action-btn ab-s" id="d-ab" onclick="alert('담겼습니다!')">
+      🛒 장바구니 담기 — <span id="d-ap">₩7,000</span>
+    </button>
+  </div>
+
+  <!-- 장바구니 -->
+  <div class="cart" style="padding-top:4px">
+    <div class="cart-panel">
+      <div class="cart-top">
+        <div class="ct-left">
+          <div class="ct-title">🛒 장바구니</div>
+          <div class="ct-badge">6</div>
+          <div class="ct-tags">
+            <span class="ct-tag ct-tag-s">S×3</span>
+            <span class="ct-tag ct-tag-p">P×3</span>
+          </div>
+        </div>
+        <button class="ct-clr">비우기</button>
+      </div>
+
+      <div class="ci-row">
+        <div class="ci-ico">🔷</div>
+        <div class="ci-body"><div class="ci-title-r">1개월 스탠다드</div><div class="ci-detail"><span>₩7,000</span><span class="profit">+₩2,900</span></div></div>
+        <div class="ci-right"><div class="ci-qty-r">×1</div><div class="ci-price-r">₩7,000</div><button class="ci-del-r">✕</button></div>
+      </div>
+      <div class="ci-row">
+        <div class="ci-ico">🔷</div>
+        <div class="ci-body"><div class="ci-title-r">6개월 스탠다드</div><div class="ci-detail"><span>₩40,000</span><span class="profit">+₩15,000</span></div></div>
+        <div class="ci-right"><div class="ci-qty-r">×1</div><div class="ci-price-r">₩40,000</div><button class="ci-del-r">✕</button></div>
+      </div>
+      <div class="ci-row">
+        <div class="ci-ico">🔷</div>
+        <div class="ci-body"><div class="ci-title-r">1년 스탠다드</div><div class="ci-detail"><span>₩70,000</span><span class="profit">+₩29,000</span></div></div>
+        <div class="ci-right"><div class="ci-qty-r">×1</div><div class="ci-price-r">₩70,000</div><button class="ci-del-r">✕</button></div>
+      </div>
+      <div class="ci-row">
+        <div class="ci-ico">⭐</div>
+        <div class="ci-body"><div class="ci-title-r">6개월 프리미엄</div><div class="ci-detail"><span>₩50,000</span><span class="profit">+₩19,000</span></div></div>
+        <div class="ci-right"><div class="ci-qty-r">×1</div><div class="ci-price-r">₩50,000</div><button class="ci-del-r">✕</button></div>
+      </div>
+      <div class="ci-row">
+        <div class="ci-ico">⭐</div>
+        <div class="ci-body"><div class="ci-title-r">1년 프리미엄</div><div class="ci-detail"><span>₩100,000</span><span class="profit">+₩29,000</span></div></div>
+        <div class="ci-right"><div class="ci-qty-r">×1</div><div class="ci-price-r">₩100,000</div><button class="ci-del-r">✕</button></div>
+      </div>
+      <div class="ci-row">
+        <div class="ci-ico">⭐</div>
+        <div class="ci-body"><div class="ci-title-r">1개월 프리미엄</div><div class="ci-detail"><span>₩10,000</span><span class="profit">+₩2,900</span></div></div>
+        <div class="ci-right"><div class="ci-qty-r">×1</div><div class="ci-price-r">₩10,000</div><button class="ci-del-r">✕</button></div>
+      </div>
+
+      <div class="cart-foot">
+        <div class="cf-rows">
+          <div class="cf-r"><span>소비자가 합계</span><span style="text-decoration:line-through;color:#374151">₩374,800</span></div>
+          <div class="cf-r"><span>내 구매가</span><span>₩277,000</span></div>
+          <div class="cf-r cf-total"><span>결제금액</span><span>₩277,000</span></div>
+          <div class="cf-save">🎉 ₩97,800 절약 (26%)</div>
+        </div>
+        <div class="pm-row">
+          <div class="pm-opt pm-sel"><div class="pm-ico2">🏦</div><div class="pm-lbl2">실시간계좌</div></div>
+          <div class="pm-opt"><div class="pm-ico2">💳</div><div class="pm-lbl2">카드결제</div></div>
+        </div>
+        <button class="final-btn">💳 ₩277,000 결제하기</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+let dt='s',dp='m',dq=1;
+const dpr={s:{m:7000,'6':40000,y:70000},p:{m:10000,'6':50000,y:100000}};
+function dTier(t){
+  dt=t;
+  document.getElementById('to-s').className='tier-opt'+(t==='s'?' t-sel-s':'');
+  document.getElementById('to-p').className='tier-opt'+(t==='p'?' t-sel-p':'');
+  const p=dpr[t];
+  document.getElementById('dpr-m').textContent='₩'+p.m.toLocaleString();
+  document.getElementById('dpr-6').textContent='₩'+p['6'].toLocaleString();
+  document.getElementById('dpr-y').textContent='₩'+p.y.toLocaleString();
+  document.getElementById('d-ab').className='action-btn '+(t==='s'?'ab-s':'ab-p');
+  updDP();updDA();
+}
+function dPlan(p){dp=p;['m','6','y'].forEach(k=>{document.getElementById('do-'+k).className='plan-opt'+(k===p?(dt==='s'?' ps':' pp'):'');});updDA();}
+function dAdj(d){dq=Math.max(1,Math.min(50,dq+d));document.getElementById('d-qty').textContent=dq;updDA();}
+function updDP(){['m','6','y'].forEach(k=>{document.getElementById('do-'+k).className='plan-opt'+(k===dp?(dt==='s'?' ps':' pp'):'');});}
+function updDA(){const u=dpr[dt][dp];document.getElementById('d-sub').textContent=`${dq}장 × ₩${u.toLocaleString()} = ₩${(u*dq).toLocaleString()}`;document.getElementById('d-ap').textContent='₩'+(u*dq).toLocaleString();}
+</script>
+</body>
+</html>
