@@ -94,24 +94,32 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 해당 사용자의 오늘 일정 조회
+    // 해당 사용자의 오늘 일정 조회 (근무 + 개인, 공휴일 제외)
     const { data: schedules } = await supabase
       .from('aone_pro_caddypro_schedules')
-      .select('date, title, shift, start_time')
+      .select('date, title, shift, start_time, type')
       .eq('license_code', tokenRow.license_code)
       .eq('date', todayKST)
+      .neq('type', 'holiday')
       .order('start_time', { ascending: true });
 
     if (!schedules || schedules.length === 0) continue;
 
     // 메시지 구성
-    const lines = schedules.map((s: { title?: string; shift?: string | number; start_time?: string }) => {
+    const lines = schedules.map((s: { title?: string; shift?: string | number; start_time?: string; type?: string }) => {
       const time = s.start_time ? s.start_time.slice(0, 5) : '';
+      if (s.type === 'personal') {
+        return `• ${time ? time + ' ' : ''}[개인] ${s.title ?? '일정'}`;
+      }
       const shift = s.shift ? `${s.shift}부` : '';
       return `• ${time ? time + ' ' : ''}${shift ? '[' + shift + '] ' : ''}${s.title ?? '일정'}`;
     });
 
-    const message = `[캐디 매니저 알림] 오늘 일정 (${todayKST})\n\n${lines.join('\n')}\n\n총 ${schedules.length}건의 일정이 있습니다.`;
+    const workCount = schedules.filter((s: { type?: string }) => s.type === 'work').length;
+    const personalCount = schedules.filter((s: { type?: string }) => s.type === 'personal').length;
+    const summary = [workCount > 0 ? `근무 ${workCount}건` : '', personalCount > 0 ? `개인 ${personalCount}건` : ''].filter(Boolean).join(', ');
+
+    const message = `[캐디 매니저 알림] 오늘 일정 (${todayKST})\n\n${lines.join('\n')}\n\n${summary}`;
 
     const ok = await sendKakaoMessage(accessToken, message);
     if (ok) sentCount++;
