@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   const restApiKey = process.env.KAKAO_REST_API_KEY?.trim();
 
   if (!restApiKey) {
-    return NextResponse.redirect(`${baseUrl}/settings?kakao=error`);
+    return NextResponse.redirect(`${baseUrl}/settings?kakao=error&reason=no_key`);
   }
 
   try {
@@ -37,14 +37,15 @@ export async function GET(request: NextRequest) {
         grant_type: 'authorization_code',
         client_id: restApiKey,
         redirect_uri: redirectUri,
-        code,
+        code: code!,
       }),
     });
 
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
-      console.error('[kakao/callback] 토큰 오류:', tokenData);
-      return NextResponse.redirect(`${baseUrl}/settings?kakao=error`);
+      const reason = encodeURIComponent(tokenData.error_code ?? tokenData.error ?? 'token_fail');
+      console.error('[kakao/callback] 토큰 오류:', JSON.stringify(tokenData));
+      return NextResponse.redirect(`${baseUrl}/settings?kakao=error&reason=${reason}`);
     }
 
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
@@ -64,13 +65,15 @@ export async function GET(request: NextRequest) {
       );
 
     if (dbError) {
-      console.error('[kakao/callback] DB 저장 오류:', dbError);
-      return NextResponse.redirect(`${baseUrl}/settings?kakao=error`);
+      const reason = encodeURIComponent(dbError.code ?? 'db_fail');
+      console.error('[kakao/callback] DB 저장 오류:', JSON.stringify(dbError));
+      return NextResponse.redirect(`${baseUrl}/settings?kakao=error&reason=${reason}`);
     }
 
     return NextResponse.redirect(`${baseUrl}/settings?kakao=success`);
   } catch (e) {
+    const reason = encodeURIComponent(String(e).slice(0, 50));
     console.error('[kakao/callback] 예외:', e);
-    return NextResponse.redirect(`${baseUrl}/settings?kakao=error`);
+    return NextResponse.redirect(`${baseUrl}/settings?kakao=error&reason=${reason}`);
   }
 }
