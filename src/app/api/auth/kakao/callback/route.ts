@@ -48,8 +48,10 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
-      const reason = encodeURIComponent(tokenData.error_code ?? tokenData.error ?? 'token_fail');
-      console.error('[kakao/callback] 토큰 오류:', JSON.stringify(tokenData));
+      const detail = JSON.stringify(tokenData);
+      const reason = encodeURIComponent(detail.slice(0, 200));
+      console.error('[kakao/callback] 토큰 오류 상세:', detail);
+      console.error('[kakao/callback] 사용된 restApiKey 길이:', restApiKey.length, '값앞10:', restApiKey.slice(0,10));
       return NextResponse.redirect(`${baseUrl}/settings?kakao=error&reason=${reason}`);
     }
 

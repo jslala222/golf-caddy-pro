@@ -57,7 +57,7 @@ export default function SettingsPage() {
             localStorage.setItem('caddy_kakao_linked', '1');
             window.history.replaceState({}, '', '/settings');
         } else if (params.get('kakao') === 'error') {
-            const reason = params.get('reason') ?? '알 수 없음';
+            const reason = decodeURIComponent(params.get('reason') ?? '알 수 없음');
             alert(`카카오 연동 실패\n원인: ${reason}`);
             window.history.replaceState({}, '', '/settings');
         } else {
