@@ -424,7 +424,8 @@ export const searchLicenseByNamePhone = async ({
             : digits.length === 10
             ? `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`
             : digits;
-        query = query.or(`user_phone.eq.${digits},user_phone.eq.${hyphenated}`);
+        // 하이픈이 포함된 값은 따옴표로 감싸야 Supabase가 올바르게 파싱함
+        query = query.or(`user_phone.eq."${digits}",user_phone.eq."${hyphenated}"`);
     }
     if (hasName) {
         query = query.ilike('user_name', `%${name!.trim()}%`);
