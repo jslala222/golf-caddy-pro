@@ -61,6 +61,16 @@ export default function SettingsPage() {
                 });
             }).catch(() => {});
         }
+
+        // SW 리로드 후 자동 구독 처리
+        if (localStorage.getItem('caddy_push_pending') === '1') {
+            localStorage.removeItem('caddy_push_pending');
+            // 약간 딜레이 후 자동 실행
+            setTimeout(() => {
+                const btn = document.querySelector<HTMLButtonElement>('[data-push-trigger]');
+                if (btn) btn.click();
+            }, 1000);
+        }
     }, []);
 
     const handleSaveAlarm = (minutes: number) => {
@@ -100,11 +110,20 @@ export default function SettingsPage() {
             }
             setPushGranted(true);
 
-            // ClientLayout이 등록한 SW가 활성화될 때까지 대기 (타임아웃 없음)
+            // ClientLayout이 등록한 SW가 활성화될 때까지 대기
             const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
             if (!vapidKey) { setPushMsg('설정 오류 — 관리자에게 문의해주세요.'); setPushLoading(false); return; }
 
-            const reg = await navigator.serviceWorker.ready;
+            // SW 등록 확인 — 없으면 등록 후 페이지 리로드 (리로드 후 active 상태)
+            const existingReg = await navigator.serviceWorker.getRegistration('/');
+            if (!existingReg?.active) {
+                await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                // SW가 처음 등록되면 페이지 리로드 필요 — localStorage에 pending 플래그 저장
+                localStorage.setItem('caddy_push_pending', '1');
+                window.location.reload();
+                return;
+            }
+            const reg = existingReg;
 
             // 기존 구독이 있으면 재사용, 없으면 신규 생성
             let sub = await reg.pushManager.getSubscription();
@@ -546,6 +565,7 @@ export default function SettingsPage() {
                             <button
                                 onClick={handleRequestPush}
                                 disabled={pushLoading}
+                                data-push-trigger
                                 className="w-full py-3 bg-orange-500 text-white font-bold rounded-2xl text-sm disabled:opacity-50 active:scale-[.98] transition"
                             >
                                 {pushLoading ? '처리 중...' : '🔔 알림 허용하기'}
