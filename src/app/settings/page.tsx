@@ -82,7 +82,7 @@ export default function SettingsPage() {
 
     const handleKakaoConnect = () => {
         const licenseCode = localStorage.getItem('caddy_license_key') ?? '';
-        const restApiKey = '02c967412c347c9c8eea770b5843e4e6';
+        const restApiKey = '02b967412c347c9c8eea770b5843e4e6';
         const redirectUri = encodeURIComponent(`https://caddy-pink.vercel.app/api/auth/kakao/callback`);
         const state = encodeURIComponent(licenseCode);
         window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${restApiKey}&redirect_uri=${redirectUri}&response_type=code&state=${state}&scope=talk_message`;
