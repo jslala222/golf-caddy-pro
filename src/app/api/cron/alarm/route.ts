@@ -7,13 +7,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import webpush from 'web-push';
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL ?? 'mailto:admin@caddypro.kr',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '',
-  process.env.VAPID_PRIVATE_KEY ?? '',
-);
-
 export async function GET(request: NextRequest) {
+  // VAPID 설정 (런타임에만 실행 — 빌드 시 환경변수 없음 방지)
+  const vapidPublic  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
+  const vapidEmail   = process.env.VAPID_EMAIL ?? 'mailto:admin@caddypro.kr';
+
+  if (!vapidPublic || !vapidPrivate) {
+    return NextResponse.json({ error: 'VAPID 키 미설정' }, { status: 500 });
+  }
+
+  webpush.setVapidDetails(vapidEmail, vapidPublic, vapidPrivate);
   // Vercel Cron 인증 헤더 확인
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
