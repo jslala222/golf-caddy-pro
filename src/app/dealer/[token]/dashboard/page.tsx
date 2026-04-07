@@ -1517,8 +1517,16 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                     <div className="space-y-5">
                         {/* 현재 잔량 */}
                         <section className="bg-stone-900 rounded-3xl p-5 space-y-3">
-                            <div className="flex items-center gap-2 text-blue-400 font-bold text-sm">
-                                <Coins size={16} /> 현재 크레딧 잔량
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-blue-400 font-bold text-sm">
+                                    <Coins size={16} /> 현재 크레딧 잔량
+                                </div>
+                                <span className="bg-blue-600/30 border border-blue-600/50 text-blue-300 text-xs font-black px-3 py-1 rounded-full">
+                                    총 {(
+                                        (dealer?.credits_month ?? 0) + (dealer?.credits_6month ?? 0) + (dealer?.credits_year ?? 0) +
+                                        (dealer?.credits_month_premium ?? 0) + (dealer?.credits_6month_premium ?? 0) + (dealer?.credits_year_premium ?? 0)
+                                    )}장
+                                </span>
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                                 {([
@@ -2019,156 +2027,6 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                             <p>• 크레딧 이용권 발급 거래: 이중발급 없음 ✅</p>
                             <p>• 사업자 딜러: ARS 126 / 손택스로 직접 발행</p>
                             <p>• 프리랜서 딜러: 본사 결제 링크 유도만 가능</p>
-                        </div>
-
-                        {/* 결과 표시 */}
-                        {receiptResult && (
-                            <div className={`rounded-3xl p-5 text-center space-y-3 ${receiptResult.success ? 'bg-emerald-900/20 border border-emerald-700' : 'bg-red-900/20 border border-red-700'}`}>
-                                <div className="text-4xl">{receiptResult.success ? '✅' : '❌'}</div>
-                                <p className={`font-black text-lg ${receiptResult.success ? 'text-emerald-300' : 'text-red-300'}`}>{receiptResult.message}</p>
-                                {receiptResult.receiptUrl && (
-                                    <a href={receiptResult.receiptUrl} target="_blank" rel="noreferrer"
-                                        className="inline-flex items-center gap-1.5 text-xs text-blue-400 underline">
-                                        <ExternalLink size={12} /> 영수증 확인
-                                    </a>
-                                )}
-                                <button onClick={() => setReceiptResult(null)}
-                                    className="w-full py-2.5 bg-stone-800 rounded-2xl text-stone-300 text-sm font-bold">닫기</button>
-                            </div>
-                        )}
-
-                        {/* 영수증 종류 선택 */}
-                        <div className="bg-orange-900/20 border border-orange-700 rounded-xl px-4 py-2.5 text-xs text-orange-300 font-bold">
-                            ⚠️ 아래 기능은 본사 명의 발행입니다 (관리자 이관 예정)
-                        </div>
-                        <div className="bg-stone-900 rounded-3xl p-5 space-y-4">
-                            <p className="text-stone-400 text-xs font-bold uppercase tracking-widest">영수증 종류</p>
-                            <div className="flex gap-2">
-                                <button onClick={() => { setReceiptType('PERSONAL'); setReceiptIdentifier(''); }}
-                                    className={`flex-1 py-3 rounded-2xl font-bold text-sm transition ${receiptType === 'PERSONAL' ? 'bg-emerald-600 text-white' : 'bg-stone-800 text-stone-400'}`}>
-                                    👤 소득공제용
-                                </button>
-                                <button onClick={() => { setReceiptType('CORPORATE'); setReceiptIdentifier(''); }}
-                                    className={`flex-1 py-3 rounded-2xl font-bold text-sm transition ${receiptType === 'CORPORATE' ? 'bg-blue-600 text-white' : 'bg-stone-800 text-stone-400'}`}>
-                                    🏢 지출증빙용
-                                </button>
-                            </div>
-                            <p className="text-stone-500 text-[10px]">
-                                {receiptType === 'PERSONAL' ? '소득공제용: 고객 휴대폰번호 입력' : '지출증빙용: 고객 사업자등록번호 10자리 입력'}
-                            </p>
-                        </div>
-
-                        {/* 입력 폼 */}
-                        <div className="bg-stone-900 rounded-3xl p-5 space-y-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">
-                                    {receiptType === 'PERSONAL' ? '고객 휴대폰번호' : '사업자등록번호'} <span className="text-red-400">*</span>
-                                </label>
-                                <input
-                                    value={receiptIdentifier}
-                                    onChange={e => {
-                                        const raw = e.target.value.replace(/[^0-9]/g, '');
-                                        if (receiptType === 'PERSONAL') {
-                                            // 전화번호 자동 하이픈
-                                            let formatted = raw;
-                                            if (raw.length > 7) formatted = raw.slice(0,3) + '-' + raw.slice(3,7) + '-' + raw.slice(7,11);
-                                            else if (raw.length > 3) formatted = raw.slice(0,3) + '-' + raw.slice(3);
-                                            setReceiptIdentifier(formatted);
-                                        } else {
-                                            // 사업자번호 XXX-XX-XXXXX
-                                            let formatted = raw;
-                                            if (raw.length > 7) formatted = raw.slice(0,3) + '-' + raw.slice(3,5) + '-' + raw.slice(5,10);
-                                            else if (raw.length > 3) formatted = raw.slice(0,3) + '-' + raw.slice(3);
-                                            setReceiptIdentifier(formatted);
-                                        }
-                                    }}
-                                    type="tel"
-                                    placeholder={receiptType === 'PERSONAL' ? '010-0000-0000' : '000-00-00000'}
-                                    maxLength={receiptType === 'PERSONAL' ? 13 : 12}
-                                    className="w-full bg-stone-800 text-white rounded-2xl px-4 py-3.5 text-sm font-mono placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">거래금액 (원) <span className="text-red-400">*</span></label>
-                                <input
-                                    value={receiptAmount}
-                                    onChange={e => {
-                                        const raw = e.target.value.replace(/[^0-9]/g, '');
-                                        setReceiptAmount(raw ? Number(raw).toLocaleString() : '');
-                                    }}
-                                    type="text"
-                                    inputMode="numeric"
-                                    placeholder="129,000"
-                                    className="w-full bg-stone-800 text-white rounded-2xl px-4 py-3.5 text-sm font-mono placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 block">상품명</label>
-                                <input
-                                    value={receiptOrderName}
-                                    onChange={e => setReceiptOrderName(e.target.value)}
-                                    type="text"
-                                    placeholder="Caddy Manager Pro 이용권"
-                                    className="w-full bg-stone-800 text-white rounded-2xl px-4 py-3.5 text-sm placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                />
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={handleIssueReceipt}
-                            disabled={isIssuingReceipt || !receiptIdentifier || !receiptAmount}
-                            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition text-base">
-                            {isIssuingReceipt
-                                ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                : <BadgeCheck size={20} />}
-                            {isIssuingReceipt ? '발행 중...' : '현금영수증 발행'}
-                        </button>
-
-                        <div className="bg-stone-900 rounded-2xl p-4 text-xs text-stone-400 leading-relaxed space-y-1">
-                            <p className="font-bold text-stone-300 mb-1">안내</p>
-                            <p>• 소득공제용: 고객 휴대폰번호로 국세청 자동 전송</p>
-                            <p>• 지출증빙용: 법인/사업자가 부가세 공제용으로 사용</p>
-                            <p>• 발행 후 국세청 홈택스에서 확인 가능합니다</p>
-                            <p>• 현금·계좌이체로 받은 거래에 한해 발행하세요</p>
-                        </div>
-
-                        {/* 발행 기록 */}
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <p className="text-stone-400 text-xs font-bold">최근 발행 내역</p>
-                                <button onClick={loadReceiptHistory}
-                                    className="text-stone-500 text-[10px] flex items-center gap-1 hover:text-stone-300">
-                                    <RefreshCcw size={10} /> 새로고침
-                                </button>
-                            </div>
-                            {receiptHistoryLoading ? (
-                                <div className="flex justify-center py-6"><div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
-                            ) : receiptHistory.length === 0 ? (
-                                <div className="bg-stone-900 rounded-2xl p-6 text-center text-stone-500 text-xs">발행 내역이 없습니다.</div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {receiptHistory.map(r => (
-                                        <div key={r.id} className="bg-stone-900 rounded-2xl p-4 flex items-center justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-1.5 mb-0.5">
-                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${r.type === 'PERSONAL' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-blue-900/50 text-blue-400'}`}>
-                                                        {r.type === 'PERSONAL' ? '소득공제' : '지출증빙'}
-                                                    </span>
-                                                    <span className="text-stone-500 text-[10px] font-mono">{r.identifier_masked}</span>
-                                                </div>
-                                                <p className="text-white font-black text-sm">₩{r.amount.toLocaleString()}</p>
-                                                <p className="text-stone-500 text-[10px]">{r.created_at.slice(0,10)} · {r.order_name ?? ''}</p>
-                                            </div>
-                                            {r.receipt_url && (
-                                                <a href={r.receipt_url} target="_blank" rel="noreferrer"
-                                                    className="flex-shrink-0 flex items-center gap-1 text-[10px] text-blue-400 border border-blue-800 rounded-xl px-2 py-1">
-                                                    <ExternalLink size={10} /> 확인
-                                                </a>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     </div>
                 )}

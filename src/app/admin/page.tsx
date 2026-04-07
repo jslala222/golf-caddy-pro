@@ -1,8 +1,8 @@
 ﻿'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { issueVoucher, PLANS, CHANNELS, searchLicenseByPhone } from '@/lib/licenseUtils';
-import type { PlanType, ChannelType } from '@/lib/licenseUtils';
+import { issueVoucher, PLANS, CHANNELS, TIER_PRICES, searchLicenseByPhone } from '@/lib/licenseUtils';
+import type { PlanType, ChannelType, TierType } from '@/lib/licenseUtils';
 import { supabase } from '@/lib/supabaseClient';
 import {
     ShieldCheck, Key, RefreshCcw, Copy, Check, ChevronLeft,
@@ -30,7 +30,7 @@ const CREDIT_PRICE: Record<'standard' | 'premium', Record<PlanType, number>> = {
     premium:  { month: 10_000, '6month': 50_000, year: 100_000 },
 };
 
-type AdminTab = 'issue' | 'licenses' | 'dealers' | 'settlements' | 'caddy' | 'restore';
+type AdminTab = 'issue' | 'licenses' | 'dealers' | 'settlements' | 'caddy' | 'restore' | 'receipt';
 
 interface Dealer {
     id: string;
@@ -98,6 +98,15 @@ export default function AdminPage() {
     const [generatedKey, setGeneratedKey] = useState('');
     const [copied, setCopied] = useState(false);
     const [generatedCount, setGeneratedCount] = useState(0);
+    const [issueTier, setIssueTier] = useState<TierType>('standard');
+
+    // 현금영수증 상태
+    const [receiptType, setReceiptType] = useState<'PERSONAL' | 'CORPORATE'>('PERSONAL');
+    const [receiptIdentifier, setReceiptIdentifier] = useState('');
+    const [receiptAmount, setReceiptAmount] = useState('');
+    const [receiptOrderName, setReceiptOrderName] = useState('Caddy Manager Pro 이용권');
+    const [isIssuingReceipt, setIsIssuingReceipt] = useState(false);
+    const [receiptResult, setReceiptResult] = useState<{ success: boolean; message: string; receiptUrl?: string } | null>(null);
 
     // 딜러 관리 상태
     const [dealers, setDealers] = useState<Dealer[]>([]);
@@ -244,7 +253,7 @@ export default function AdminPage() {
     const handleIssue = async () => {
         setIsIssuing(true);
         setGeneratedKey('');
-        const result = await issueVoucher({ channel, plan, days, memo, userName, userPhone, issuedBy: 'admin' });
+        const result = await issueVoucher({ channel, plan, days, memo, userName, userPhone, issuedBy: 'admin', tier: issueTier });
         setIsIssuing(false);
         if (result.success && result.code) {
             setGeneratedKey(result.code);
@@ -538,6 +547,39 @@ export default function AdminPage() {
         }
     };
 
+    const handleIssueReceipt = async () => {
+        const cleanIdentifier = receiptIdentifier.replace(/[^0-9]/g, '');
+        const cleanAmount = parseInt(receiptAmount.replace(/[^0-9]/g, ''), 10);
+        if (!cleanIdentifier || !cleanAmount) return;
+        setIsIssuingReceipt(true);
+        setReceiptResult(null);
+        try {
+            const res = await fetch('/api/admin/cash-receipt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    adminPassword: '0827',
+                    amount: cleanAmount,
+                    type: receiptType,
+                    identifier: cleanIdentifier,
+                    orderName: receiptOrderName || 'Caddy Manager Pro 이용권',
+                }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setReceiptResult({ success: true, message: '현금영수증 발행 완료!', receiptUrl: data.receiptUrl });
+                setReceiptIdentifier('');
+                setReceiptAmount('');
+            } else {
+                setReceiptResult({ success: false, message: data.error || '발행 실패' });
+            }
+        } catch {
+            setReceiptResult({ success: false, message: '네트워크 오류' });
+        } finally {
+            setIsIssuingReceipt(false);
+        }
+    };
+
     const TABS: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
         { key: 'issue',       label: '코드발급',  icon: <Key size={14} /> },
         { key: 'licenses',    label: '이용내역',  icon: <Search size={14} /> },
@@ -545,29 +587,30 @@ export default function AdminPage() {
         { key: 'settlements', label: '정산관리',  icon: <Receipt size={14} /> },
         { key: 'caddy',       label: '캐디관리',  icon: <Users2 size={14} /> },
         { key: 'restore',     label: '데이터복구', icon: <HardDriveDownload size={14} /> },
+        { key: 'receipt',     label: '영수증발행', icon: <BadgeCheck size={14} /> },
     ];
 
     return (
-        <div className="bg-stone-50 min-h-screen pb-24">
+        <div className="bg-stone-950 min-h-screen pb-24 text-white">
             {/* ── 크레딧 충전 모달 ── */}
             {creditModalDealer && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4" onClick={() => setCreditModalDealer(null)}>
-                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="bg-stone-900 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl border border-stone-700" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 font-bold text-stone-900">
-                                <Coins size={18} className="text-blue-600" /> 크레딧 충전
+                            <div className="flex items-center gap-2 font-bold text-white">
+                                <Coins size={18} className="text-blue-400" /> 크레딧 충전
                             </div>
-                            <button onClick={() => setCreditModalDealer(null)} className="text-stone-400 hover:text-stone-600">
+                            <button onClick={() => setCreditModalDealer(null)} className="text-stone-500 hover:text-stone-300">
                                 <X size={20} />
                             </button>
                         </div>
-                        <p className="text-stone-600 text-sm font-bold">{creditModalDealer.name}</p>
+                        <p className="text-stone-300 text-sm font-bold">{creditModalDealer.name}</p>
 
                         {/* 티어 선택 */}
                         <div className="grid grid-cols-2 gap-2">
                             {(['standard', 'premium'] as const).map(t => (
                                 <button key={t} onClick={() => setCreditTier(t)}
-                                    className={`py-2.5 rounded-xl text-sm font-bold border-2 transition ${creditTier === t ? (t === 'premium' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-blue-500 bg-blue-50 text-blue-700') : 'border-stone-200 text-stone-500'}`}>
+                                    className={`py-2.5 rounded-xl text-sm font-bold border-2 transition ${creditTier === t ? (t === 'premium' ? 'border-emerald-500 bg-emerald-900/40 text-emerald-300' : 'border-blue-500 bg-blue-900/40 text-blue-300') : 'border-stone-700 text-stone-400'}`}>
                                     {t === 'premium' ? '⭐ 프리미엄' : '스탠다드'}
                                 </button>
                             ))}
@@ -577,16 +620,16 @@ export default function AdminPage() {
                         <div className="grid grid-cols-3 gap-2">
                             {([['month','1개월'], ['6month','6개월'], ['year','1년']] as [PlanType, string][]).map(([key, label]) => (
                                 <button key={key} onClick={() => setCreditPlan(key)}
-                                    className={`py-2.5 rounded-xl text-sm font-bold border-2 transition ${creditPlan === key ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-stone-200 text-stone-500'}`}>
+                                    className={`py-2.5 rounded-xl text-sm font-bold border-2 transition ${creditPlan === key ? 'border-blue-500 bg-blue-900/40 text-blue-300' : 'border-stone-700 text-stone-400'}`}>
                                     {label}
                                 </button>
                             ))}
                         </div>
 
                         {/* 공급가 표시 */}
-                        <div className="bg-stone-50 rounded-2xl p-3 text-center">
+                        <div className="bg-stone-800 rounded-2xl p-3 text-center">
                             <p className="text-xs text-stone-500">공급가 (장당)</p>
-                            <p className="text-xl font-black text-stone-900">
+                            <p className="text-xl font-black text-white">
                                 ₩{(CREDIT_PRICE[creditTier][creditPlan]).toLocaleString()}
                             </p>
                         </div>
@@ -594,16 +637,16 @@ export default function AdminPage() {
                         {/* 수량 */}
                         <div className="flex items-center gap-4">
                             <button onClick={() => setCreditQty(q => Math.max(1, q - 1))}
-                                className="w-11 h-11 bg-stone-100 hover:bg-stone-200 rounded-full flex items-center justify-center">
-                                <Minus size={18} />
+                                className="w-11 h-11 bg-stone-800 hover:bg-stone-700 rounded-full flex items-center justify-center">
+                                <Minus size={18} className="text-stone-300" />
                             </button>
                             <div className="flex-1 text-center">
-                                <p className="text-3xl font-black text-stone-900">{creditQty}장</p>
+                                <p className="text-3xl font-black text-white">{creditQty}장</p>
                                 <p className="text-xs text-stone-500">합계 ₩{(CREDIT_PRICE[creditTier][creditPlan] * creditQty).toLocaleString()}</p>
                             </div>
                             <button onClick={() => setCreditQty(q => Math.min(100, q + 1))}
-                                className="w-11 h-11 bg-stone-100 hover:bg-stone-200 rounded-full flex items-center justify-center">
-                                <Plus size={18} />
+                                className="w-11 h-11 bg-stone-800 hover:bg-stone-700 rounded-full flex items-center justify-center">
+                                <Plus size={18} className="text-stone-300" />
                             </button>
                         </div>
 
@@ -615,14 +658,14 @@ export default function AdminPage() {
                     </div>
                 </div>
             )}
-            <header className="bg-white border-b border-stone-100 px-6 pt-12 pb-4 sticky top-0 z-10">
+            <header className="bg-stone-950 border-b border-stone-800 px-6 pt-12 pb-4 sticky top-0 z-10">
                 <div className="flex items-center justify-between mb-3">
                     <div>
-                        <Link href="/settings" className="inline-flex items-center text-stone-700 text-xs font-bold gap-1 mb-1">
+                        <Link href="/settings" className="inline-flex items-center text-stone-400 text-xs font-bold gap-1 mb-1">
                             <ChevronLeft size={14} /> 설정
                         </Link>
-                        <h1 className="text-xl font-black text-stone-900 flex items-center gap-2">
-                            <ShieldCheck size={20} className="text-emerald-600" /> 관리자 도구
+                        <h1 className="text-xl font-black text-white flex items-center gap-2">
+                            <ShieldCheck size={20} className="text-emerald-400" /> 관리자 도구
                         </h1>
                     </div>
                 </div>
@@ -632,8 +675,8 @@ export default function AdminPage() {
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
                                 activeTab === tab.key
-                                    ? 'bg-stone-900 text-white'
-                                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-stone-800 text-stone-400 hover:bg-stone-700 hover:text-white'
                             }`}>
                             {tab.icon}{tab.label}
                         </button>
@@ -645,34 +688,55 @@ export default function AdminPage() {
 
                 {/* ══ 탭: 코드 발급 ══ */}
                 {activeTab === 'issue' && (
-                    <div className="space-y-6">
-                        <section className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm space-y-4">
-                            <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
-                                <Key size={18} /> 이용권 코드 발급
+                    <div className="space-y-4">
+                        <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
+                            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                                <Key size={16} /> 이용권 코드 발급
                             </div>
 
                             {/* 채널 선택 */}
                             <div>
-                                <label className="text-[10px] font-bold text-stone-700 uppercase tracking-widest mb-1.5 block">판매 채널</label>
+                                <p className="text-stone-400 text-[10px] font-bold uppercase tracking-widest mb-2">판매 채널</p>
                                 <div className="grid grid-cols-3 gap-2">
                                     {(Object.entries(CHANNELS) as [ChannelType, string][]).map(([key, label]) => (
                                         <button key={key} onClick={() => setChannel(key)}
-                                            className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition ${channel === key ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-stone-50 text-stone-600 border-stone-200 hover:border-emerald-400'}`}>
+                                            className={`py-2.5 rounded-2xl text-[11px] font-bold transition ${channel === key ? 'bg-emerald-700 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}`}>
                                             {label}
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
+                            {/* 이용권 종류 (스탠다드/프리미엄) */}
+                            <div>
+                                <p className="text-stone-400 text-[10px] font-bold uppercase tracking-widest mb-2">이용권 종류</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={() => setIssueTier('standard')}
+                                        className={`py-3 rounded-2xl text-sm font-bold transition ${issueTier === 'standard' ? 'bg-blue-700 text-white border-2 border-blue-500' : 'bg-stone-800 text-stone-400 border-2 border-transparent'}`}>
+                                        <p>스탠다드</p>
+                                        <p className="text-[10px] mt-0.5 opacity-70">수동 복구</p>
+                                    </button>
+                                    <button onClick={() => setIssueTier('premium')}
+                                        className={`py-3 rounded-2xl text-sm font-bold transition relative ${issueTier === 'premium' ? 'bg-emerald-700 text-white border-2 border-emerald-500' : 'bg-stone-800 text-stone-400 border-2 border-transparent'}`}>
+                                        <span className="absolute top-1.5 right-1.5 bg-emerald-500/30 text-emerald-300 text-[8px] font-black px-1.5 py-0.5 rounded-full">추천</span>
+                                        <p>⭐ 프리미엄</p>
+                                        <p className="text-[10px] mt-0.5 opacity-70">자동 복구</p>
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* 요금제 선택 */}
                             <div>
-                                <label className="text-[10px] font-bold text-stone-700 uppercase tracking-widest mb-1.5 block">요금제</label>
+                                <p className="text-stone-400 text-[10px] font-bold uppercase tracking-widest mb-2">요금제</p>
                                 <div className="grid grid-cols-3 gap-2">
                                     {(Object.entries(PLANS) as [PlanType, typeof PLANS[PlanType]][]).map(([key, info]) => (
                                         <button key={key} onClick={() => setPlan(key)}
-                                            className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition flex flex-col items-center gap-0.5 ${plan === key ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-600 border-stone-200 hover:border-stone-400'}`}>
-                                            <span>{info.label}</span>
-                                            <span className="opacity-60 text-[9px]">₩{info.price.toLocaleString()}</span>
+                                            className={`py-3 rounded-2xl text-center transition border-2 ${plan === key ? 'bg-stone-700 border-blue-500' : 'bg-stone-800 border-transparent'}`}>
+                                            <p className="text-xs font-bold text-stone-200">{info.label}</p>
+                                            <p className="text-[9px] text-stone-500 mt-0.5">{info.days}일</p>
+                                            <p className={`text-[11px] font-black mt-1 ${issueTier === 'premium' ? 'text-purple-400' : 'text-emerald-400'}`}>
+                                                ₩{TIER_PRICES[issueTier][key].toLocaleString()}
+                                            </p>
                                         </button>
                                     ))}
                                 </div>
@@ -680,18 +744,19 @@ export default function AdminPage() {
 
                             {/* 일수 조정 */}
                             <div>
-                                <label className="text-[10px] font-bold text-stone-700 uppercase tracking-widest mb-1.5 block">
-                                    부여 일수 <span className="text-stone-500 normal-case">(기본 {PLANS[plan].days}일 / {minDays}~{maxDays}일 조정 가능)</span>
-                                </label>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-stone-400 text-[10px] font-bold uppercase tracking-widest">부여 일수</p>
+                                    <p className="text-stone-600 text-[10px]">{minDays}~{maxDays}일 조정 가능</p>
+                                </div>
+                                <div className="flex items-center gap-4">
                                     <button onClick={() => setDays(d => Math.max(minDays, d - 5))}
-                                        className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition">
-                                        <Minus size={16} />
+                                        className="w-12 h-12 bg-stone-800 hover:bg-stone-700 rounded-full flex items-center justify-center transition">
+                                        <Minus size={18} className="text-stone-300" />
                                     </button>
-                                    <div className="flex-1 text-center text-2xl font-black text-stone-900">{days}일</div>
+                                    <div className="flex-1 text-center text-3xl font-black text-white">{days}일</div>
                                     <button onClick={() => setDays(d => Math.min(maxDays, d + 5))}
-                                        className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition">
-                                        <Plus size={16} />
+                                        className="w-12 h-12 bg-stone-800 hover:bg-stone-700 rounded-full flex items-center justify-center transition">
+                                        <Plus size={18} className="text-stone-300" />
                                     </button>
                                 </div>
                             </div>
@@ -699,43 +764,54 @@ export default function AdminPage() {
                             {/* 고객 정보 */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-[10px] font-bold text-stone-700 mb-1 block">고객 이름 (선택)</label>
+                                    <label className="text-stone-400 text-[10px] font-bold mb-1.5 block">고객 이름 (선택)</label>
                                     <input value={userName} onChange={e => setUserName(e.target.value)}
                                         placeholder="홍길동"
-                                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none" />
+                                        className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-600 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-bold text-stone-700 mb-1 block">연락처 (선택)</label>
-                                    <input value={userPhone} onChange={e => setUserPhone(e.target.value)}
-                                        placeholder="010-0000-0000"
-                                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none" />
+                                    <label className="text-stone-400 text-[10px] font-bold mb-1.5 block">연락처 (선택)</label>
+                                    <input value={userPhone} onChange={e => {
+                                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                                        let formatted = raw;
+                                        if (raw.length > 7) formatted = raw.slice(0,3)+'-'+raw.slice(3,7)+'-'+raw.slice(7,11);
+                                        else if (raw.length > 3) formatted = raw.slice(0,3)+'-'+raw.slice(3);
+                                        setUserPhone(formatted);
+                                    }}
+                                        type="tel" placeholder="010-0000-0000"
+                                        className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-600 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
                                 </div>
                             </div>
 
                             {/* 메모 */}
                             <div>
-                                <label className="text-[10px] font-bold text-stone-700 mb-1 block">메모 (선택)</label>
+                                <label className="text-stone-400 text-[10px] font-bold mb-1.5 block">메모 (선택)</label>
                                 <input value={memo} onChange={e => setMemo(e.target.value)}
                                     placeholder="예: 3월 이벤트, 기기변경 복원 요청..."
-                                    className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none" />
+                                    className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-600 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
                             </div>
 
                             <button onClick={handleIssue} disabled={isIssuing}
-                                className="w-full bg-stone-900 text-white font-bold py-4 rounded-2xl hover:bg-stone-800 transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-60">
-                                {isIssuing ? <RefreshCcw size={20} className="animate-spin" /> : <Key size={20} />}
-                                {isIssuing ? '발급 중...' : '이용권 코드 발급'}
+                                className={`w-full py-5 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition disabled:opacity-50 ${
+                                    issueTier === 'premium'
+                                        ? 'bg-gradient-to-r from-emerald-600 to-purple-600 hover:from-emerald-500 hover:to-purple-500 text-white'
+                                        : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                                }`}>
+                                {isIssuing ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Key size={22} />}
+                                {isIssuing ? '발급 중...' : `${issueTier === 'premium' ? '⭐ 프리미엄' : '스탠다드'} 이용권 발급`}
                             </button>
                         </section>
 
                         {/* 발급 결과 */}
                         {generatedKey && (
-                            <section className="bg-emerald-600 p-6 rounded-3xl text-white shadow-xl animate-in fade-in slide-in-from-top-4">
-                                <div className="text-[10px] font-black text-emerald-200 uppercase tracking-widest mb-3">발급된 이용권 코드</div>
+                            <section className={`p-6 rounded-3xl text-white shadow-xl ${issueTier === 'premium' ? 'bg-gradient-to-br from-emerald-800 to-purple-800' : 'bg-emerald-700'}`}>
+                                <div className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-3">✅ 발급 완료</div>
                                 <div className="flex flex-col items-center gap-4">
                                     <div className="text-4xl font-black tracking-[0.2em] font-mono">{generatedKey}</div>
-                                    <div className="flex gap-2 flex-wrap justify-center text-xs text-emerald-100">
+                                    <div className="flex gap-2 flex-wrap justify-center text-xs text-white/80">
                                         <span className="bg-white/20 px-2 py-1 rounded-full">{CHANNELS[channel]}</span>
                                         <span className="bg-white/20 px-2 py-1 rounded-full">{PLANS[plan].label} ({days}일)</span>
+                                        <span className="bg-white/20 px-2 py-1 rounded-full">{issueTier === 'premium' ? '⭐ 프리미엄' : '스탠다드'}</span>
                                     </div>
                                     <button onClick={handleCopy}
                                         className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-6 py-2 rounded-full text-xs font-bold transition">
@@ -743,8 +819,8 @@ export default function AdminPage() {
                                         {copied ? '복사 완료!' : '코드 복사'}
                                     </button>
                                 </div>
-                                <div className="mt-4 pt-4 border-t border-white/10 text-[10px] text-emerald-100/70 text-center">
-                                    이 코드를 구매자에게 전달하세요 · 오늘 총 {generatedCount}개 발급
+                                <div className="mt-4 pt-4 border-t border-white/10 text-[10px] text-white/40 text-center">
+                                    구매자에게 전달하세요 · 오늘 총 {generatedCount}개 발급
                                 </div>
                             </section>
                         )}
@@ -1312,13 +1388,120 @@ export default function AdminPage() {
                             </button>
                             {importLog && (
                                 <div className={`p-3 rounded-xl text-xs font-mono border ${
-                                    importStatus === 'done' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
-                                    importStatus === 'error' ? 'bg-red-50 border-red-200 text-red-600' :
-                                    'bg-stone-50 border-stone-200 text-stone-600'
+                                    importStatus === 'done' ? 'bg-emerald-900/30 border-emerald-700 text-emerald-300' :
+                                    importStatus === 'error' ? 'bg-red-900/30 border-red-700 text-red-400' :
+                                    'bg-stone-800 border-stone-700 text-stone-400'
                                 }`}>{importLog}</div>
                             )}
                         </div>
                     </section>
+                )}
+
+                {/* ══ 탭: 현금영수증 발행 ══ */}
+                {activeTab === 'receipt' && (
+                    <div className="space-y-4">
+                        <h2 className="text-white font-bold text-sm flex items-center gap-2">
+                            <BadgeCheck size={16} className="text-emerald-400" /> 현금영수증 발행 (본사 명의)
+                        </h2>
+
+                        {receiptResult && (
+                            <div className={`rounded-3xl p-5 text-center space-y-3 ${receiptResult.success ? 'bg-emerald-900/20 border border-emerald-700' : 'bg-red-900/20 border border-red-700'}`}>
+                                <div className="text-4xl">{receiptResult.success ? '✅' : '❌'}</div>
+                                <p className={`font-black text-lg ${receiptResult.success ? 'text-emerald-300' : 'text-red-300'}`}>{receiptResult.message}</p>
+                                {receiptResult.receiptUrl && (
+                                    <a href={receiptResult.receiptUrl} target="_blank" rel="noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-xs text-blue-400 underline">
+                                        영수증 확인 →
+                                    </a>
+                                )}
+                                <button onClick={() => setReceiptResult(null)}
+                                    className="w-full py-2.5 bg-stone-800 rounded-2xl text-stone-300 text-sm font-bold">닫기</button>
+                            </div>
+                        )}
+
+                        {/* 종류 선택 */}
+                        <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
+                            <p className="text-stone-400 text-[10px] font-bold uppercase tracking-widest">영수증 종류</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => { setReceiptType('PERSONAL'); setReceiptIdentifier(''); }}
+                                    className={`py-3 rounded-2xl font-bold text-sm transition border-2 ${receiptType === 'PERSONAL' ? 'bg-emerald-700 text-white border-emerald-500' : 'bg-stone-800 text-stone-400 border-transparent'}`}>
+                                    👤 소득공제용
+                                </button>
+                                <button onClick={() => { setReceiptType('CORPORATE'); setReceiptIdentifier(''); }}
+                                    className={`py-3 rounded-2xl font-bold text-sm transition border-2 ${receiptType === 'CORPORATE' ? 'bg-blue-700 text-white border-blue-500' : 'bg-stone-800 text-stone-400 border-transparent'}`}>
+                                    🏢 지출증빙용
+                                </button>
+                            </div>
+                            <p className="text-stone-600 text-[10px]">
+                                {receiptType === 'PERSONAL' ? '소득공제용: 고객 휴대폰번호 입력' : '지출증빙용: 사업자등록번호 10자리 입력'}
+                            </p>
+                        </section>
+
+                        {/* 입력 폼 */}
+                        <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
+                            <div>
+                                <label className="text-stone-400 text-[10px] font-bold mb-1.5 block">
+                                    {receiptType === 'PERSONAL' ? '고객 휴대폰번호' : '사업자등록번호'} <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    value={receiptIdentifier}
+                                    onChange={e => {
+                                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                                        if (receiptType === 'PERSONAL') {
+                                            let f = raw;
+                                            if (raw.length > 7) f = raw.slice(0,3)+'-'+raw.slice(3,7)+'-'+raw.slice(7,11);
+                                            else if (raw.length > 3) f = raw.slice(0,3)+'-'+raw.slice(3);
+                                            setReceiptIdentifier(f);
+                                        } else {
+                                            let f = raw;
+                                            if (raw.length > 7) f = raw.slice(0,3)+'-'+raw.slice(3,5)+'-'+raw.slice(5,10);
+                                            else if (raw.length > 3) f = raw.slice(0,3)+'-'+raw.slice(3);
+                                            setReceiptIdentifier(f);
+                                        }
+                                    }}
+                                    type="tel"
+                                    placeholder={receiptType === 'PERSONAL' ? '010-0000-0000' : '000-00-00000'}
+                                    maxLength={receiptType === 'PERSONAL' ? 13 : 12}
+                                    className="w-full bg-stone-800 text-white rounded-2xl px-4 py-3.5 text-sm font-mono placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-stone-700"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-stone-400 text-[10px] font-bold mb-1.5 block">거래금액 (원) <span className="text-red-400">*</span></label>
+                                <input
+                                    value={receiptAmount}
+                                    onChange={e => { const r = e.target.value.replace(/[^0-9]/g, ''); setReceiptAmount(r ? Number(r).toLocaleString() : ''); }}
+                                    type="text" inputMode="numeric" placeholder="9,900"
+                                    className="w-full bg-stone-800 text-white rounded-2xl px-4 py-3.5 text-sm font-mono placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-stone-700"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-stone-400 text-[10px] font-bold mb-1.5 block">상품명</label>
+                                <input
+                                    value={receiptOrderName}
+                                    onChange={e => setReceiptOrderName(e.target.value)}
+                                    type="text" placeholder="Caddy Manager Pro 이용권"
+                                    className="w-full bg-stone-800 text-white rounded-2xl px-4 py-3.5 text-sm placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-stone-700"
+                                />
+                            </div>
+                        </section>
+
+                        <button
+                            onClick={handleIssueReceipt}
+                            disabled={isIssuingReceipt || !receiptIdentifier || !receiptAmount}
+                            className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 rounded-3xl font-black text-white text-xl flex items-center justify-center gap-3 transition">
+                            {isIssuingReceipt
+                                ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                : <BadgeCheck size={22} />}
+                            {isIssuingReceipt ? '발행 중...' : '현금영수증 발행'}
+                        </button>
+
+                        <div className="bg-stone-900 rounded-2xl p-4 text-xs text-stone-500 leading-relaxed space-y-1">
+                            <p className="font-bold text-stone-400 mb-1">안내</p>
+                            <p>• 본사 명의로 발행됩니다 (PortOne V2)</p>
+                            <p>• 소득공제용: 고객 휴대폰번호로 국세청 자동 전송</p>
+                            <p>• 지출증빙용: 법인/사업자 부가세 공제용</p>
+                        </div>
+                    </div>
                 )}
 
             </div>
