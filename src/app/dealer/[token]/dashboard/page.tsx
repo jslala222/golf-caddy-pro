@@ -1972,11 +1972,11 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                     <div className="space-y-5">
                         <h2 className="text-white font-bold text-sm flex items-center gap-2"><BadgeCheck size={16} className="text-emerald-400" /> 현금영수증 발행</h2>
 
-                        {/* ⚠️ 이중발급 경고 */}
-                        <div className="bg-amber-900/25 border border-amber-600 rounded-2xl p-4 space-y-1.5 text-xs text-amber-200 leading-relaxed">
-                            <p className="font-black text-amber-300 text-sm">⚠️ 사용 전 반드시 확인</p>
-                            <p>• <strong>포트원(카드·실시간계좌이체)으로 결제된 건은 사용 금지</strong><br/>고객이 결제창에서 이미 선택했거나, 10만원↑는 자동 처리됨 → 이중발급</p>
-                            <p>• <strong>이 기능은 딜러가 고객에게 직접 현금·개인계좌로 받은 경우에만</strong> 사용하세요</p>
+                        {/* ✅ 딜러 전용 안내 */}
+                        <div className="bg-emerald-900/20 border border-emerald-700 rounded-2xl p-4 space-y-1 text-xs text-emerald-200 leading-relaxed">
+                            <p className="font-black text-emerald-300 text-sm">✅ 딜러 현금 수금 전용</p>
+                            <p>고객에게 <strong>현금·계좌이체</strong>로 받은 경우 여기서 현금영수증을 발행하세요.</p>
+                            <p className="text-emerald-400">크레딧으로 코드를 발급한 거래는 고객이 포트원 결제를 거치지 않으므로 이중발급 걱정 없습니다.</p>
                         </div>
 
                         {/* 🏢 사업자 딜러 안내 */}
