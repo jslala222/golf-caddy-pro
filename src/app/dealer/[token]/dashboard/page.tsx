@@ -111,6 +111,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [isIssuing, setIsIssuing] = useState(false);
     const [issueConfirm, setIssueConfirm] = useState<{ type: 'credit' | 'cash' | 'extend'; creditCol?: string; avail?: number; newExpiresAt?: string } | null>(null);
     const [noCreditModal, setNoCreditModal] = useState<{ planLabel: string; tier: 'standard' | 'premium' } | null>(null);
+    const [cardWarnModal, setCardWarnModal] = useState(false);
     const [issuedCode, setIssuedCode] = useState('');
     const [issuedPlan, setIssuedPlan] = useState('');
     const [issuedDays, setIssuedDays] = useState(0);
@@ -891,6 +892,45 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 </div>
             )}
 
+            {/* 카드결제 경고 모달 */}
+            {cardWarnModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-6"
+                    style={{ background: 'rgba(0,0,0,0.88)' }}
+                    onClick={() => setCardWarnModal(false)}>
+                    <div className="bg-stone-900 border border-red-700/60 rounded-3xl p-7 w-full max-w-sm text-center space-y-5 shadow-2xl"
+                        onClick={e => e.stopPropagation()}>
+                        <div className="w-16 h-16 bg-red-900/30 rounded-full flex items-center justify-center mx-auto">
+                            <span className="text-3xl">💳</span>
+                        </div>
+                        <div>
+                            <p className="text-red-300 font-black text-xl mb-2">카드결제를 선택하셨습니다</p>
+                            <p className="text-white font-bold text-sm mb-4">정말 카드결제로 진행하시겠습니까?</p>
+                            <div className="bg-stone-800 border border-stone-700 rounded-2xl p-4 text-left space-y-2 mb-4">
+                                <p className="text-amber-400 font-black text-xs uppercase tracking-wider mb-3">⚠️ 카드결제 단점 안내</p>
+                                <p className="text-stone-300 text-xs">• 카드 수수료 <span className="text-red-400 font-bold">약 3~3.5%</span> 차감됩니다</p>
+                                <p className="text-stone-300 text-xs">• 크레딧 발급까지 <span className="text-red-400 font-bold">최대 15일</span> 소요됩니다</p>
+                                <p className="text-stone-300 text-xs">• 즉시 이용권 발급이 <span className="text-red-400 font-bold">불가능</span>합니다</p>
+                                <p className="text-stone-300 text-xs">• 카드 취소 시 처리가 복잡해집니다</p>
+                            </div>
+                            <div className="bg-emerald-900/30 border border-emerald-700/50 rounded-2xl p-3">
+                                <p className="text-emerald-300 font-black text-xs">💡 딜러 카드결제는 본사와 직접 문의해 주세요</p>
+                                <p className="text-emerald-400/70 text-[10px] mt-1">실시간 계좌이체 시 즉시 크레딧이 충전됩니다</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => setCardWarnModal(false)}
+                                className="py-3.5 bg-stone-700 hover:bg-stone-600 rounded-2xl font-bold text-stone-300 transition">
+                                취소
+                            </button>
+                            <button onClick={() => { setCardWarnModal(false); handleBuyCredits(); }}
+                                className="py-3.5 bg-red-700 hover:bg-red-600 rounded-2xl font-bold text-white transition text-sm">
+                                그래도 카드결제
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 크레딧 부족 경고 모달 */}
             {noCreditModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center px-6"
@@ -1608,8 +1648,16 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                         </div>
                                     </div>
 
-                                    <button onClick={handleBuyCredits} disabled={isBuyingCredit}
-                                        className="w-full py-5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition shadow-lg shadow-violet-900/40">
+                                    <button
+                                        onClick={() => {
+                                            if (creditPayMethod === 'CARD') {
+                                                setCardWarnModal(true);
+                                            } else {
+                                                handleBuyCredits();
+                                            }
+                                        }}
+                                        disabled={isBuyingCredit}
+                                        className="w-full py-5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-content gap-3 transition shadow-lg shadow-violet-900/40 justify-center">
                                         {isBuyingCredit ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <span>✨</span>}
                                         {isBuyingCredit ? '결제 중...' : `₩${totalSupply.toLocaleString()} 결제하기`}
                                     </button>
