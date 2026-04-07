@@ -57,14 +57,14 @@ function SubscribeInner() {
     const raw = sessionStorage.getItem('caddy_payment_info');
     if (!raw) return;
 
-    let info: { name: string; phone: string; planKey: PortOneProductKey; paymentId: string; tier?: string };
+    let info: { name: string; phone: string; planKey: PortOneProductKey; paymentId: string; tier?: string; dealerRef?: string };
     try { info = JSON.parse(raw); } catch { return; }
 
     setLoading(true);
     fetch('/api/payment/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentId, name: info.name, phone: info.phone, planKey: info.planKey, tier: info.tier ?? 'standard' }),
+      body: JSON.stringify({ paymentId, name: info.name, phone: info.phone, planKey: info.planKey, tier: info.tier ?? 'standard', dealerRef: info.dealerRef }),
     })
       .then(r => r.json())
       .then(res => {
@@ -107,7 +107,7 @@ function SubscribeInner() {
     setError('');
     setLoading(true);
 
-    const result = await requestCaddyPayment({ name: name.trim(), phone: phone.trim(), planKey: selectedPlan, tier: selectedTier, payMethod: selectedPayMethod });
+    const result = await requestCaddyPayment({ name: name.trim(), phone: phone.trim(), planKey: selectedPlan, tier: selectedTier, payMethod: selectedPayMethod, dealerRef });
 
     if (!result.success) {
       setModalMsg(result.error ?? '결제 처리 중 오류가 발생했습니다.');
@@ -120,7 +120,7 @@ function SubscribeInner() {
       const res = await fetch('/api/payment/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentId: result.paymentId, name: name.trim(), phone: phone.trim(), planKey: selectedPlan, tier: selectedTier }),
+        body: JSON.stringify({ paymentId: result.paymentId, name: name.trim(), phone: phone.trim(), planKey: selectedPlan, tier: selectedTier, dealerRef }),
       });
       const data = await res.json();
       if (data.code) {

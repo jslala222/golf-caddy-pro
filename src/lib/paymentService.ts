@@ -52,12 +52,14 @@ export async function requestCaddyPayment({
   planKey,
   tier = 'standard',
   payMethod = 'CARD',
+  dealerRef,
 }: {
   name: string;
   phone: string;
   planKey: PortOneProductKey;
   tier?: 'standard' | 'premium';
   payMethod?: 'CARD' | 'TRANSFER';
+  dealerRef?: string;
 }): Promise<PaymentResult> {
   if (typeof window === 'undefined' || !window.PortOne) {
     return { success: false, error: '결제 모듈을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.' };
@@ -69,7 +71,7 @@ export async function requestCaddyPayment({
   // 모바일 리다이렉트 대비 — 구매자 정보 임시 저장
   sessionStorage.setItem(
     'caddy_payment_info',
-    JSON.stringify({ name, phone, planKey, paymentId, tier, payMethod }),
+    JSON.stringify({ name, phone, planKey, paymentId, tier, payMethod, dealerRef }),
   );
 
   try {

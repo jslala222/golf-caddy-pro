@@ -202,7 +202,7 @@ export default function AdminPage() {
     const loadSettlements = useCallback(async () => {
         setSettlementLoading(true);
         const { data } = await supabase
-            .from('aone_pro_caddypro_dealer_settlements')
+            .from('aone_pro_caddypro_settlements')
             .select('*, dealer:aone_pro_caddypro_dealers(name, phone)')
             .order('created_at', { ascending: false });
         setSettlements((data as Settlement[]) || []);
@@ -326,7 +326,7 @@ export default function AdminPage() {
     const handleMarkSettled = async (ids: string[]) => {
         if (!confirm(`${ids.length}건을 정산 완료 처리할까요?`)) return;
         await supabase
-            .from('aone_pro_caddypro_dealer_settlements')
+            .from('aone_pro_caddypro_settlements')
             .update({ settled: true, settled_at: new Date().toISOString() })
             .in('id', ids);
         loadSettlements();

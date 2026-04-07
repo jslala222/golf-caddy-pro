@@ -398,5 +398,112 @@ await supabase
   ✅ 7일 만료 배너 (기존 구현)</div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- 딜러 수수료 구조 (안 C 결정 사항) -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="section" style="margin-top:2rem;">
+  <h2 style="color:#f59e0b; border-color:#f59e0b;">💰 딜러 수수료 구조 (안 C — 확정)</h2>
+
+  <div class="case" style="border-color:#10b981; background:rgba(16,185,129,.06);">
+    <div class="case-title" style="color:#10b981;">수수료 발생 케이스</div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; font-size:.85rem; color:#d4d4d4;">
+        <thead>
+          <tr style="background:rgba(255,255,255,.04); border-bottom:1px solid #3f3f46;">
+            <th style="padding:.5rem .75rem; text-align:left;">케이스</th>
+            <th style="padding:.5rem .75rem; text-align:left;">결제 경로</th>
+            <th style="padding:.5rem .75rem; text-align:center;">수수료</th>
+            <th style="padding:.5rem .75rem; text-align:left;">비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #27272a;">
+            <td style="padding:.5rem .75rem;">딜러 크레딧 → 신규 발급</td>
+            <td style="padding:.5rem .75rem;">딜러 대시보드 API</td>
+            <td style="padding:.5rem .75rem; text-align:center; color:#10b981; font-weight:700;">✅ 있음</td>
+            <td style="padding:.5rem .75rem; color:#a3a3a3;">공급가 차익에 내포됨</td>
+          </tr>
+          <tr style="border-bottom:1px solid #27272a;">
+            <td style="padding:.5rem .75rem;">딜러 크레딧 → 기간연장</td>
+            <td style="padding:.5rem .75rem;">딜러 대시보드 API</td>
+            <td style="padding:.5rem .75rem; text-align:center; color:#ef4444; font-weight:700;">❌ 없음</td>
+            <td style="padding:.5rem .75rem; color:#a3a3a3;">크레딧 차익으로 이미 수익 실현</td>
+          </tr>
+          <tr style="border-bottom:1px solid #27272a;">
+            <td style="padding:.5rem .75rem;">고객 직접결제 (딜러 링크 유입)</td>
+            <td style="padding:.5rem .75rem;">PortOne → /api/payment/complete</td>
+            <td style="padding:.5rem .75rem; text-align:center; color:#10b981; font-weight:700;">✅ 있음</td>
+            <td style="padding:.5rem .75rem; color:#a3a3a3;">?ref=토큰 → <code>issued_by=dealer_X</code><br>settlements 자동 적립</td>
+          </tr>
+          <tr style="border-bottom:1px solid #27272a;">
+            <td style="padding:.5rem .75rem;">고객 직접결제 (재구독, 딜러 링크 없음)</td>
+            <td style="padding:.5rem .75rem;">PortOne → /api/payment/complete</td>
+            <td style="padding:.5rem .75rem; text-align:center; color:#10b981; font-weight:700;">✅ 있음</td>
+            <td style="padding:.5rem .75rem; color:#a3a3a3;">기존 license.issued_by 역추적<br>원 딜러 자동 인식 → settlements 적립</td>
+          </tr>
+          <tr>
+            <td style="padding:.5rem .75rem;">관리자 직접 발급</td>
+            <td style="padding:.5rem .75rem;">Admin API</td>
+            <td style="padding:.5rem .75rem; text-align:center; color:#e11d48; font-weight:700;">❌ 없음</td>
+            <td style="padding:.5rem .75rem; color:#a3a3a3;">issued_by = 'admin'</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="case" style="border-color:#6366f1; background:rgba(99,102,241,.06); margin-top:1rem;">
+    <div class="case-title" style="color:#818cf8;">코드 흐름 요약</div>
+    <pre style="font-size:.78rem; color:#c4b5fd; line-height:1.6; overflow-x:auto;">
+[subscribe/page.tsx]
+  URL ?ref=딜러토큰 → dealerRef state
+  requestCaddyPayment({ ..., dealerRef })  ← sessionStorage에도 저장
+  fetch('/api/payment/complete', { ..., dealerRef })
+
+[/api/payment/complete]
+  1) dealerRef 있음  → dealers 테이블에서 token으로 조회 → issued_by = 'dealer_X'
+  2) dealerRef 없음  → 동일 전화번호의 기존 license.issued_by 역추적
+                       → issued_by 가 'dealer_X' 형태면 → 재구독으로 수수료 적립
+  3) 딜러 못 찾음   → issued_by = 'portone' (수수료 없음)
+
+  issueVoucher() 성공 후:
+  aone_pro_caddypro_settlements.insert({
+    dealer_id, license_code, type: 'first'|'renewal',
+    plan, sale_amount, commission_rate, commission_amount,
+    settled: false
+  })
+    </pre>
+  </div>
+
+  <div class="case" style="border-color:#f59e0b; background:rgba(245,158,11,.06); margin-top:1rem;">
+    <div class="case-title" style="color:#fbbf24;">수수료율 (commission_rate)</div>
+    <ul style="margin:0; padding-left:1.2rem; line-height:1.8; color:#d4d4d4; font-size:.88rem;">
+      <li>딜러별 개인 수수료율: <code>aone_pro_caddypro_dealers.commission_rate</code> 컬럼</li>
+      <li>해당 컬럼이 <code>NULL</code>이거나 미설정 시 → <strong>기본값 20% (0.2)</strong> 적용</li>
+      <li><code>commission_amount = sale_amount × commission_rate</code> (원 단위 반올림)</li>
+    </ul>
+  </div>
+
+  <div class="case" style="border-color:#3b82f6; background:rgba(59,130,246,.06); margin-top:1rem;">
+    <div class="case-title" style="color:#60a5fa;">Supabase 테이블 — aone_pro_caddypro_settlements</div>
+    <pre style="font-size:.78rem; color:#93c5fd; line-height:1.6; overflow-x:auto;">
+id               UUID  PK
+dealer_id        UUID  FK → dealers.id
+license_code     TEXT  FK → licenses.code
+type             TEXT  'first' | 'renewal'
+plan             TEXT  'month' | '6month' | 'year'
+sale_amount      INT   실제 결제금액 (원)
+commission_rate  NUMERIC  수수료율 (0.0~1.0)
+commission_amount INT  수수료 금액 (원)
+settled          BOOL  정산 완료 여부
+settled_at       TIMESTAMPTZ
+created_at       TIMESTAMPTZ DEFAULT NOW()
+    </pre>
+    <p style="color:#fbbf24; font-size:.8rem; margin:.5rem 0 0;">
+      ⚠️ <code>aone_pro_caddypro_dealer_settlements</code>는 버그(구버전 테이블명) — <code>aone_pro_caddypro_settlements</code>로 통일 완료
+    </p>
+  </div>
+</div>
+
 </body>
 </html>

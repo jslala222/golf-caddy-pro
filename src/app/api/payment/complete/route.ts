@@ -17,14 +17,14 @@ const VALID_PLANS: Record<string, { days: number; amount: number; premiumAmount:
 };
 
 export async function POST(request: NextRequest) {
-  let body: { paymentId?: string; name?: string; phone?: string; planKey?: string; tier?: string };
+  let body: { paymentId?: string; name?: string; phone?: string; planKey?: string; tier?: string; dealerRef?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: '요청 형식이 잘못되었습니다.' }, { status: 400 });
   }
 
-  const { paymentId, name, phone, planKey, tier } = body;
+  const { paymentId, name, phone, planKey, tier, dealerRef } = body;
   const resolvedTier = tier === 'premium' ? 'premium' : 'standard';
 
   if (!paymentId || !name || !phone || !planKey) {
@@ -113,6 +113,39 @@ export async function POST(request: NextRequest) {
     console.warn('[payment/complete] PORTONE_SECRET 미설정 — 검증 생략 (개발 환경)');
   }
 
+  // ── 딜러 연결 결정 ────────────────────────────────────────
+  // 1순위: 결제 페이지 URL에 포함된 dealerRef (딜러 링크로 유입)
+  // 2순위: 해당 전화번호로 기존에 발급된 이용권의 issued_by (재구독 시 원래 딜러 유지)
+  let finalDealerToken: string | null = typeof dealerRef === 'string' && dealerRef.trim() ? dealerRef.trim() : null;
+
+  if (!finalDealerToken) {
+    const { data: prevLicense } = await supabase
+      .from('aone_pro_caddypro_licenses')
+      .select('issued_by')
+      .eq('user_phone', phone)
+      .ilike('issued_by', 'dealer_%')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (prevLicense?.issued_by?.startsWith('dealer_')) {
+      finalDealerToken = prevLicense.issued_by.slice(7); // 'dealer_' 제거
+    }
+  }
+
+  // 딜러 정보 조회 (토큰 → id, commission_rate)
+  let dealerRecord: { id: string; commission_rate?: number | null } | null = null;
+  if (finalDealerToken) {
+    const { data: dl } = await supabase
+      .from('aone_pro_caddypro_dealers')
+      .select('id, commission_rate')
+      .eq('token', finalDealerToken)
+      .eq('is_active', true)
+      .maybeSingle();
+    dealerRecord = dl ?? null;
+  }
+
+  const issuedBy = dealerRecord ? `dealer_${finalDealerToken}` : 'portone';
+
   // ── 이용권 코드 발급 ────────────────────────────────────────
   const result = await issueVoucher({
     channel: 'direct',
@@ -122,12 +155,37 @@ export async function POST(request: NextRequest) {
     memo: `PortOne:${paymentId}`,
     userName: name,
     userPhone: phone,
-    issuedBy: 'portone',
+    issuedBy,
   });
 
   if (!result.success || !result.code) {
     console.error('[payment/complete] 코드 발급 실패:', result.error);
     return NextResponse.json({ error: '이용권 발급 중 오류가 발생했습니다. 고객센터로 문의해주세요.' }, { status: 500 });
+  }
+
+  // ── 딜러 수당 정산 적립 ─────────────────────────────────────
+  if (dealerRecord) {
+    const saleAmount = resolvedTier === 'premium' ? planInfo.premiumAmount : planInfo.amount;
+    const commissionRate = dealerRecord.commission_rate ?? 0.2;
+    const commissionAmount = Math.round(saleAmount * commissionRate);
+    // dealerRef 직접 전달됐으면 신규, 기존 issued_by에서 찾았으면 재구독
+    const settlementType: 'first' | 'renewal' = typeof dealerRef === 'string' && dealerRef.trim() ? 'first' : 'renewal';
+
+    try {
+      await supabase.from('aone_pro_caddypro_settlements').insert({
+        dealer_id: dealerRecord.id,
+        license_code: result.code,
+        type: settlementType,
+        plan: planKey,
+        sale_amount: saleAmount,
+        commission_rate: commissionRate,
+        commission_amount: commissionAmount,
+        settled: false,
+      });
+    } catch (settlementErr) {
+      // 정산 기록 실패해도 이용권 발급은 이미 완료 — 로그만 남김
+      console.error('[payment/complete] 정산 기록 실패:', settlementErr);
+    }
   }
 
   return NextResponse.json({ code: result.code });
