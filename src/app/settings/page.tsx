@@ -43,6 +43,8 @@ export default function SettingsPage() {
     const [customAlarm, setCustomAlarm] = useState('');
     const [alarmUnit, setAlarmUnit] = useState<'분' | '시간'>('분');
     const [kakaoLinked, setKakaoLinked] = useState(false);
+    const [kakaoHour, setKakaoHour] = useState(6);
+    const [kakaoHourSaving, setKakaoHourSaving] = useState(false);
 
     useEffect(() => {
         // URL 파라미터로 카카오 연동 결과 처리
@@ -56,7 +58,22 @@ export default function SettingsPage() {
         } else {
             setKakaoLinked(localStorage.getItem('caddy_kakao_linked') === '1');
         }
+        setKakaoHour(parseInt(localStorage.getItem('caddy_kakao_hour') ?? '6', 10));
     }, []);
+
+    const handleKakaoHourChange = async (hour: number) => {
+        setKakaoHour(hour);
+        localStorage.setItem('caddy_kakao_hour', String(hour));
+        const licenseCode = localStorage.getItem('caddy_license_key');
+        if (!licenseCode) return;
+        setKakaoHourSaving(true);
+        await fetch('/api/auth/kakao/notification-hour', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ licenseCode, hour }),
+        });
+        setKakaoHourSaving(false);
+    };
 
     const handleKakaoConnect = () => {
         const licenseCode = localStorage.getItem('caddy_license_key') ?? '';
@@ -381,7 +398,26 @@ export default function SettingsPage() {
                         {kakaoLinked ? (
                             <>
                                 <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm bg-emerald-50 rounded-xl px-3 py-2">
-                                    <Check size={16} /> 카카오톡 연동 완료 — 매일 아침 일정 알림을 받습니다
+                                    <Check size={16} /> 카카오톡 연동 완료
+                                </div>
+                                {/* 알림 시각 선택 */}
+                                <div className="space-y-2">
+                                    <p className="text-xs font-bold text-stone-500">매일 카톡 발송 시각</p>
+                                    <div className="grid grid-cols-5 gap-1.5">
+                                        {[5, 6, 7, 8, 9].map(h => (
+                                            <button
+                                                key={h}
+                                                onClick={() => handleKakaoHourChange(h)}
+                                                className={`py-2 rounded-xl text-xs font-bold border transition ${kakaoHour === h ? 'bg-[#FEE500] border-yellow-400 text-[#3C1E1E]' : 'bg-stone-50 border-stone-200 text-stone-600'}`}
+                                            >
+                                                {h}시
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {kakaoHourSaving
+                                        ? <p className="text-xs text-stone-400">저장 중...</p>
+                                        : <p className="text-xs text-emerald-600 font-semibold">매일 오전 <strong>{kakaoHour}시</strong>에 오늘 일정을 카카오톡으로 보내드립니다</p>
+                                    }
                                 </div>
                                 <button
                                     onClick={handleKakaoDisconnect}

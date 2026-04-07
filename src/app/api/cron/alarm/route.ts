@@ -54,13 +54,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'KAKAO_REST_API_KEY 미설정' }, { status: 500 });
   }
 
+  // 요청 hour 파라미터 (KST 기준, 기본 6시)
+  const hourParam = request.nextUrl.searchParams.get('hour');
+  const targetHour = hourParam ? parseInt(hourParam, 10) : 6;
+
   // 오늘 날짜 (KST)
   const todayKST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  // 카카오 연동된 모든 사용자 토큰 조회
+  // 해당 시각을 설정한 카카오 연동 사용자 토큰 조회
   const { data: tokens, error: tokenErr } = await supabase
     .from('aone_pro_caddypro_kakao_tokens')
-    .select('license_code, access_token, refresh_token, expires_at');
+    .select('license_code, access_token, refresh_token, expires_at')
+    .eq('notification_hour', targetHour);
 
   if (tokenErr || !tokens || tokens.length === 0) {
     return NextResponse.json({ sent: 0, reason: '연동 사용자 없음' });

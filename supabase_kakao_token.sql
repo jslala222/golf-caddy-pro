@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS aone_pro_caddypro_kakao_tokens (
     access_token    TEXT NOT NULL,
     refresh_token   TEXT,
     expires_at      TIMESTAMPTZ,
+    notification_hour INT NOT NULL DEFAULT 6,  -- 알림 받을 시각 (KST 기준, 5~9)
     created_at      TIMESTAMPTZ DEFAULT NOW(),
     updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
