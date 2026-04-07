@@ -139,7 +139,7 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                         </div>
                     </div>
                     <div className="space-y-3">
-                        <Link href="/subscribe?plan=6month"
+                        <Link href={`/subscribe?plan=6month&tier=${typeof window !== 'undefined' ? (localStorage.getItem('caddy_tier') ?? 'standard') : 'standard'}`}
                             className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black text-lg flex items-center justify-center gap-2 transition active:scale-95">
                             <RefreshCcw size={20} /> 온라인으로 바로 갱신
                         </Link>
@@ -173,7 +173,7 @@ export function LicenseGuard({ children }: { children: React.ReactNode }) {
                             <p className="text-sm font-bold flex-1">
                                 이용권이 <span className="underline">{daysLeft}일 후</span> 만료됩니다.
                             </p>
-                            <Link href="/subscribe?plan=6month"
+                            <Link href={`/subscribe?plan=6month&tier=${typeof window !== 'undefined' ? (localStorage.getItem('caddy_tier') ?? 'standard') : 'standard'}`}
                                 className="shrink-0 bg-white text-amber-600 text-xs font-black px-3 py-1.5 rounded-full hover:bg-amber-50 active:scale-95 transition">
                                 갱신하기
                             </Link>

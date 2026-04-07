@@ -595,7 +595,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
             alert('크레딧 차감 중 오류가 발생했습니다. 다시 시도해 주세요.');
             return;
         }
-        const result = await extendLicense({ licenseId: renewResult.id, plan, days, dealerToken: token });
+        const result = await extendLicense({ licenseId: renewResult.id, plan, days, dealerToken: token, tier: issueTier });
         setIsExtending(false);
         if (result.success && result.newExpiresAt) {
             await supabase
@@ -1428,6 +1428,12 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                             <div className="flex items-center justify-between">
                                                 <span className="text-xs font-bold text-stone-400">고객명</span>
                                                 <span className="text-white text-sm">{renewResult.userName || '-'}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-bold text-stone-400">현재 이용권</span>
+                                                <span className={`text-xs font-black px-2.5 py-1 rounded-full ${renewResult.tier === 'premium' ? 'bg-amber-600/30 text-amber-300' : 'bg-emerald-700/30 text-emerald-300'}`}>
+                                                    {renewResult.tier === 'premium' ? '⭐ 프리미엄' : '스탠다드'} · {renewResult.plan === 'month' ? '1개월' : renewResult.plan === '6month' ? '6개월' : renewResult.plan === 'year' ? '1년' : renewResult.plan ?? '-'}
+                                                </span>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-xs font-bold text-stone-400">현재 만료일</span>

@@ -302,11 +302,13 @@ export const extendLicense = async ({
     plan,
     days,
     dealerToken,
+    tier,
 }: {
     licenseId: string;
     plan: PlanType;
     days: number;
     dealerToken: string;
+    tier?: 'standard' | 'premium';
 }): Promise<{ success: boolean; newExpiresAt?: string; error?: string }> => {
     const { data: current, error: fetchError } = await supabase
         .from('aone_pro_caddypro_licenses')
@@ -321,15 +323,18 @@ export const extendLicense = async ({
         : now;
     const newExpiresAt = new Date(baseDate.getTime() + days * 86_400_000);
 
+    const updatePayload: Record<string, unknown> = {
+        expires_at: newExpiresAt.toISOString(),
+        is_active: true,
+        plan,
+        days,
+        issued_by: `dealer_${dealerToken}`,
+    };
+    if (tier) updatePayload.tier = tier;
+
     const { error } = await supabase
         .from('aone_pro_caddypro_licenses')
-        .update({
-            expires_at: newExpiresAt.toISOString(),
-            is_active: true,
-            plan,
-            days,
-            issued_by: `dealer_${dealerToken}`,
-        })
+        .update(updatePayload)
         .eq('id', licenseId);
 
     if (error) return { success: false, error: error.message };
