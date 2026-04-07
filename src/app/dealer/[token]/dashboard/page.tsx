@@ -174,6 +174,24 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [receiptOrderName, setReceiptOrderName] = useState('Caddy Manager Pro 이용권');
     const [isIssuingReceipt, setIsIssuingReceipt] = useState(false);
     const [receiptResult, setReceiptResult] = useState<{ success: boolean; message: string; receiptUrl?: string | null } | null>(null);
+    const [receiptHistory, setReceiptHistory] = useState<Array<{
+        id: string; amount: number; type: string; identifier_masked: string;
+        order_name: string | null; receipt_url: string | null; created_at: string;
+    }>>([]);
+    const [receiptHistoryLoading, setReceiptHistoryLoading] = useState(false);
+
+    const loadReceiptHistory = useCallback(async () => {
+        if (!dealer) return;
+        setReceiptHistoryLoading(true);
+        const { data } = await supabase
+            .from('aone_pro_caddypro_cash_receipts')
+            .select('id, amount, type, identifier_masked, order_name, receipt_url, created_at')
+            .eq('dealer_token', dealer.token)
+            .order('created_at', { ascending: false })
+            .limit(20);
+        setReceiptHistory(data ?? []);
+        setReceiptHistoryLoading(false);
+    }, [dealer]);
 
     useEffect(() => { setDays(PLANS[plan].days); }, [plan]);
 
@@ -260,7 +278,8 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         if (!authenticated || !dealer) return;
         if (activeTab === 'customers' || activeTab === 'earnings') loadLicenses();
         if (activeTab === 'earnings' || activeTab === 'settlement') loadSettlements();
-    }, [activeTab, authenticated, dealer, loadLicenses, loadSettlements]);
+        if (activeTab === 'receipt') loadReceiptHistory();
+    }, [activeTab, authenticated, dealer, loadLicenses, loadSettlements, loadReceiptHistory]);
 
     // ── PIN 인증 ──
     const handlePinSubmit = () => {
@@ -649,6 +668,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 setReceiptResult({ success: true, message: '현금영수증이 발행되었습니다!', receiptUrl: data.receiptUrl });
                 setReceiptIdentifier('');
                 setReceiptAmount('');
+                loadReceiptHistory();
             } else {
                 setReceiptResult({ success: false, message: data.error || '발행 실패' });
             }
@@ -2058,6 +2078,45 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                             <p>• 지출증빙용: 법인/사업자가 부가세 공제용으로 사용</p>
                             <p>• 발행 후 국세청 홈택스에서 확인 가능합니다</p>
                             <p>• 현금·계좌이체로 받은 거래에 한해 발행하세요</p>
+                        </div>
+
+                        {/* 발행 기록 */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <p className="text-stone-400 text-xs font-bold">최근 발행 내역</p>
+                                <button onClick={loadReceiptHistory}
+                                    className="text-stone-500 text-[10px] flex items-center gap-1 hover:text-stone-300">
+                                    <RefreshCcw size={10} /> 새로고침
+                                </button>
+                            </div>
+                            {receiptHistoryLoading ? (
+                                <div className="flex justify-center py-6"><div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
+                            ) : receiptHistory.length === 0 ? (
+                                <div className="bg-stone-900 rounded-2xl p-6 text-center text-stone-500 text-xs">발행 내역이 없습니다.</div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {receiptHistory.map(r => (
+                                        <div key={r.id} className="bg-stone-900 rounded-2xl p-4 flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${r.type === 'PERSONAL' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-blue-900/50 text-blue-400'}`}>
+                                                        {r.type === 'PERSONAL' ? '소득공제' : '지출증빙'}
+                                                    </span>
+                                                    <span className="text-stone-500 text-[10px] font-mono">{r.identifier_masked}</span>
+                                                </div>
+                                                <p className="text-white font-black text-sm">₩{r.amount.toLocaleString()}</p>
+                                                <p className="text-stone-500 text-[10px]">{r.created_at.slice(0,10)} · {r.order_name ?? ''}</p>
+                                            </div>
+                                            {r.receipt_url && (
+                                                <a href={r.receipt_url} target="_blank" rel="noreferrer"
+                                                    className="flex-shrink-0 flex items-center gap-1 text-[10px] text-blue-400 border border-blue-800 rounded-xl px-2 py-1">
+                                                    <ExternalLink size={10} /> 확인
+                                                </a>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

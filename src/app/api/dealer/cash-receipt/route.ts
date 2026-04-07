@@ -94,7 +94,26 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await res.json();
-    return NextResponse.json({ success: true, issueId, receiptUrl: data.receiptUrl ?? null });
+    const receiptUrl: string | null = data.receiptUrl ?? null;
+
+    // ── DB 기록 저장 ──────────────────────────────────────────────
+    // 식별번호 마스킹 (끝 4자리만 노출)
+    const masked = cleanIdentifier.length >= 4
+      ? '*'.repeat(cleanIdentifier.length - 4) + cleanIdentifier.slice(-4)
+      : '****';
+
+    await supabase.from('aone_pro_caddypro_cash_receipts').insert({
+      dealer_token: dealerToken,
+      dealer_name: dealer.name,
+      amount,
+      type,
+      identifier_masked: masked,
+      order_name: orderName || 'Caddy Manager Pro 이용권',
+      issue_id: issueId,
+      receipt_url: receiptUrl,
+    });
+
+    return NextResponse.json({ success: true, issueId, receiptUrl });
   } catch (e) {
     console.error('[cash-receipt] 서버 오류:', e);
     return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
