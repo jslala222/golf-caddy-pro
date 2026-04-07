@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/settings?kakao=error`);
   }
 
-  const restApiKey = process.env.KAKAO_REST_API_KEY?.trim();
+  const restApiKey = (process.env.KAKAO_REST_API_KEY?.trim()) || '02c967412c347c9c8eea770b5843e4e6';
 
   if (!restApiKey) {
     return NextResponse.redirect(`${baseUrl}/settings?kakao=error&reason=no_key`);
