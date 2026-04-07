@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw } from 'lucide-react';
+import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X } from 'lucide-react';
 import { migrateLocalDataToSupabase } from '@/lib/supabaseDB';
 import { formatNumber, todayKST } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
@@ -17,6 +17,7 @@ export default function SettingsPage() {
     const [licenseCode, setLicenseCode] = useState<string | null>(null);
     const [licenseExpiresAt, setLicenseExpiresAt] = useState<string | null>(null);
     const [codeCopied, setCodeCopied] = useState(false);
+    const [policyModal, setPolicyModal] = useState<null | 'tos' | 'privacy' | 'refund'>(null);
 
     useEffect(() => {
         setLicenseCode(localStorage.getItem('caddy_license_key'));
@@ -403,7 +404,7 @@ export default function SettingsPage() {
                 </div>
             </section>
 
-            <div className="text-center text-xs text-stone-400 mt-10 pb-10 space-y-2">
+            <div className="text-center text-xs text-stone-400 mt-10 space-y-2">
                 <div className="flex items-center justify-center gap-2">
                     <Link href="/admin" className="inline-block py-2 px-6 bg-stone-100 rounded-full text-stone-500 font-bold hover:bg-stone-200 transition-colors border border-stone-200">
                         관리자 도구 (v1.0)
@@ -412,8 +413,52 @@ export default function SettingsPage() {
                         딜러 로그인
                     </Link>
                 </div>
-                <p className="text-[10px]">Data stored locally on your device.</p>
+            </div>
+
+            {/* 사업자 정보 + 약관 */}
+            <div className="mt-5 pb-10 px-1">
+                <p className="text-center text-[11px] text-stone-400 mb-3">
+                    🔒 모든 데이터는 귀하의 기기 내에서만 처리됩니다.
+                </p>
+                <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 text-[11px] text-stone-500 leading-relaxed space-y-0.5">
+                    <p className="font-bold text-stone-700 text-xs">에이원PRO</p>
+                    <p>대표자: 김정식 | 사업자등록번호: 544-19-02359</p>
+                    <p>주소: 경기도 화성시 만세구 향남읍 하길로 9, 1102동 1002호</p>
+                    <p>통신판매업: 제 2026 - 화성만세 - 0114 호</p>
+                    <p>고객센터: 010-2737-7229 | jslala222@gmail.com</p>
+                    <div className="flex gap-4 mt-3 pt-2 border-t border-stone-200">
+                        <button onClick={() => setPolicyModal('tos')} className="text-emerald-600 font-bold hover:underline">이용약관</button>
+                        <button onClick={() => setPolicyModal('privacy')} className="text-emerald-600 font-bold hover:underline">개인정보처리방침</button>
+                        <button onClick={() => setPolicyModal('refund')} className="text-red-500 font-bold hover:underline">환불 정책</button>
+                    </div>
+                </div>
             </div>
         </div>
+
+        {/* PolicyModal */}
+        {policyModal && (() => {
+            const titles: Record<string, string> = { tos: '이용약관', privacy: '개인정보처리방침', refund: '환불 정책' };
+            const contents: Record<string, string> = {
+                tos: `제 1 조 (목적)\n본 약관은 에이원PRO(이하 "회사"라 함)가 제공하는 캐디 매니저 프로 서비스(이하 "서비스"라 함)를 이용함에 있어 회사와 이용자의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.\n\n제 2 조 (서비스 이용)\n1. 서비스는 골프 캐디의 일정 관리, 수입 정산 및 고객 관리를 위한 모바일 앱 서비스입니다.\n2. 이용자는 본 약관에 동의하고 이용권을 구매한 후 서비스를 이용할 수 있습니다.\n\n제 3 조 (딜러 제도)\n1. 회사는 딜러를 통한 이용권 판매를 허용합니다.\n2. 딜러는 본 약관 및 딜러 운영 정책에 따라 이용권을 판매하여야 합니다.\n3. 딜러가 고객에게 이용권을 재판매하는 경우, 딜러-고객 간 거래에 대한 책임은 딜러에게 있습니다.\n\n제 4 조 (결제 및 환불)\n1. 이용권 구매 및 환불에 관한 상세 사항은 별도의 '환불 정책'에 따릅니다.\n2. 이용자는 전자상거래 등에서의 소비자보호에 관한 법률에 따라 결제일로부터 7일 이내에 청약철회를 요청할 수 있습니다. 단, 이용권 코드를 접속 사용한 경우는 제외됩니다.\n\n제 5 조 (서비스 변경 및 중단)\n회사는 서비스 운영상 상당한 이유가 있는 경우 서비스의 전부 또는 일부를 변경하거나 중단할 수 있으며, 사전 고지합니다.\n\n제 6 조 (준거법 및 분쟁 해결)\n본 약관은 대한민국 법률에 따라 규율되며, 분쟁 발생 시 관할 법원은 회사 소재지 법원으로 합니다.\n\n시행일: 2026년 4월 1일`,
+                privacy: `에이원PRO(이하 "회사")는 개인정보보호법 등 관련 법령에 따라 이용자의 개인정보를 보호합니다.\n\n1. 수집하는 개인정보 항목\n• 필수: 이름, 전화번호, 결제 기록\n• 자동 수집: 기기 정보, 서비스 이용 기록\n\n2. 개인정보의 이용 목적\n• 유료 서비스 제공 및 본인 확인\n• 이용권 발급 및 관리\n• 고객 상담 및 불만 처리\n\n3. 개인정보의 보유 및 이용기간\n원칙적으로 수집 목적 달성 시 지체 없이 파기합니다.\n• 결제 및 계약 기록: 5년 (전자상거래법)\n• 소비자 불만 처리 기록: 3년\n\n4. 개인정보 처리 위탁\n원활한 결제 서비스를 위해 아래와 같이 위탁합니다.\n• 수탁업체: KG이니시스 | 업무: 결제 처리\n\n5. 개인정보 보호책임자\n• 성명: 김정식\n• 이메일: jslala222@gmail.com\n• 전화: 010-2737-7229\n\n시행일: 2026년 4월 1일`,
+                refund: `에이원PRO는 전자상거래 등에서의 소비자보호에 관한 법률을 준수합니다.\n\n1. 크레딧(이용권) 구매 환불\n결제일로부터 7일 이내, 고객에게 발급한 이용권 코드가 미사용(미접속) 상태인 경우 전액 환불이 가능합니다.\n\n2. 이용권 사용 후 환불 제한\n발급된 이용권 코드가 1회 이상 접속하여 사용된 경우, 디지털 콘텐츠의 특성상 청약철회(환불)가 제한됩니다.\n\n3. 딜러-고객 간 환불 처리\n• 딜러가 고객에게 판매한 이용권의 환불은 딜러와 고객 간 합의에 따릅니다.\n• 미사용 이용권에 한해 본사에 코드 비활성화 및 딜러 크레딧 복구를 요청할 수 있습니다.\n• 사용 완료된 이용권은 환불 대상에서 제외됩니다.\n\n4. 환불 절차 및 처리 기간\n• 신청: 고객센터(010-2737-7229) 또는 이메일(jslala222@gmail.com)\n• 처리 기간: 영업일 기준 3~5일 이내\n• 환불 수단: 결제 시 사용한 동일 수단\n\n5. 카드결제 환불 시 유의사항\n카드결제는 PG사 정책에 따라 환불 처리까지 최대 15일이 소요될 수 있습니다.\n\n시행일: 2026년 4월 1일`
+            };
+            return (
+                <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => setPolicyModal(null)}>
+                    <div className="bg-white rounded-t-3xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-stone-100">
+                            <h2 className="font-bold text-stone-800 text-base">{titles[policyModal]}</h2>
+                            <button onClick={() => setPolicyModal(null)} className="text-stone-400 hover:text-stone-600 transition"><X size={20} /></button>
+                        </div>
+                        <div className="overflow-y-auto px-6 py-4 text-sm text-stone-600 leading-relaxed whitespace-pre-wrap flex-1">
+                            {contents[policyModal]}
+                        </div>
+                        <div className="px-6 py-4 border-t border-stone-100">
+                            <button onClick={() => setPolicyModal(null)} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition">확인</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        })()}
     );
 }
