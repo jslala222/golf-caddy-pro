@@ -1972,6 +1972,24 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                     <div className="space-y-5">
                         <h2 className="text-white font-bold text-sm flex items-center gap-2"><BadgeCheck size={16} className="text-emerald-400" /> 현금영수증 발행</h2>
 
+                        {/* ⚠️ 이중발급 경고 */}
+                        <div className="bg-amber-900/25 border border-amber-600 rounded-2xl p-4 space-y-1.5 text-xs text-amber-200 leading-relaxed">
+                            <p className="font-black text-amber-300 text-sm">⚠️ 사용 전 반드시 확인</p>
+                            <p>• <strong>포트원(카드·실시간계좌이체)으로 결제된 건은 사용 금지</strong><br/>고객이 결제창에서 이미 선택했거나, 10만원↑는 자동 처리됨 → 이중발급</p>
+                            <p>• <strong>이 기능은 딜러가 고객에게 직접 현금·개인계좌로 받은 경우에만</strong> 사용하세요</p>
+                        </div>
+
+                        {/* 🏢 사업자 딜러 안내 */}
+                        <div className="bg-blue-900/20 border border-blue-700 rounded-2xl p-4 space-y-1.5 text-xs text-blue-200 leading-relaxed">
+                            <p className="font-black text-blue-300 text-sm">🏢 사업자 딜러라면 직접 발행하세요</p>
+                            <p>사업자등록증이 있는 딜러는 <strong>본인 사업자 명의</strong>로 발행해야 합니다.<br/>아래 기능은 <strong>본사 명의</strong>로 발행되므로 사업자 딜러에게는 적합하지 않습니다.</p>
+                            <div className="mt-2 bg-blue-900/30 rounded-xl p-3 space-y-1">
+                                <p className="font-bold text-blue-100">직접 발행 방법</p>
+                                <p>① ARS <strong>126</strong> 전화 → 2번 → 사업자번호 입력 → 금액 → 고객번호 (30초)</p>
+                                <p>② 스마트폰 <strong>손택스 앱</strong> → 현금영수증 → 발급</p>
+                            </div>
+                        </div>
+
                         {/* 결과 표시 */}
                         {receiptResult && (
                             <div className={`rounded-3xl p-5 text-center space-y-3 ${receiptResult.success ? 'bg-emerald-900/20 border border-emerald-700' : 'bg-red-900/20 border border-red-700'}`}>
