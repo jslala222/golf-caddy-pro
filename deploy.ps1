@@ -31,11 +31,23 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
-Write-Host "[3/3] new_origin 으로 푸시 중..."
+Write-Host "[3/4] new_origin 으로 푸시 중..."
 git push new_origin master
 if ($LASTEXITCODE -ne 0) {
     Write-Host "푸시 실패."
     exit 1
+}
+
+Write-Host ""
+Write-Host "[4/4] 최신 배포 alias 연결 중..."
+Start-Sleep -Seconds 10
+$deployList = vercel ls caddy-pink 2>&1 | Out-String
+$latestUrl = ($deployList -split "`n" | Select-String "caddy-pink-.*vercel\.app" | Select-Object -First 1) -replace ".*?(caddy-pink-\S+\.vercel\.app).*", '$1'
+if ($latestUrl) {
+    vercel alias $latestUrl caddy-pink.vercel.app 2>&1
+    Write-Host "  alias 완료: caddy-pink.vercel.app → $latestUrl"
+} else {
+    Write-Host "  alias 자동 연결 실패 - 수동으로 연결하세요."
 }
 
 Write-Host ""
