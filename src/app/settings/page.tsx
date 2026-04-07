@@ -139,8 +139,20 @@ export default function SettingsPage() {
         setPushMsg('');
         try {
             const reg = await navigator.serviceWorker.ready;
-            const sub = await reg.pushManager.getSubscription();
-            if (!sub) { setPushMsg('구독 정보가 없습니다. 알림을 다시 켜주세요.'); setPushLoading(false); return; }
+            let sub = await reg.pushManager.getSubscription();
+            // 구독이 없으면 자동으로 구독 신청
+            if (!sub) {
+                const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+                if (!vapidKey) { setPushMsg('❌ 설정 오류 — 관리자에게 문의해주세요.'); setPushLoading(false); return; }
+                sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidKey });
+                const licenseCode = localStorage.getItem('caddy_license_key');
+                await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subscription: sub, licenseCode }),
+                });
+                setPushEnabled(true);
+            }
             const res = await fetch('/api/push/test', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -152,8 +164,8 @@ export default function SettingsPage() {
                 const err = await res.json();
                 setPushMsg(`❌ 발송 실패: ${err.detail ?? err.error}`);
             }
-        } catch {
-            setPushMsg('❌ 오류가 발생했습니다.');
+        } catch (e) {
+            setPushMsg(`❌ 오류: ${e instanceof Error ? e.message : '알 수 없는 오류'}`);
         }
         setPushLoading(false);
     };
@@ -538,6 +550,16 @@ export default function SettingsPage() {
                                 className="w-full py-3 bg-orange-500 text-white font-bold rounded-2xl text-sm disabled:opacity-50 active:scale-[.98] transition"
                             >
                                 {pushLoading ? '처리 중...' : '🔔 알림 허용하기'}
+                            </button>
+                        )}
+                        {/* 알림 권한이 있으면 항상 테스트 버튼 표시 */}
+                        {pushGranted && (
+                            <button
+                                onClick={handleTestPush}
+                                disabled={pushLoading}
+                                className="w-full py-2 bg-blue-500 text-white font-bold rounded-2xl text-sm disabled:opacity-50 active:scale-[.98] transition"
+                            >
+                                {pushLoading ? '발송 중...' : '🔔 테스트 알림 보내기'}
                             </button>
                         )}
                         {pushMsg && <p className="text-xs text-stone-500">{pushMsg}</p>}
