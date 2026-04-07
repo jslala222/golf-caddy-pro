@@ -946,14 +946,19 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 {(() => {
                     const d = dealer;
                     if (!d) return null;
+                    const totalCredits = (d.credits_month + d.credits_6month + d.credits_year +
+                        d.credits_month_premium + d.credits_6month_premium + d.credits_year_premium);
                     const items = [
                         { label: '1개월', credits: d.credits_month, premiumCredits: d.credits_month_premium },
                         { label: '6개월', credits: d.credits_6month, premiumCredits: d.credits_6month_premium },
                         { label: '1년',   credits: d.credits_year,   premiumCredits: d.credits_year_premium },
                     ].filter(i => i.credits > 0 || i.premiumCredits > 0);
-                    if (items.length === 0) return null;
                     return (
                         <div className="mt-3 flex flex-wrap gap-1.5">
+                            {/* 총 보유량 칩 */}
+                            <span className="flex items-center gap-1 bg-white/15 text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-white/30">
+                                <Coins size={10} /> 총 보유량 {totalCredits}장
+                            </span>
                             {items.map(i => (
                                 <React.Fragment key={i.label}>
                                     {i.credits > 0 && (
@@ -1565,49 +1570,47 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                     <div className="bg-stone-800/60 rounded-2xl p-4 space-y-2">
                                         <div className="flex justify-between text-sm text-stone-400">
                                             <span>소비자가 합계</span>
-                                            <span className="line-through">₩{totalConsumer.toLocaleString()}</span>
+                                            <span className="line-through decoration-red-500">₩{totalConsumer.toLocaleString()}</span>
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <span className="text-stone-300">내 구매가</span>
                                             <span className="text-white font-bold text-base">₩{totalSupply.toLocaleString()}</span>
                                         </div>
-                                        <div className="border-t border-stone-700 pt-2 flex justify-between">
-                                            <span className="text-emerald-400 font-bold text-sm">절약 금액 🎉</span>
-                                            <span className="text-emerald-400 font-black">₩{totalSaving.toLocaleString()} <span className="text-xs">({totalDiscount}% 할인)</span></span>
+                                        <div className="border-t border-stone-700 pt-3 flex items-center justify-between">
+                                            <span className="text-white font-black text-base">결제 금액</span>
+                                            <div className="text-right">
+                                                <p className="text-white font-black text-2xl">₩{totalSupply.toLocaleString()}</p>
+                                                <p className="text-emerald-400 font-bold text-xs mt-1">🎉 ₩{totalSaving.toLocaleString()} 절약 ({totalDiscount}% 할인)</p>
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* 결제수단 */}
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">결제수단</label>
-                                        <button onClick={() => setCreditPayMethod('TRANSFER')}
-                                            className={`w-full p-3.5 rounded-2xl border text-left transition ${creditPayMethod === 'TRANSFER' ? 'border-emerald-500 bg-emerald-900/20' : 'border-stone-700 bg-stone-800'}`}>
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-xl">📲</span>
-                                                <div>
-                                                    <p className="text-sm font-bold text-white flex items-center gap-2">
-                                                        실시간계좌이체
-                                                        <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-full font-black">추천</span>
-                                                    </p>
-                                                    <p className="text-[10px] text-emerald-400">수수료 없음 · 즉시 충전</p>
-                                                </div>
-                                            </div>
-                                        </button>
-                                        <button onClick={() => setCreditPayMethod('CARD')}
-                                            className={`w-full p-3.5 rounded-2xl border text-left transition ${creditPayMethod === 'CARD' ? 'border-blue-500 bg-blue-900/20' : 'border-stone-700 bg-stone-800'}`}>
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-xl">💳</span>
-                                                <div>
-                                                    <p className="text-sm font-bold text-white">카드결제</p>
-                                                    <p className="text-[10px] text-amber-400">⚠ 카드 수수료 발생 · 실시간이체를 권장합니다</p>
-                                                </div>
-                                            </div>
-                                        </button>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button onClick={() => setCreditPayMethod('TRANSFER')}
+                                                className={`p-4 rounded-2xl border text-center transition ${creditPayMethod === 'TRANSFER' ? 'border-emerald-500 bg-emerald-900/20' : 'border-stone-700 bg-stone-800'}`}>
+                                                <div className="text-2xl mb-1">🏦</div>
+                                                <p className="text-xs font-bold text-white">실시간 계좌</p>
+                                                {creditPayMethod === 'TRANSFER' && (
+                                                    <p className="text-[9px] text-emerald-400 mt-0.5">수수료 없음 · 즉시 충전</p>
+                                                )}
+                                            </button>
+                                            <button onClick={() => setCreditPayMethod('CARD')}
+                                                className={`p-4 rounded-2xl border text-center transition ${creditPayMethod === 'CARD' ? 'border-blue-500 bg-blue-900/20' : 'border-stone-700 bg-stone-800'}`}>
+                                                <div className="text-2xl mb-1">💳</div>
+                                                <p className="text-xs font-bold text-white">카드 결제</p>
+                                                {creditPayMethod === 'CARD' && (
+                                                    <p className="text-[9px] text-amber-400 mt-0.5">⚠ 카드 수수료 발생</p>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <button onClick={handleBuyCredits} disabled={isBuyingCredit}
-                                        className="w-full py-5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition">
-                                        {isBuyingCredit ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Coins size={24} />}
+                                        className="w-full py-5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 disabled:opacity-40 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition shadow-lg shadow-violet-900/40">
+                                        {isBuyingCredit ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <span>✨</span>}
                                         {isBuyingCredit ? '결제 중...' : `₩${totalSupply.toLocaleString()} 결제하기`}
                                     </button>
 
