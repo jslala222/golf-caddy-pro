@@ -83,11 +83,17 @@ export default function SettingsPage() {
                 return;
             }
             setPushGranted(true);
-            // SW ready 타임아웃 8초
+            // SW가 아직 없으면 직접 등록
+            if (!navigator.serviceWorker.controller) {
+                try {
+                    await navigator.serviceWorker.register('/sw.js');
+                } catch { /* 무시 */ }
+            }
+            // SW ready 타임아웃 20초
             const reg = await Promise.race([
                 navigator.serviceWorker.ready,
                 new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error('timeout')), 8000)
+                    setTimeout(() => reject(new Error('timeout')), 20000)
                 ),
             ]);
             const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
