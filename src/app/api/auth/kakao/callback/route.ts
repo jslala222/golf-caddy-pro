@@ -28,17 +28,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/settings?kakao=error&reason=no_key`);
   }
 
+  const clientSecret = process.env.KAKAO_CLIENT_SECRET?.trim();
+
   try {
     // 1) 인가코드 → 액세스 토큰 교환
+    const tokenParams: Record<string, string> = {
+      grant_type: 'authorization_code',
+      client_id: restApiKey,
+      redirect_uri: redirectUri,
+      code: code!,
+    };
+    if (clientSecret) tokenParams.client_secret = clientSecret;
+
     const tokenRes = await fetch('https://kauth.kakao.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: restApiKey,
-        redirect_uri: redirectUri,
-        code: code!,
-      }),
+      body: new URLSearchParams(tokenParams),
     });
 
     const tokenData = await tokenRes.json();
