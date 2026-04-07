@@ -13,6 +13,7 @@
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-start-rgb));
+  min-width: 360px;
 }
 
 @layer utilities {
