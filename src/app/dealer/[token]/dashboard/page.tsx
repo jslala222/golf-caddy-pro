@@ -79,7 +79,7 @@ interface Settlement {
     created_at: string;
 }
 
-type DealerTab = 'issue' | 'earnings' | 'customers' | 'settlement' | 'credits' | 'receipt';
+type DealerTab = 'issue' | 'credits' | 'finance' | 'earnings' | 'customers' | 'settlement' | 'receipt';
 
 // ── 컴포넌트 ──────────────────────────────────────────────────────
 export default function DealerDashboardPage({ params }: { params: { token: string } }) {
@@ -276,8 +276,8 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
 
     useEffect(() => {
         if (!authenticated || !dealer) return;
-        if (activeTab === 'customers' || activeTab === 'earnings') loadLicenses();
-        if (activeTab === 'earnings' || activeTab === 'settlement') loadSettlements();
+        if (activeTab === 'customers' || activeTab === 'earnings' || activeTab === 'finance') loadLicenses();
+        if (activeTab === 'earnings' || activeTab === 'settlement' || activeTab === 'finance') loadSettlements();
         if (activeTab === 'receipt') loadReceiptHistory();
     }, [activeTab, authenticated, dealer, loadLicenses, loadSettlements, loadReceiptHistory]);
 
@@ -636,12 +636,11 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         .reduce((a, s) => a + s.commission_amount, 0);
 
     const TABS: { key: DealerTab; label: string; icon: React.ReactNode }[] = [
-        { key: 'issue',      label: '코드발급',  icon: <Key size={14} /> },
-        { key: 'credits',    label: '크레딧구매', icon: <Coins size={14} /> },
-        { key: 'earnings',   label: '내 수익',   icon: <TrendingUp size={14} /> },
-        { key: 'customers',  label: '내 고객',   icon: <Users size={14} /> },
-        { key: 'settlement', label: '정산요청',  icon: <Receipt size={14} /> },
-        { key: 'receipt',    label: '현금영수증', icon: <BadgeCheck size={14} /> },
+        { key: 'issue',     label: '코드발급',  icon: <Key size={14} /> },
+        { key: 'credits',   label: '크레딧',    icon: <Coins size={14} /> },
+        { key: 'finance',   label: '수익·정산', icon: <TrendingUp size={14} /> },
+        { key: 'customers', label: '내 고객',   icon: <Users size={14} /> },
+        { key: 'receipt',   label: '영수증',    icon: <Receipt size={14} /> },
     ];
 
     // ── 현금영수증 발행 핸들러 ──────────────────────────────────
@@ -1055,9 +1054,7 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                     <div>
                         <p className="text-blue-300 text-xs font-bold uppercase tracking-widest mb-1">Caddy Manager Pro</p>
                         <h1 className="text-2xl font-black">딜러 대시보드</h1>
-                        <p className="text-blue-200 text-sm mt-1">
-                            {dealer?.name} 님 · 총 {dealer?.total_issued ?? 0}건 발급
-                        </p>
+                        <p className="text-blue-200 text-sm mt-1">{dealer?.name} 님</p>
                     </div>
                     <button
                         onClick={() => { router.push('/landing'); }}
@@ -1065,38 +1062,39 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                         <LogOut size={13} /> 로그아웃
                     </button>
                 </div>
-                {/* 크레딧 잔량 요약 */}
-                {(() => {
+                {/* 요약 카드 그리드 */}
+                {dealer && (() => {
                     const d = dealer;
-                    if (!d) return null;
-                    const totalCredits = (d.credits_month + d.credits_6month + d.credits_year +
-                        d.credits_month_premium + d.credits_6month_premium + d.credits_year_premium);
+                    const totalCredits = d.credits_month + d.credits_6month + d.credits_year +
+                        d.credits_month_premium + d.credits_6month_premium + d.credits_year_premium;
                     const items = [
-                        { label: '1개월', credits: d.credits_month, premiumCredits: d.credits_month_premium },
-                        { label: '6개월', credits: d.credits_6month, premiumCredits: d.credits_6month_premium },
-                        { label: '1년',   credits: d.credits_year,   premiumCredits: d.credits_year_premium },
-                    ].filter(i => i.credits > 0 || i.premiumCredits > 0);
+                        { label: '1개월', s: d.credits_month, p: d.credits_month_premium },
+                        { label: '6개월', s: d.credits_6month, p: d.credits_6month_premium },
+                        { label: '1년',   s: d.credits_year,   p: d.credits_year_premium },
+                    ].filter(i => i.s > 0 || i.p > 0);
                     return (
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                            {/* 총 보유량 칩 */}
-                            <span className="flex items-center gap-1 bg-white/15 text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-white/30">
-                                <Coins size={10} /> 총 보유량 {totalCredits}장
-                            </span>
-                            {items.map(i => (
-                                <React.Fragment key={i.label}>
-                                    {i.credits > 0 && (
-                                        <span className="flex items-center gap-1 bg-blue-600/60 text-blue-100 text-[10px] font-bold px-2 py-1 rounded-full">
-                                            <Coins size={10} /> {i.label} {i.credits}장
-                                        </span>
-                                    )}
-                                    {i.premiumCredits > 0 && (
-                                        <span className="flex items-center gap-1 bg-emerald-600/60 text-emerald-100 text-[10px] font-bold px-2 py-1 rounded-full">
-                                            <Coins size={10} /> {i.label}프리미엄 {i.premiumCredits}장
-                                        </span>
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </div>
+                        <>
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                                <div className="bg-white/12 rounded-2xl p-3.5">
+                                    <p className="text-blue-200 text-[10px] font-bold mb-1">💳 보유 크레딧</p>
+                                    <p className="text-white font-black text-2xl leading-none">{totalCredits}<span className="text-blue-200 text-base font-bold"> 장</span></p>
+                                </div>
+                                <div className="bg-white/12 rounded-2xl p-3.5">
+                                    <p className="text-blue-200 text-[10px] font-bold mb-1">📤 총 발급</p>
+                                    <p className="text-white font-black text-2xl leading-none">{d.total_issued}<span className="text-blue-200 text-base font-bold"> 건</span></p>
+                                </div>
+                            </div>
+                            {items.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                    {items.map(i => (
+                                        <React.Fragment key={i.label}>
+                                            {i.s > 0 && <span className="flex items-center gap-1 bg-blue-600/50 text-blue-100 text-[10px] font-bold px-2 py-1 rounded-full"><Coins size={9}/> {i.label} {i.s}장</span>}
+                                            {i.p > 0 && <span className="flex items-center gap-1 bg-emerald-600/50 text-emerald-100 text-[10px] font-bold px-2 py-1 rounded-full"><Coins size={9}/> {i.label}⭐ {i.p}장</span>}
+                                        </React.Fragment>
+                                    ))}
+                                </div>
+                            )}
+                        </>
                     );
                 })()}
             </div>
@@ -1760,15 +1758,35 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                     </div>
                 )}
 
-                {/* ── 내 수익 탭 ── */}
-                {activeTab === 'earnings' && (
+                {/* ── 수익·정산 탭 ── */}
+                {activeTab === 'finance' && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-white font-bold text-sm flex items-center gap-2"><TrendingUp size={16} className="text-emerald-400" /> 수익 현황</h2>
+                            <h2 className="text-white font-bold text-sm flex items-center gap-2"><TrendingUp size={16} className="text-emerald-400" /> 수익·정산</h2>
                             <button onClick={() => { loadSettlements(); loadLicenses(); }} className="text-stone-500 hover:text-stone-300">
                                 <RefreshCcw size={14} />
                             </button>
                         </div>
+
+                        {/* 정산 요청 버튼 */}
+                        {!settlementsLoading && !licensesLoading && (
+                            <div className="space-y-2">
+                                <div className="bg-amber-900/20 border border-amber-700 rounded-2xl p-4 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-amber-300 text-xs font-bold">미정산 금액</p>
+                                        <p className="text-amber-100 text-2xl font-black">₩{pendingAmount.toLocaleString()}</p>
+                                        <p className="text-amber-400/70 text-[10px]">{settlements.filter(s => !s.settled).length}건</p>
+                                    </div>
+                                    <button
+                                        onClick={handleSettlementRequest}
+                                        disabled={requestingSettlement || pendingAmount === 0}
+                                        className="py-3 px-4 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-2xl font-bold text-white text-sm flex items-center gap-2 transition">
+                                        {requestingSettlement ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Receipt size={15} />}
+                                        {requestingSettlement ? '요청 중...' : pendingAmount > 0 ? '정산 요청' : '요청 없음'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {settlementsLoading || licensesLoading ? (
                             <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
@@ -1970,24 +1988,37 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                 {/* ── 현금영수증 발행 탭 ── */}
                 {activeTab === 'receipt' && (
                     <div className="space-y-5">
-                        <h2 className="text-white font-bold text-sm flex items-center gap-2"><BadgeCheck size={16} className="text-emerald-400" /> 현금영수증 발행</h2>
+                        <h2 className="text-white font-bold text-sm flex items-center gap-2"><Receipt size={16} className="text-amber-400" /> 영수증 안내</h2>
 
-                        {/* ✅ 딜러 전용 안내 */}
-                        <div className="bg-emerald-900/20 border border-emerald-700 rounded-2xl p-4 space-y-1 text-xs text-emerald-200 leading-relaxed">
-                            <p className="font-black text-emerald-300 text-sm">✅ 딜러 현금 수금 전용</p>
-                            <p>고객에게 <strong>현금·계좌이체</strong>로 받은 경우 여기서 현금영수증을 발행하세요.</p>
-                            <p className="text-emerald-400">크레딧으로 코드를 발급한 거래는 고객이 포트원 결제를 거치지 않으므로 이중발급 걱정 없습니다.</p>
+                        {/* 🏢 사업자 딜러 */}
+                        <div className="bg-blue-900/20 border border-blue-700 rounded-2xl p-5 space-y-3">
+                            <p className="font-black text-blue-300 text-base">🏢 사업자 딜러 — 본인 명의 직접 발행</p>
+                            <p className="text-blue-100 text-sm leading-relaxed">사업자등록증이 있으면 <strong>본인 사업자 명의</strong>로 직접 발행하세요.</p>
+                            <div className="bg-blue-950/60 rounded-xl p-4 space-y-1.5 text-xs text-blue-200 leading-relaxed">
+                                <p className="font-bold text-blue-100 mb-2">발행 방법</p>
+                                <p>① ARS <strong>126</strong> → 2번 → 사업자번호 → 금액 → 고객번호 (30초)</p>
+                                <p>② 스마트폰 <strong>손택스 앱</strong> → 현금영수증 → 발급</p>
+                                <p>③ PC <strong>홈택스 (hometax.go.kr)</strong> → 현금영수증 발급</p>
+                            </div>
                         </div>
 
-                        {/* 🏢 사업자 딜러 안내 */}
-                        <div className="bg-blue-900/20 border border-blue-700 rounded-2xl p-4 space-y-1.5 text-xs text-blue-200 leading-relaxed">
-                            <p className="font-black text-blue-300 text-sm">🏢 사업자 딜러라면 직접 발행하세요</p>
-                            <p>사업자등록증이 있는 딜러는 <strong>본인 사업자 명의</strong>로 발행해야 합니다.<br/>아래 기능은 <strong>본사 명의</strong>로 발행되므로 사업자 딜러에게는 적합하지 않습니다.</p>
-                            <div className="mt-2 bg-blue-900/30 rounded-xl p-3 space-y-1">
-                                <p className="font-bold text-blue-100">직접 발행 방법</p>
-                                <p>① ARS <strong>126</strong> 전화 → 2번 → 사업자번호 입력 → 금액 → 고객번호 (30초)</p>
-                                <p>② 스마트폰 <strong>손택스 앱</strong> → 현금영수증 → 발급</p>
+                        {/* 👤 프리랜서 딜러 */}
+                        <div className="bg-amber-900/20 border border-amber-700 rounded-2xl p-5 space-y-3">
+                            <p className="font-black text-amber-300 text-base">👤 프리랜서 딜러 — 직접 발행 불가</p>
+                            <p className="text-amber-100 text-sm leading-relaxed">사업자가 없으면 고객에게 <strong className="text-red-300">현금영수증을 직접 발행할 수 없습니다.</strong></p>
+                            <div className="bg-amber-950/60 rounded-xl p-4 space-y-1.5 text-xs text-amber-200 leading-relaxed">
+                                <p className="font-bold text-amber-100 mb-2">고객이 영수증 원할 때</p>
+                                <p>→ <strong>본사 결제 페이지로 유도</strong>하세요 (코드발급 탭 → B안 결제링크 생성)</p>
+                                <p>→ 포트원 결제 시 영수증 자동 발행됩니다 ✅</p>
+                                <p className="text-amber-400">카드결제 / 실시간 계좌이체 모두 자동 처리</p>
                             </div>
+                        </div>
+
+                        <div className="bg-stone-900 rounded-2xl p-4 text-xs text-stone-400 leading-relaxed space-y-1">
+                            <p className="font-bold text-stone-300 mb-1.5">📌 핵심 원칙</p>
+                            <p>• 크레딧 이용권 발급 거래: 이중발급 없음 ✅</p>
+                            <p>• 사업자 딜러: ARS 126 / 손택스로 직접 발행</p>
+                            <p>• 프리랜서 딜러: 본사 결제 링크 유도만 가능</p>
                         </div>
 
                         {/* 결과 표시 */}
@@ -2007,6 +2038,9 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                         )}
 
                         {/* 영수증 종류 선택 */}
+                        <div className="bg-orange-900/20 border border-orange-700 rounded-xl px-4 py-2.5 text-xs text-orange-300 font-bold">
+                            ⚠️ 아래 기능은 본사 명의 발행입니다 (관리자 이관 예정)
+                        </div>
                         <div className="bg-stone-900 rounded-3xl p-5 space-y-4">
                             <p className="text-stone-400 text-xs font-bold uppercase tracking-widest">영수증 종류</p>
                             <div className="flex gap-2">

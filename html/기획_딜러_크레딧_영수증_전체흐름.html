@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>딜러 크레딧 · 영수증 · 세무 전체 흐름 정리</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    line-height: 1.7;
+    padding: 24px 16px 60px;
+    font-size: 14px;
+  }
+
+  /* 제목 */
+  .page-title {
+    text-align: center;
+    margin-bottom: 32px;
+    padding: 24px;
+    background: linear-gradient(135deg, #1e293b, #0f2744);
+    border-radius: 16px;
+    border: 1px solid #334155;
+  }
+  .page-title h1 { font-size: 1.5rem; font-weight: 900; color: #f8fafc; margin-bottom: 8px; }
+  .page-title p  { font-size: 0.85rem; color: #94a3b8; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.75rem; font-weight:700; margin:2px; }
+  .badge-blue   { background:#1d4ed8; color:#fff; }
+  .badge-green  { background:#15803d; color:#fff; }
+  .badge-amber  { background:#b45309; color:#fff; }
+
+  /* 섹션 */
+  .section {
+    background: #1e293b;
+    border-radius: 14px;
+    padding: 22px 20px;
+    margin-bottom: 20px;
+    border: 1px solid #334155;
+  }
+  .section-title {
+    font-size: 1rem;
+    font-weight: 900;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #334155;
+    color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* 흐름도 */
+  .flow-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 12px 0; }
+  .flow-box {
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .fb-본사  { background:#1d4ed8; color:#fff; }
+  .fb-딜러a { background:#7c3aed; color:#fff; }
+  .fb-딜러b { background:#0f766e; color:#fff; }
+  .fb-고객  { background:#374151; color:#e5e7eb; }
+  .fb-세무  { background:#9a3412; color:#fff; }
+  .fb-ok    { background:#166534; color:#bbf7d0; }
+  .fb-warn  { background:#854d0e; color:#fef08a; }
+  .fb-bad   { background:#991b1b; color:#fecaca; }
+  .flow-arrow { color:#64748b; font-size:1.2rem; font-weight:900; }
+  .flow-note { font-size:0.75rem; color:#64748b; margin-left:4px; }
+
+  /* 카드 그리드 */
+  .card-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:600px){ .card-grid { grid-template-columns:1fr; } }
+
+  .card {
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .card-a  { background:#1e1b4b; border:2px solid #7c3aed; }
+  .card-b  { background:#042f2e; border:2px solid #0f766e; }
+  .card-ok { background:#052e16; border:1px solid #166534; }
+  .card-warn { background:#2d1b00; border:1px solid #b45309; }
+  .card-bad  { background:#2d0a0a; border:1px solid #991b1b; }
+
+  .card-title { font-size:0.92rem; font-weight:900; margin-bottom:10px; }
+  .card-a .card-title  { color:#a78bfa; }
+  .card-b .card-title  { color:#5eead4; }
+  .card-ok .card-title { color:#86efac; }
+  .card-warn .card-title { color:#fcd34d; }
+  .card-bad .card-title  { color:#fca5a5; }
+
+  ul.dot { padding-left: 0; list-style: none; }
+  ul.dot li { padding: 3px 0; font-size: 0.84rem; }
+  ul.dot li::before { content: '• '; color: #64748b; }
+
+  /* 테이블 */
+  table { width:100%; border-collapse:collapse; font-size:0.82rem; margin-top:10px; }
+  th { background:#0f172a; color:#94a3b8; padding:9px 12px; text-align:left; font-weight:700; }
+  td { padding:9px 12px; border-bottom:1px solid #1e293b; }
+  tr:nth-child(even) td { background:#0f172a55; }
+  td.good { color:#86efac; font-weight:700; }
+  td.warn { color:#fcd34d; font-weight:700; }
+  td.bad  { color:#fca5a5; font-weight:700; }
+
+  /* 코드블록 */
+  .code-box {
+    background:#0f172a;
+    border-radius:10px;
+    padding:14px 16px;
+    font-family:'Courier New', monospace;
+    font-size:0.8rem;
+    line-height:1.9;
+    margin:12px 0;
+    border:1px solid #334155;
+  }
+  .c-gray   { color:#64748b; }
+  .c-green  { color:#34d399; }
+  .c-blue   { color:#93c5fd; }
+  .c-yellow { color:#fcd34d; }
+  .c-red    { color:#fca5a5; }
+  .c-purple { color:#c4b5fd; }
+
+  /* 하이라이트 박스 */
+  .hl-box {
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:0.84rem;
+    margin:10px 0;
+    line-height:1.8;
+  }
+  .hl-green  { background:#052e16; border-left:4px solid #22c55e; }
+  .hl-amber  { background:#2d1b00; border-left:4px solid #f59e0b; }
+  .hl-red    { background:#2d0a0a; border-left:4px solid #ef4444; }
+  .hl-blue   { background:#0c1a3a; border-left:4px solid #3b82f6; }
+  .hl-purple { background:#1a0a3a; border-left:4px solid #8b5cf6; }
+  .hl-box strong { display:block; font-weight:900; margin-bottom:4px; }
+  .hl-green strong  { color:#86efac; }
+  .hl-amber strong  { color:#fcd34d; }
+  .hl-red strong    { color:#fca5a5; }
+  .hl-blue strong   { color:#93c5fd; }
+  .hl-purple strong { color:#c4b5fd; }
+
+  footer { text-align:center; font-size:0.75rem; color:#475569; margin-top:16px; }
+
+  /* 스텝 */
+  .step-list { list-style:none; padding:0; }
+  .step-list li { display:flex; gap:12px; align-items:flex-start; padding:8px 0; border-bottom:1px dashed #334155; }
+  .step-list li:last-child { border-bottom:none; }
+  .step-num { min-width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:900; flex-shrink:0; margin-top:1px; }
+  .sn-a { background:#7c3aed; color:#fff; }
+  .sn-b { background:#0f766e; color:#fff; }
+  .sn-c { background:#1d4ed8; color:#fff; }
+  .step-content .st { font-weight:700; font-size:0.87rem; }
+  .step-content .sd { font-size:0.79rem; color:#94a3b8; margin-top:2px; }
+
+  /* 구분선 */
+  hr { border:none; border-top:1px solid #334155; margin:20px 0; }
+</style>
+</head>
+<body>
+
+<!-- 제목 -->
+<div class="page-title">
+  <h1>딜러 크레딧 · 영수증 · 세무 전체 흐름 정리</h1>
+  <p>본사 ↔ 딜러 ↔ 고객 간 돈의 흐름과 각 단계별 영수증·세무 처리</p>
+  <div style="margin-top:10px;">
+    <span class="badge badge-amber">2026-04-07</span>
+    <span class="badge badge-blue">Caddy Manager Pro</span>
+  </div>
+</div>
+
+<!-- 1. 전체 구조 한눈에 -->
+<div class="section">
+  <div class="section-title">🗺️ 전체 돈의 흐름 — 한눈에</div>
+
+  <div class="code-box">
+<span class="c-gray">═══════════════════════════════════════════════════════</span>
+<span class="c-blue">【 흐름 1 】 본사 → 딜러 (크레딧 판매)</span>
+<span class="c-gray">───────────────────────────────────────────────────────</span>
+딜러가 본사에 <span class="c-green">크레딧 구매 (포트원)</span>
+    카드결제   → 카드사 자동 영수증 ✅
+    계좌이체   → 포트원 현금영수증 ✅ (자동 or 자진발급)
+<span class="c-gray">→ 이 단계 영수증은 완전 자동 처리됨</span>
+
+<span class="c-blue">【 흐름 2 】 딜러 → 고객 (코드 발급)</span>
+<span class="c-gray">───────────────────────────────────────────────────────</span>
+딜러가 크레딧 차감 → 고객에게 이용권 코드 전달
+고객이 딜러에게 <span class="c-yellow">현금 or 개인계좌</span>로 결제
+    <span class="c-gray">→ 포트원 거치지 않음 → 자동 영수증 없음</span>
+    <span class="c-gray">→ 딜러 유형에 따라 처리 방식이 완전히 다름</span>
+
+<span class="c-blue">【 흐름 3 】 본사 → 딜러 (수수료 정산)</span>
+<span class="c-gray">───────────────────────────────────────────────────────</span>
+딜러에게 수수료(마진) 지급 → 딜러 유형에 따라 처리 다름
+<span class="c-gray">═══════════════════════════════════════════════════════</span>
+  </div>
+</div>
+
+<!-- 2. 딜러 유형 -->
+<div class="section">
+  <div class="section-title">👥 딜러 유형 2가지 — 처리 방식 완전히 다름</div>
+  <div class="card-grid">
+    <div class="card card-a">
+      <div class="card-title">🔵 안 A — 사업자 딜러</div>
+      <ul class="dot">
+        <li>개인사업자 or 법인 사업자 보유</li>
+        <li>본인 명의로 세금계산서/현금영수증 발행 가능</li>
+        <li>부가세 신고 의무 직접 부담</li>
+        <li>본사와 세금계산서 교환으로 정산</li>
+      </ul>
+    </div>
+    <div class="card card-b">
+      <div class="card-title">🟢 안 B — 프리랜서 딜러 (주력)</div>
+      <ul class="dot">
+        <li>사업자등록증 없음</li>
+        <li>고객에게 현금영수증 발행 불가</li>
+        <li>본사가 수수료 지급 시 3.3% 원천징수</li>
+        <li>연 1회 지급명세서 제출 (본사 의무)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 흐름 1 상세 - 크레딧 구매 -->
+<div class="section">
+  <div class="section-title">💳 흐름 1 상세 — 본사가 딜러에게 크레딧 판매</div>
+
+  <div class="flow-wrap">
+    <div class="flow-box fb-딜러a">딜러 (A or B)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box fb-본사">본사 결제페이지 (포트원)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box fb-ok">영수증 자동 처리 ✅</div>
+  </div>
+
+  <table>
+    <thead><tr><th>결제수단</th><th>영수증 처리</th><th>별도 작업</th></tr></thead>
+    <tbody>
+      <tr><td>카드결제</td><td class="good">카드사 자동 발행</td><td class="good">없음</td></tr>
+      <tr><td>계좌이체 + 고객 번호 입력</td><td class="good">포트원 자동 발행</td><td class="good">없음</td></tr>
+      <tr><td>계좌이체 + 번호 미입력 + 10만원↑</td><td class="good">서버 자진발급 자동</td><td class="good">없음 (코드로 구현됨)</td></tr>
+      <tr><td>계좌이체 + 번호 미입력 + 10만원↓</td><td class="good">의무 없음</td><td class="good">없음</td></tr>
+    </tbody>
+  </table>
+
+  <div class="hl-box hl-green" style="margin-top:14px;">
+    <strong>✅ 흐름 1은 완전 자동 — 본사가 추가로 할 일 없음</strong>
+    포트원이 모든 영수증 처리. 딜러 유형(A/B) 관계없이 동일하게 처리됨.
+  </div>
+</div>
+
+<!-- 4. 흐름 2 상세 - 딜러-고객 -->
+<div class="section">
+  <div class="section-title">💰 흐름 2 상세 — 딜러가 고객에게 코드 판매</div>
+
+  <div class="flow-wrap">
+    <div class="flow-box fb-고객">고객</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box fb-warn">현금 or 개인계좌</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box fb-딜러a">딜러</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box fb-고객">이용권 코드 전달</div>
+  </div>
+  <p class="flow-note" style="margin-bottom:14px;">※ 포트원 거치지 않음 → 자동 처리 없음 → 딜러가 직접 처리해야 함</p>
+
+  <div class="card-grid">
+
+    <!-- 안 A -->
+    <div class="card card-a">
+      <div class="card-title">🔵 안 A 딜러 — 고객 영수증</div>
+      <ul class="dot">
+        <li style="color:#c4b5fd;">✅ 본인 사업자 명의로 발행 가능</li>
+        <li>현금영수증: ARS 126 or 손택스 앱</li>
+        <li>세금계산서: 홈택스 전자 발행</li>
+        <li>우리 프로그램 현금영수증 탭 사용 ❌ (본사 명의로 나옴)</li>
+      </ul>
+      <div class="hl-box hl-purple" style="margin-top:10px;">
+        <strong>직접 발행 방법</strong>
+        ① ARS 126 → 2번 → 사업자번호 → 금액 → 고객번호 (30초)<br>
+        ② 손택스 앱 → 현금영수증 → 발급
+      </div>
+    </div>
+
+    <!-- 안 B -->
+    <div class="card card-b">
+      <div class="card-title">🟢 안 B 딜러 — 고객 영수증</div>
+      <ul class="dot">
+        <li style="color:#fca5a5;">❌ 사업자 없음 → 고객에게 발행 불가</li>
+        <li>우리 프로그램 탭으로 발행하면?</li>
+        <li style="padding-left:10px; color:#fcd34d;">→ 본사 명의로 나감</li>
+        <li style="padding-left:10px; color:#fca5a5;">→ 본사가 그 돈 받지 않음 = 허위영수증 ⚠️</li>
+      </ul>
+      <div class="hl-box hl-red" style="margin-top:10px;">
+        <strong>❌ 합법적 발행 방법 없음</strong>
+        고객이 영수증 원하면 → 본사 결제페이지로 유도<br>
+        <span style="color:#f87171;">"현금 결제는 영수증 발행 불가" 고객에게 안내 필요</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 5. 흐름 3 상세 - 정산 -->
+<div class="section">
+  <div class="section-title">🧾 흐름 3 상세 — 본사가 딜러에게 수수료 정산</div>
+
+  <div class="card-grid">
+
+    <div class="card card-a">
+      <div class="card-title">🔵 안 A 딜러 정산</div>
+      <ul class="step-list">
+        <li>
+          <span class="step-num sn-a">1</span>
+          <div class="step-content">
+            <div class="st">딜러가 본사에 세금계산서 발행</div>
+            <div class="sd">수수료(마진) 금액으로 역발행</div>
+          </div>
+        </li>
+        <li>
+          <span class="step-num sn-a">2</span>
+          <div class="step-content">
+            <div class="st">본사가 수수료 입금</div>
+            <div class="sd">원천징수 없음, 세금계산서 수취</div>
+          </div>
+        </li>
+        <li>
+          <span class="step-num sn-a">3</span>
+          <div class="step-content">
+            <div class="st">본사 장부 매입비용 처리</div>
+            <div class="sd">부가세 매입세액 공제 가능</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card card-b">
+      <div class="card-title">🟢 안 B 딜러 정산</div>
+      <ul class="step-list">
+        <li>
+          <span class="step-num sn-b">1</span>
+          <div class="step-content">
+            <div class="st">본사가 수수료에서 3.3% 차감</div>
+            <div class="sd">소득세 3% + 지방소득세 0.3%</div>
+          </div>
+        </li>
+        <li>
+          <span class="step-num sn-b">2</span>
+          <div class="step-content">
+            <div class="st">잔액 딜러 계좌 입금</div>
+            <div class="sd">매월 정산 시 실수령액 지급</div>
+          </div>
+        </li>
+        <li>
+          <span class="step-num sn-b">3</span>
+          <div class="step-content">
+            <div class="st">매월 10일 원천세 신고 (홈택스)</div>
+            <div class="sd">소득 구분 코드 A03 (사업소득-인적용역)</div>
+          </div>
+        </li>
+        <li>
+          <span class="step-num sn-b">4</span>
+          <div class="step-content">
+            <div class="st">다음해 3월 지급명세서 제출</div>
+            <div class="sd">딜러별 인적사항 포함, 미제출 시 2% 가산세</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- 6. 우리 프로그램 현금영수증 탭 정리 -->
+<div class="section">
+  <div class="section-title">📱 우리 프로그램 현금영수증 탭 — 실제 사용 가능 여부</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>상황</th>
+        <th>탭 사용 가능?</th>
+        <th>이유</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>안 A 딜러가 고객에게 현금 수금</td>
+        <td class="bad">❌ 사용 불가</td>
+        <td>본사 명의로 발행되므로 적합하지 않음</td>
+      </tr>
+      <tr>
+        <td>안 B 딜러가 고객에게 현금 수금</td>
+        <td class="bad">❌ 허위영수증</td>
+        <td>본사가 그 돈 받지 않음 → 세무 문제</td>
+      </tr>
+      <tr>
+        <td>딜러가 본사 계좌로 받은 돈 재정산</td>
+        <td class="warn">⚠️ 구조적 불가</td>
+        <td>딜러-고객 간 거래는 본사와 무관</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="hl-box hl-amber" style="margin-top:16px;">
+    <strong>⚠️ 결론 — 현금영수증 탭은 현재 구조에서 사용처 없음</strong>
+    딜러가 고객에게 어떤 방식으로 받든 우리 탭으로 발행하는 건 적합하지 않습니다.<br>
+    탭 기능보다는 <strong>딜러 유형별 안내 가이드</strong>로 대체하는 것이 현실적입니다.
+  </div>
+</div>
+
+<!-- 7. 고객이 영수증 원할 때 -->
+<div class="section">
+  <div class="section-title">🙋 고객이 영수증을 원할 때 — 딜러가 할 수 있는 것</div>
+
+  <div class="card-grid">
+    <div class="card card-a">
+      <div class="card-title">🔵 안 A 딜러 고객</div>
+      <ul class="dot">
+        <li>ARS 126으로 직접 현금영수증 발행 ✅</li>
+        <li>홈택스로 세금계산서 발행 ✅</li>
+        <li>카드단말기 보유 시 카드 결제 ✅</li>
+        <li>모든 방법 사용 가능</li>
+      </ul>
+    </div>
+    <div class="card card-b">
+      <div class="card-title">🟢 안 B 딜러 고객</div>
+      <ul class="dot">
+        <li style="color:#fca5a5;">현금 결제 → 영수증 발행 방법 없음</li>
+        <li style="color:#86efac;">해결책: 고객에게 본사 결제 페이지 유도</li>
+        <li style="padding-left:10px;">→ caddy-pink.vercel.app/subscribe</li>
+        <li style="padding-left:10px;">→ 포트원으로 결제 → 영수증 자동</li>
+        <li style="color:#86efac;">딜러는 본사에서 수수료로 정산받음</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="hl-box hl-blue" style="margin-top:14px;">
+    <strong>💡 핵심 원칙</strong>
+    고객이 영수증이 필요하면 → <strong>항상 포트원(본사) 결제를 거쳐야 함</strong><br>
+    딜러가 중간에서 현금 수령 후 영수증을 발행할 수 있는 합법적 방법:<br>
+    → 안 A (사업자 딜러): 본인 명의로 직접 발행<br>
+    → 안 B (프리랜서): 없음 → 본사 결제 유도만 가능
+  </div>
+</div>
+
+<!-- 8. 최종 정리표 -->
+<div class="section">
+  <div class="section-title">📊 딜러 유형별 전체 처리 정리표</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>구분</th>
+        <th>🔵 안 A (사업자 딜러)</th>
+        <th>🟢 안 B (프리랜서 딜러)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>크레딧 구매 영수증</strong></td>
+        <td class="good">자동 (포트원)</td>
+        <td class="good">자동 (포트원)</td>
+      </tr>
+      <tr>
+        <td><strong>고객 현금 수금 영수증</strong></td>
+        <td class="good">본인 발행 (ARS 126)</td>
+        <td class="bad">발행 불가</td>
+      </tr>
+      <tr>
+        <td><strong>고객이 영수증 원할 때</strong></td>
+        <td class="good">직접 발행</td>
+        <td class="warn">본사 결제 유도</td>
+      </tr>
+      <tr>
+        <td><strong>수수료 정산 방식</strong></td>
+        <td>세금계산서 교환</td>
+        <td>3.3% 원천징수 후 지급</td>
+      </tr>
+      <tr>
+        <td><strong>본사 세무 의무</strong></td>
+        <td>세금계산서 수취 + 매입비용</td>
+        <td>원천세 신고 + 지급명세서</td>
+      </tr>
+      <tr>
+        <td><strong>우리 현금영수증 탭</strong></td>
+        <td class="bad">사용 불가 (본사 명의)</td>
+        <td class="bad">허위영수증 위험</td>
+      </tr>
+      <tr>
+        <td><strong>딜러 진입 장벽</strong></td>
+        <td class="warn">높음 (사업자 필요)</td>
+        <td class="good">낮음</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 9. 권장 액션 -->
+<div class="section">
+  <div class="section-title">✅ 우리가 해야 할 것 — 액션 리스트</div>
+
+  <ul class="step-list">
+    <li>
+      <span class="step-num sn-c">1</span>
+      <div class="step-content">
+        <div class="st">딜러 계약서 작성 (A/B 유형별)</div>
+        <div class="sd">안 A: 세금계산서 교환 조항 | 안 B: 3.3% 원천징수 동의 + 주민번호 수취</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num sn-c">2</span>
+      <div class="step-content">
+        <div class="st">딜러 등록 시 A/B 유형 구분 저장 (DB)</div>
+        <div class="sd">관리자 페이지 딜러관리 탭에 사업자 여부 필드 추가</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num sn-c">3</span>
+      <div class="step-content">
+        <div class="st">안 B 딜러에게 고객 안내 문구 제공</div>
+        <div class="sd">"현금 결제 시 영수증 불가, 본사 결제 시 자동 발행" 안내카드</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num sn-c">4</span>
+      <div class="step-content">
+        <div class="st">안 B 딜러 수수료 지급 시 3.3% 원천징수 실행</div>
+        <div class="sd">매월 10일 홈택스 원천세 신고 (A03 코드)</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num sn-c">5</span>
+      <div class="step-content">
+        <div class="st">현금영수증 탭 → 안내 가이드 탭으로 교체 (선택)</div>
+        <div class="sd">실제 발행 기능 대신 유형별 안내 + ARS 126 링크로 대체 고려</div>
+      </div>
+    </li>
+    <li>
+      <span class="step-num sn-c">6</span>
+      <div class="step-content">
+        <div class="st">세무사 1회 상담 (딜러 10명 이상 시)</div>
+        <div class="sd">지급명세서 누락 가산세 2% 방지, 원천징수 신고 방법 확인</div>
+      </div>
+    </li>
+  </ul>
+</div>
+
+<footer>
+  Caddy Manager Pro 내부 기획문서 · 2026-04-07 · 법적 효력 없음 — 실제 집행 전 세무사 확인 필수
+</footer>
+
+</body>
+</html>
