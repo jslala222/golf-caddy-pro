@@ -18,6 +18,7 @@ export default function SettingsPage() {
     const [licenseExpiresAt, setLicenseExpiresAt] = useState<string | null>(null);
     const [codeCopied, setCodeCopied] = useState(false);
     const [policyModal, setPolicyModal] = useState<null | 'tos' | 'privacy' | 'refund'>(null);
+    const [pushAlertModal, setPushAlertModal] = useState<null | { title: string; desc: string; guide?: string }>(null);
 
     // 알람 설정
     const ALARM_OPTIONS = [
@@ -72,33 +73,60 @@ export default function SettingsPage() {
         setPushMsg('');
         try {
             const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                setPushGranted(true);
-                // 서비스워커에서 구독 등록
-                const reg = await navigator.serviceWorker.ready;
-                const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-                if (!vapidKey) { setPushMsg('VAPID 키 미설정 — 관리자 문의'); setPushLoading(false); return; }
-                const sub = await reg.pushManager.subscribe({
+            if (permission !== 'granted') {
+                setPushAlertModal({
+                    title: '알림이 차단되어 있어요',
+                    desc: '스마트폰에서 이 앱의 알림을 막아두셨어요.',
+                    guide: '해결방법: 스마트폰 설정 → 앱 → 브라우저 → 알림 → 허용',
+                });
+                setPushLoading(false);
+                return;
+            }
+            setPushGranted(true);
+            // SW ready 타임아웃 8초
+            const reg = await Promise.race([
+                navigator.serviceWorker.ready,
+                new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('timeout')), 8000)
+                ),
+            ]);
+            const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (!vapidKey) { setPushMsg('설정 오류 — 관리자에게 문의해주세요.'); setPushLoading(false); return; }
+            // 기존 구독이 있으면 재사용, 없으면 신규 생성
+            let sub = await reg.pushManager.getSubscription();
+            if (!sub) {
+                sub = await reg.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: vapidKey,
                 });
-                // 구독 정보를 서버에 저장
-                const licenseCode = localStorage.getItem('caddy_license_key');
-                await fetch('/api/push/subscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ subscription: sub, licenseCode }),
-                });
-                setPushEnabled(true);
-                setPushMsg('알림 허용 완료! 이제 약속 알람을 받을 수 있습니다.');
-            } else {
-                setPushMsg('알림이 거부되었습니다. 브라우저 설정에서 허용해주세요.');
             }
-        } catch (e) {
-            setPushMsg('오류가 발생했습니다. 홈화면에 앱을 추가한 후 다시 시도해주세요.');
+            // 구독 정보를 서버에 저장
+            const licenseCode = localStorage.getItem('caddy_license_key');
+            await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subscription: sub, licenseCode }),
+            });
+            setPushEnabled(true);
+            setPushMsg('✅ 알림 설정 완료! 약속 시간 전에 알림을 보내드립니다.');
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : '';
+            if (msg === 'timeout') {
+                setPushAlertModal({
+                    title: '알림 설정이 안 되네요',
+                    desc: '일반 브라우저(크롬, 사파리)에서는 알림이 잘 안 될 수 있어요.',
+                    guide: '해결방법: 이 앱을 홈화면에 추가한 뒤, 홈화면 아이콘으로 열어서 다시 시도해 주세요.',
+                });
+            } else {
+                setPushAlertModal({
+                    title: '알림 설정 중 문제가 생겼어요',
+                    desc: '알 수 없는 오류가 발생했습니다.',
+                    guide: '홈화면에 앱을 추가한 뒤 다시 시도해 주세요.',
+                });
+            }
         }
         setPushLoading(false);
-    };
+    }
 
     const handleDisablePush = async () => {
         setPushLoading(true);
@@ -659,6 +687,32 @@ export default function SettingsPage() {
                 </div>
             </div>
         </div>
+
+        {/* Push 알림 안내 모달 */}
+        {pushAlertModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4" onClick={() => setPushAlertModal(null)}>
+                <div className="bg-white rounded-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-start gap-3">
+                        <span className="text-2xl">📵</span>
+                        <div>
+                            <p className="font-bold text-stone-800 text-base">{pushAlertModal.title}</p>
+                            <p className="text-sm text-stone-500 mt-1">{pushAlertModal.desc}</p>
+                        </div>
+                    </div>
+                    {pushAlertModal.guide && (
+                        <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+                            <p className="text-sm text-orange-700 font-semibold whitespace-pre-line">{pushAlertModal.guide}</p>
+                        </div>
+                    )}
+                    <button
+                        onClick={() => setPushAlertModal(null)}
+                        className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl text-sm"
+                    >
+                        확인
+                    </button>
+                </div>
+            </div>
+        )}
 
         {/* PolicyModal */}
         {policyModal && (() => {
