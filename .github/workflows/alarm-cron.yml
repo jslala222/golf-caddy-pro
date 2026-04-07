@@ -1,0 +1,27 @@
+name: 알람 Cron — 5분마다 Web Push 발송
+
+on:
+  schedule:
+    # KST 기준 매 5분 (UTC 기준 */5)
+    # GitHub Actions 최소 단위 = 5분
+    - cron: '*/5 * * * *'
+  # 수동 실행 버튼 (테스트용)
+  workflow_dispatch:
+
+jobs:
+  send-alarms:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Push 알람 발송 요청
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X GET "https://caddy-pink.vercel.app/api/cron/alarm" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          echo "HTTP 응답: $RESPONSE"
+          if [ "$RESPONSE" != "200" ]; then
+            echo "⚠️ 응답 코드 $RESPONSE — 정상 범위 확인 필요"
+            exit 0
+          fi
+          echo "✅ 알람 Cron 완료"
