@@ -100,24 +100,11 @@ export default function SettingsPage() {
             }
             setPushGranted(true);
 
-            // SW 등록 + active 될 때까지 대기
+            // ClientLayout이 등록한 SW가 활성화될 때까지 대기 (타임아웃 없음)
             const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
             if (!vapidKey) { setPushMsg('설정 오류 — 관리자에게 문의해주세요.'); setPushLoading(false); return; }
 
-            let reg = await navigator.serviceWorker.getRegistration('/');
-            if (!reg) {
-                reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-            }
-            // active 상태가 될 때까지 100ms 간격으로 폴링 (최대 15초)
-            if (!reg.active) {
-                await new Promise<void>((resolve, reject) => {
-                    const deadline = Date.now() + 15000;
-                    const poll = setInterval(() => {
-                        if (reg!.active) { clearInterval(poll); resolve(); return; }
-                        if (Date.now() > deadline) { clearInterval(poll); reject(new Error('SW 활성화 시간 초과')); }
-                    }, 100);
-                });
-            }
+            const reg = await navigator.serviceWorker.ready;
 
             // 기존 구독이 있으면 재사용, 없으면 신규 생성
             let sub = await reg.pushManager.getSubscription();
@@ -151,18 +138,7 @@ export default function SettingsPage() {
         setPushLoading(true);
         setPushMsg('');
         try {
-            let reg = await navigator.serviceWorker.getRegistration('/');
-            if (!reg) reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-            if (!reg.active) {
-                await new Promise<void>((resolve, reject) => {
-                    const deadline = Date.now() + 15000;
-                    const poll = setInterval(() => {
-                        if (reg!.active) { clearInterval(poll); resolve(); return; }
-                        if (Date.now() > deadline) { clearInterval(poll); reject(new Error('SW 활성화 시간 초과')); }
-                    }, 100);
-                });
-            }
-
+            const reg = await navigator.serviceWorker.ready;
             let sub = await reg.pushManager.getSubscription();
             if (!sub) {
                 const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
