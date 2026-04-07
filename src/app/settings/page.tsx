@@ -18,7 +18,6 @@ export default function SettingsPage() {
     const [licenseExpiresAt, setLicenseExpiresAt] = useState<string | null>(null);
     const [codeCopied, setCodeCopied] = useState(false);
     const [policyModal, setPolicyModal] = useState<null | 'tos' | 'privacy' | 'refund'>(null);
-    const [pushAlertModal, setPushAlertModal] = useState<null | { title: string; desc: string; guide?: string }>(null);
 
     // 알람 설정
     const ALARM_OPTIONS = [
@@ -43,172 +42,15 @@ export default function SettingsPage() {
     });
     const [customAlarm, setCustomAlarm] = useState('');
     const [alarmUnit, setAlarmUnit] = useState<'분' | '시간'>('분');
-    const [pushSupported, setPushSupported] = useState(false);
-    const [pushGranted, setPushGranted] = useState(false);
-    const [pushEnabled, setPushEnabled] = useState(false); // 실제 구독 존재 여부
-    const [pushLoading, setPushLoading] = useState(false);
-    const [pushMsg, setPushMsg] = useState('');
+    const [kakaoLinked, setKakaoLinked] = useState(false);
 
     useEffect(() => {
-        const granted = 'Notification' in window && Notification.permission === 'granted';
-        setPushSupported('Notification' in window && 'serviceWorker' in navigator);
-        setPushGranted(granted);
-        // 실제 PushManager 구독 존재 여부 확인
-        if (granted && 'serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(reg => {
-                reg.pushManager.getSubscription().then(sub => {
-                    setPushEnabled(!!sub);
-                });
-            }).catch(() => {});
-        }
-
-        // SW 리로드 후 자동 구독 처리
-        if (localStorage.getItem('caddy_push_pending') === '1') {
-            localStorage.removeItem('caddy_push_pending');
-            // 약간 딜레이 후 자동 실행
-            setTimeout(() => {
-                const btn = document.querySelector<HTMLButtonElement>('[data-push-trigger]');
-                if (btn) btn.click();
-            }, 1000);
-        }
+        setKakaoLinked(localStorage.getItem('caddy_kakao_linked') === '1');
     }, []);
 
     const handleSaveAlarm = (minutes: number) => {
         setAlarmMinutes(minutes);
         localStorage.setItem('caddy_alarm_minutes', String(minutes));
-    };
-
-    const handleRequestPush = async () => {
-        setPushLoading(true);
-        setPushMsg('');
-
-        // iOS 감지 — 홈화면 추가 없이는 Push 불가
-        const ua = navigator.userAgent;
-        const isIOS = /iphone|ipad|ipod/i.test(ua);
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-            || (navigator as { standalone?: boolean }).standalone === true;
-        if (isIOS && !isStandalone) {
-            setPushAlertModal({
-                title: '홈화면 추가가 필요해요',
-                desc: '아이폰은 홈화면에 앱을 추가해야 알림을 받을 수 있어요.',
-                guide: '방법: Safari 하단 공유 버튼(□↑) → "홈 화면에 추가" → 홈화면 아이콘으로 열기 → 다시 알림 켜기',
-            });
-            setPushLoading(false);
-            return;
-        }
-
-        try {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                setPushAlertModal({
-                    title: '알림이 차단되어 있어요',
-                    desc: '스마트폰에서 이 앱의 알림을 막아두셨어요.',
-                    guide: '해결방법: 스마트폰 설정 → 앱 → 브라우저 → 알림 → 허용',
-                });
-                setPushLoading(false);
-                return;
-            }
-            setPushGranted(true);
-
-            // ClientLayout이 등록한 SW가 활성화될 때까지 대기
-            const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-            if (!vapidKey) { setPushMsg('설정 오류 — 관리자에게 문의해주세요.'); setPushLoading(false); return; }
-
-            // SW 등록 확인 — 없으면 등록 후 페이지 리로드 (리로드 후 active 상태)
-            const existingReg = await navigator.serviceWorker.getRegistration('/');
-            if (!existingReg?.active) {
-                await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-                // SW가 처음 등록되면 페이지 리로드 필요 — localStorage에 pending 플래그 저장
-                localStorage.setItem('caddy_push_pending', '1');
-                window.location.reload();
-                return;
-            }
-            const reg = existingReg;
-
-            // 기존 구독이 있으면 재사용, 없으면 신규 생성
-            let sub = await reg.pushManager.getSubscription();
-            if (!sub) {
-                sub = await reg.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: vapidKey,
-                });
-            }
-            // 구독 정보를 서버에 저장
-            const licenseCode = localStorage.getItem('caddy_license_key');
-            await fetch('/api/push/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subscription: sub, licenseCode }),
-            });
-            setPushEnabled(true);
-            setPushMsg('✅ 알림 설정 완료! 약속 시간 전에 알림을 보내드립니다.');
-        } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : '';
-            setPushAlertModal({
-                title: '알림 설정 중 문제가 생겼어요',
-                desc: `오류: ${msg || '알 수 없는 오류'}`,
-                guide: '크롬 브라우저에서 다시 시도해 주세요.',
-            });
-        }
-        setPushLoading(false);
-    }
-
-    const handleTestPush = async () => {
-        setPushLoading(true);
-        setPushMsg('');
-        try {
-            const reg = await navigator.serviceWorker.ready;
-            let sub = await reg.pushManager.getSubscription();
-            if (!sub) {
-                const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-                if (!vapidKey) { setPushMsg('❌ 설정 오류'); setPushLoading(false); return; }
-                sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidKey });
-                const licenseCode = localStorage.getItem('caddy_license_key');
-                await fetch('/api/push/subscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ subscription: sub, licenseCode }),
-                });
-                setPushEnabled(true);
-            }
-            const res = await fetch('/api/push/test', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subscription: sub.toJSON() }),
-            });
-            if (res.ok) {
-                setPushMsg('✅ 테스트 알림을 보냈습니다! 잠시 후 알림을 확인하세요.');
-            } else {
-                const err = await res.json();
-                setPushMsg(`❌ 발송 실패: ${err.detail ?? err.error}`);
-            }
-        } catch (e) {
-            setPushMsg(`❌ 오류: ${e instanceof Error ? e.message : '알 수 없는 오류'}`);
-        }
-        setPushLoading(false);
-    };
-
-    const handleDisablePush = async () => {
-        setPushLoading(true);
-        setPushMsg('');
-        try {
-            const reg = await navigator.serviceWorker.ready;
-            const sub = await reg.pushManager.getSubscription();
-            if (sub) {
-                await sub.unsubscribe();
-                const licenseCode = localStorage.getItem('caddy_license_key');
-                await fetch('/api/push/unsubscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ endpoint: sub.endpoint, licenseCode }),
-                });
-            }
-            setPushEnabled(false);
-            setPushMsg('알림을 끄셨습니다. 다시 켜려면 아래 버튼을 눌러주세요.');
-        } catch {
-            setPushMsg('오류가 발생했습니다.');
-        }
-        setPushLoading(false);
     };
 
     useEffect(() => {
@@ -510,78 +352,21 @@ export default function SettingsPage() {
                         </p>
                     )}
 
-                    {/* 푸시 알림 권한 */}
-                    <div className="border-t border-stone-100 pt-4 space-y-2">
-                        <p className="text-xs font-bold text-stone-500">스마트폰 알림 권한</p>
-                        {!pushSupported ? (
-                            <p className="text-xs text-stone-400">이 브라우저는 푸시 알림을 지원하지 않습니다.<br/>홈화면에 앱을 추가 후 다시 시도해주세요.</p>
-                        ) : pushGranted ? (
-                            <div className="space-y-2">
-                                {pushEnabled ? (
-                                    <>
-                                        <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm bg-emerald-50 rounded-xl px-3 py-2">
-                                            <Check size={16} /> 알림 켜짐 — 알람이 울립니다
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={handleDisablePush}
-                                                disabled={pushLoading}
-                                                className="flex-1 py-2 border border-stone-200 text-stone-400 font-bold rounded-2xl text-xs disabled:opacity-50 active:scale-[.98] transition"
-                                            >
-                                                {pushLoading ? '처리 중...' : '🔕 알림 끄기'}
-                                            </button>
-                                            <button
-                                                onClick={handleRequestPush}
-                                                disabled={pushLoading}
-                                                className="flex-1 py-2 border border-stone-200 text-stone-500 font-bold rounded-2xl text-xs disabled:opacity-50 active:scale-[.98] transition"
-                                            >
-                                                {pushLoading ? '처리 중...' : '🔄 기기 재등록'}
-                                            </button>
-                                        </div>
-                                        <button
-                                            onClick={handleTestPush}
-                                            disabled={pushLoading}
-                                            className="w-full py-2 bg-blue-500 text-white font-bold rounded-2xl text-sm disabled:opacity-50 active:scale-[.98] transition"
-                                        >
-                                            {pushLoading ? '발송 중...' : '🔔 테스트 알림 보내기'}
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="flex items-center gap-2 text-stone-400 font-bold text-sm bg-stone-50 rounded-xl px-3 py-2">
-                                            🔕 알림 꺼짐
-                                        </div>
-                                        <button
-                                            onClick={handleRequestPush}
-                                            disabled={pushLoading}
-                                            className="w-full py-3 bg-orange-500 text-white font-bold rounded-2xl text-sm disabled:opacity-50 active:scale-[.98] transition"
-                                        >
-                                            {pushLoading ? '처리 중...' : '🔔 알림 켜기'}
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        ) : (
-                            <button
-                                onClick={handleRequestPush}
-                                disabled={pushLoading}
-                                data-push-trigger
-                                className="w-full py-3 bg-orange-500 text-white font-bold rounded-2xl text-sm disabled:opacity-50 active:scale-[.98] transition"
-                            >
-                                {pushLoading ? '처리 중...' : '🔔 알림 허용하기'}
-                            </button>
-                        )}
-                        {/* 알림 권한이 있으면 항상 테스트 버튼 표시 */}
-                        {pushGranted && (
-                            <button
-                                onClick={handleTestPush}
-                                disabled={pushLoading}
-                                className="w-full py-2 bg-blue-500 text-white font-bold rounded-2xl text-sm disabled:opacity-50 active:scale-[.98] transition"
-                            >
-                                {pushLoading ? '발송 중...' : '🔔 테스트 알림 보내기'}
-                            </button>
-                        )}
-                        {pushMsg && <p className="text-xs text-stone-500">{pushMsg}</p>}
+                    {/* 카카오톡 알림 */}
+                    <div className="border-t border-stone-100 pt-4 space-y-3">
+                        <p className="text-xs font-bold text-stone-500">카카오톡 알림</p>
+                        <div className="bg-yellow-50 rounded-2xl p-4 space-y-1">
+                            <p className="text-sm font-bold text-stone-800">카카오톡 채널 구독</p>
+                            <p className="text-xs text-stone-500">채널을 추가하시면 일정 알림을 카카오톡으로 보내드립니다.</p>
+                        </div>
+                        <a
+                            href="https://pf.kakao.com/_kQsVX/chat"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-3 bg-[#FEE500] text-[#3C1E1E] font-bold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-[.98] transition"
+                        >
+                            💬 카카오톡 채널 추가하기
+                        </a>
                     </div>
                 </div>
             </section>
@@ -766,31 +551,6 @@ export default function SettingsPage() {
             </div>
         </div>
 
-        {/* Push 알림 안내 모달 */}
-        {pushAlertModal && (
-            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4" onClick={() => setPushAlertModal(null)}>
-                <div className="bg-white rounded-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-start gap-3">
-                        <span className="text-2xl">📵</span>
-                        <div>
-                            <p className="font-bold text-stone-800 text-base">{pushAlertModal.title}</p>
-                            <p className="text-sm text-stone-500 mt-1">{pushAlertModal.desc}</p>
-                        </div>
-                    </div>
-                    {pushAlertModal.guide && (
-                        <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
-                            <p className="text-sm text-orange-700 font-semibold whitespace-pre-line">{pushAlertModal.guide}</p>
-                        </div>
-                    )}
-                    <button
-                        onClick={() => setPushAlertModal(null)}
-                        className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl text-sm"
-                    >
-                        확인
-                    </button>
-                </div>
-            </div>
-        )}
 
         {/* PolicyModal */}
         {policyModal && (() => {
