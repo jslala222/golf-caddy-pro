@@ -418,14 +418,13 @@ export const searchLicenseByNamePhone = async ({
 
     if (hasPhone) {
         const digits = phone!.replace(/\D/g, '');
-        // 하이픈 포함 형식으로도 변환 (010-XXXX-XXXX)
         const hyphenated = digits.length === 11
             ? `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7)}`
             : digits.length === 10
             ? `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`
             : digits;
-        // 하이픈이 포함된 값은 따옴표로 감싸야 Supabase가 올바르게 파싱함
-        query = query.or(`user_phone.eq."${digits}",user_phone.eq."${hyphenated}"`);
+        // .or() 파싱 오류 방지 → .in() 사용
+        query = query.in('user_phone', [digits, hyphenated]);
     }
     if (hasName) {
         query = query.ilike('user_name', `%${name!.trim()}%`);
