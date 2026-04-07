@@ -44,12 +44,22 @@ export default function SettingsPage() {
     const [alarmUnit, setAlarmUnit] = useState<'분' | '시간'>('분');
     const [pushSupported, setPushSupported] = useState(false);
     const [pushGranted, setPushGranted] = useState(false);
+    const [pushEnabled, setPushEnabled] = useState(false); // 실제 구독 존재 여부
     const [pushLoading, setPushLoading] = useState(false);
     const [pushMsg, setPushMsg] = useState('');
 
     useEffect(() => {
+        const granted = 'Notification' in window && Notification.permission === 'granted';
         setPushSupported('Notification' in window && 'serviceWorker' in navigator);
-        setPushGranted(Notification.permission === 'granted');
+        setPushGranted(granted);
+        // 실제 PushManager 구독 존재 여부 확인
+        if (granted && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.pushManager.getSubscription().then(sub => {
+                    setPushEnabled(!!sub);
+                });
+            }).catch(() => {});
+        }
     }, []);
 
     const handleSaveAlarm = (minutes: number) => {
@@ -79,12 +89,36 @@ export default function SettingsPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ subscription: sub, licenseCode }),
                 });
+                setPushEnabled(true);
                 setPushMsg('알림 허용 완료! 이제 약속 알람을 받을 수 있습니다.');
             } else {
                 setPushMsg('알림이 거부되었습니다. 브라우저 설정에서 허용해주세요.');
             }
         } catch (e) {
             setPushMsg('오류가 발생했습니다. 홈화면에 앱을 추가한 후 다시 시도해주세요.');
+        }
+        setPushLoading(false);
+    };
+
+    const handleDisablePush = async () => {
+        setPushLoading(true);
+        setPushMsg('');
+        try {
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                await sub.unsubscribe();
+                const licenseCode = localStorage.getItem('caddy_license_key');
+                await fetch('/api/push/unsubscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint: sub.endpoint, licenseCode }),
+                });
+            }
+            setPushEnabled(false);
+            setPushMsg('알림을 끄셨습니다. 다시 켜려면 아래 버튼을 눌러주세요.');
+        } catch {
+            setPushMsg('오류가 발생했습니다.');
         }
         setPushLoading(false);
     };
@@ -395,16 +429,42 @@ export default function SettingsPage() {
                             <p className="text-xs text-stone-400">이 브라우저는 푸시 알림을 지원하지 않습니다.<br/>홈화면에 앱을 추가 후 다시 시도해주세요.</p>
                         ) : pushGranted ? (
                             <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm bg-emerald-50 rounded-xl px-3 py-2">
-                                    <Check size={16} /> 알림 허용됨 — 알람이 울립니다
-                                </div>
-                                <button
-                                    onClick={handleRequestPush}
-                                    disabled={pushLoading}
-                                    className="w-full py-2 border border-stone-200 text-stone-500 font-bold rounded-2xl text-xs disabled:opacity-50 active:scale-[.98] transition"
-                                >
-                                    {pushLoading ? '처리 중...' : '🔄 기기 변경 시 재등록'}
-                                </button>
+                                {pushEnabled ? (
+                                    <>
+                                        <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm bg-emerald-50 rounded-xl px-3 py-2">
+                                            <Check size={16} /> 알림 켜짐 — 알람이 울립니다
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handleDisablePush}
+                                                disabled={pushLoading}
+                                                className="flex-1 py-2 border border-stone-200 text-stone-400 font-bold rounded-2xl text-xs disabled:opacity-50 active:scale-[.98] transition"
+                                            >
+                                                {pushLoading ? '처리 중...' : '🔕 알림 끄기'}
+                                            </button>
+                                            <button
+                                                onClick={handleRequestPush}
+                                                disabled={pushLoading}
+                                                className="flex-1 py-2 border border-stone-200 text-stone-500 font-bold rounded-2xl text-xs disabled:opacity-50 active:scale-[.98] transition"
+                                            >
+                                                {pushLoading ? '처리 중...' : '🔄 기기 재등록'}
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center gap-2 text-stone-400 font-bold text-sm bg-stone-50 rounded-xl px-3 py-2">
+                                            🔕 알림 꺼짐
+                                        </div>
+                                        <button
+                                            onClick={handleRequestPush}
+                                            disabled={pushLoading}
+                                            className="w-full py-3 bg-orange-500 text-white font-bold rounded-2xl text-sm disabled:opacity-50 active:scale-[.98] transition"
+                                        >
+                                            {pushLoading ? '처리 중...' : '🔔 알림 켜기'}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         ) : (
                             <button
