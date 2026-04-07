@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X } from 'lucide-react';
+import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X, Bell } from 'lucide-react';
 import { migrateLocalDataToSupabase } from '@/lib/supabaseDB';
 import { formatNumber, todayKST } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
@@ -18,6 +18,66 @@ export default function SettingsPage() {
     const [licenseExpiresAt, setLicenseExpiresAt] = useState<string | null>(null);
     const [codeCopied, setCodeCopied] = useState(false);
     const [policyModal, setPolicyModal] = useState<null | 'tos' | 'privacy' | 'refund'>(null);
+
+    // 알람 설정
+    const ALARM_OPTIONS = [
+        { label: '알람 없음', value: 0 },
+        { label: '30분 전', value: 30 },
+        { label: '1시간 전', value: 60 },
+        { label: '2시간 전', value: 120 },
+        { label: '3시간 전', value: 180 },
+    ];
+    const [alarmMinutes, setAlarmMinutes] = useState<number>(() => {
+        if (typeof window === 'undefined') return 60;
+        return parseInt(localStorage.getItem('caddy_alarm_minutes') ?? '60', 10);
+    });
+    const [customAlarm, setCustomAlarm] = useState('');
+    const [pushSupported, setPushSupported] = useState(false);
+    const [pushGranted, setPushGranted] = useState(false);
+    const [pushLoading, setPushLoading] = useState(false);
+    const [pushMsg, setPushMsg] = useState('');
+
+    useEffect(() => {
+        setPushSupported('Notification' in window && 'serviceWorker' in navigator);
+        setPushGranted(Notification.permission === 'granted');
+    }, []);
+
+    const handleSaveAlarm = (minutes: number) => {
+        setAlarmMinutes(minutes);
+        localStorage.setItem('caddy_alarm_minutes', String(minutes));
+    };
+
+    const handleRequestPush = async () => {
+        setPushLoading(true);
+        setPushMsg('');
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                setPushGranted(true);
+                // 서비스워커에서 구독 등록
+                const reg = await navigator.serviceWorker.ready;
+                const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+                if (!vapidKey) { setPushMsg('VAPID 키 미설정 — 관리자 문의'); setPushLoading(false); return; }
+                const sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: vapidKey,
+                });
+                // 구독 정보를 서버에 저장
+                const licenseCode = localStorage.getItem('caddy_license_key');
+                await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subscription: sub, licenseCode }),
+                });
+                setPushMsg('알림 허용 완료! 이제 약속 알람을 받을 수 있습니다.');
+            } else {
+                setPushMsg('알림이 거부되었습니다. 브라우저 설정에서 허용해주세요.');
+            }
+        } catch (e) {
+            setPushMsg('오류가 발생했습니다. 홈화면에 앱을 추가한 후 다시 시도해주세요.');
+        }
+        setPushLoading(false);
+    };
 
     useEffect(() => {
         setLicenseCode(localStorage.getItem('caddy_license_key'));
@@ -255,6 +315,76 @@ export default function SettingsPage() {
                     </section>
                 );
             })()}
+
+            {/* 알림 설정 섹션 */}
+            <section className="space-y-4">
+                <h2 className="text-lg font-bold text-stone-800 flex items-center">
+                    <div className="w-1 h-6 bg-orange-500 rounded-full mr-2"></div> 약속 알림 설정
+                </h2>
+                <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-4">
+                    <p className="text-sm text-stone-500">개인 일정 등록 시 약속 몇 분 전에 알림을 받을지 설정합니다.</p>
+
+                    {/* 알람 시간 선택 */}
+                    <div className="grid grid-cols-3 gap-2">
+                        {ALARM_OPTIONS.map(opt => (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => handleSaveAlarm(opt.value)}
+                                className={`py-3 rounded-2xl text-sm font-bold border transition ${alarmMinutes === opt.value ? 'bg-orange-500 border-orange-500 text-white' : 'bg-stone-50 border-stone-200 text-stone-600 hover:border-orange-300'}`}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                        {/* 사용자 지정 */}
+                        <div className={`col-span-3 flex gap-2 items-center border rounded-2xl px-3 py-2 ${![0,30,60,120,180].includes(alarmMinutes) ? 'border-orange-400 bg-orange-50' : 'border-stone-200'}`}>
+                            <Bell size={16} className="text-stone-400 flex-shrink-0" />
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="직접 입력 (분)"
+                                value={customAlarm}
+                                onChange={e => setCustomAlarm(e.target.value.replace(/[^0-9]/g, ''))}
+                                className="flex-1 text-sm font-bold bg-transparent outline-none text-stone-700"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => { const m = parseInt(customAlarm); if (m > 0) handleSaveAlarm(m); }}
+                                className="text-xs font-bold text-orange-500 px-2 py-1 rounded-lg hover:bg-orange-50"
+                            >
+                                저장
+                            </button>
+                        </div>
+                    </div>
+
+                    {alarmMinutes > 0 && (
+                        <p className="text-xs text-orange-600 font-semibold bg-orange-50 rounded-xl px-3 py-2">
+                            현재 설정: 약속 <strong>{alarmMinutes}분 전</strong> 알림
+                        </p>
+                    )}
+
+                    {/* 푸시 알림 권한 */}
+                    <div className="border-t border-stone-100 pt-4 space-y-2">
+                        <p className="text-xs font-bold text-stone-500">스마트폰 알림 권한</p>
+                        {!pushSupported ? (
+                            <p className="text-xs text-stone-400">이 브라우저는 푸시 알림을 지원하지 않습니다.<br/>홈화면에 앱을 추가 후 다시 시도해주세요.</p>
+                        ) : pushGranted ? (
+                            <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm bg-emerald-50 rounded-xl px-3 py-2">
+                                <Check size={16} /> 알림 허용됨 — 알람이 울립니다
+                            </div>
+                        ) : (
+                            <button
+                                onClick={handleRequestPush}
+                                disabled={pushLoading}
+                                className="w-full py-3 bg-orange-500 text-white font-bold rounded-2xl text-sm disabled:opacity-50 active:scale-[.98] transition"
+                            >
+                                {pushLoading ? '처리 중...' : '🔔 알림 허용하기'}
+                            </button>
+                        )}
+                        {pushMsg && <p className="text-xs text-stone-500">{pushMsg}</p>}
+                    </div>
+                </div>
+            </section>
 
             {/* Fee Settings Section */}
             <section className="space-y-4">

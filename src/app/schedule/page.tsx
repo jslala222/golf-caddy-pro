@@ -214,6 +214,20 @@ function ScheduleContent() {
         e.preventDefault();
         const finalTime = `${hour}:${minute}`;
 
+        // 개인 일정 + 알람 설정 시 alarmAt 계산
+        let alarmAt: string | undefined;
+        if (type === 'personal') {
+            const alarmMinutes = parseInt(
+                typeof window !== 'undefined' ? (localStorage.getItem('caddy_alarm_minutes') ?? '60') : '60',
+                10
+            );
+            if (alarmMinutes > 0) {
+                const dt = new Date(`${date}T${finalTime}:00+09:00`);
+                dt.setMinutes(dt.getMinutes() - alarmMinutes);
+                alarmAt = dt.toISOString();
+            }
+        }
+
         const scheduleData = {
             date,
             time: finalTime,
@@ -226,6 +240,7 @@ function ScheduleContent() {
             swapMemo: type === 'work' && isSwap && swapMemo.trim() ? swapMemo.trim() : undefined,
             caddyFee: type === 'work' && caddyFee ? Number(caddyFee) : undefined,
             overFee: type === 'work' && overFee ? Number(overFee) : undefined,
+            alarmAt,
         };
 
         if (editingId) {

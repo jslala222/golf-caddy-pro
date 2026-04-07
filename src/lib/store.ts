@@ -27,6 +27,8 @@ export interface Schedule {
     swapThanksAmount?: number;
     swapThanksDate?: string;
     swapThanksAddedToLedger?: boolean;
+    alarmAt?: string; // ISO 8601 — 알람 발송 시각 (약속시간 - 설정값)
+    alarmSent?: boolean;
     createdAt?: string;
 }
 
