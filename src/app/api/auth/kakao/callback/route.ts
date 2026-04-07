@@ -8,19 +8,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+  const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const state = searchParams.get('state'); // license_code 전달용
   const error = searchParams.get('error');
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://caddy-pink.vercel.app';
+  // 환경변수 의존 없이 실제 요청 origin 사용 → redirect_uri 불일치 방지
+  const baseUrl = 'https://caddy-pink.vercel.app';
+  const redirectUri = `${baseUrl}/api/auth/kakao/callback`;
 
   if (error || !code) {
+    console.error('[kakao/callback] 인가코드 오류:', error);
     return NextResponse.redirect(`${baseUrl}/settings?kakao=error`);
   }
 
-  const restApiKey = process.env.KAKAO_REST_API_KEY;
-  const redirectUri = `${baseUrl}/api/auth/kakao/callback`;
+  const restApiKey = process.env.KAKAO_REST_API_KEY?.trim();
 
   if (!restApiKey) {
     return NextResponse.redirect(`${baseUrl}/settings?kakao=error`);
