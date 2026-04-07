@@ -1,2 +1,10 @@
-{}
+{
+  "crons": [
+    {
+      "path": "/api/cron/alarm",
+      "schedule": "30 21 * * *"
+    }
+  ]
+}
+
 

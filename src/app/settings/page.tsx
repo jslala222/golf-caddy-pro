@@ -45,8 +45,31 @@ export default function SettingsPage() {
     const [kakaoLinked, setKakaoLinked] = useState(false);
 
     useEffect(() => {
-        setKakaoLinked(localStorage.getItem('caddy_kakao_linked') === '1');
+        // URL 파라미터로 카카오 연동 결과 처리
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('kakao') === 'success') {
+            setKakaoLinked(true);
+            localStorage.setItem('caddy_kakao_linked', '1');
+            window.history.replaceState({}, '', '/settings');
+        } else if (params.get('kakao') === 'error') {
+            window.history.replaceState({}, '', '/settings');
+        } else {
+            setKakaoLinked(localStorage.getItem('caddy_kakao_linked') === '1');
+        }
     }, []);
+
+    const handleKakaoConnect = () => {
+        const licenseCode = localStorage.getItem('caddy_license_key') ?? '';
+        const restApiKey = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
+        const redirectUri = encodeURIComponent(`${window.location.origin}/api/auth/kakao/callback`);
+        const state = encodeURIComponent(licenseCode);
+        window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${restApiKey}&redirect_uri=${redirectUri}&response_type=code&state=${state}&scope=talk_message`;
+    };
+
+    const handleKakaoDisconnect = () => {
+        localStorage.removeItem('caddy_kakao_linked');
+        setKakaoLinked(false);
+    };
 
     const handleSaveAlarm = (minutes: number) => {
         setAlarmMinutes(minutes);
@@ -354,19 +377,33 @@ export default function SettingsPage() {
 
                     {/* 카카오톡 알림 */}
                     <div className="border-t border-stone-100 pt-4 space-y-3">
-                        <p className="text-xs font-bold text-stone-500">카카오톡 알림</p>
-                        <div className="bg-yellow-50 rounded-2xl p-4 space-y-1">
-                            <p className="text-sm font-bold text-stone-800">카카오톡 채널 구독</p>
-                            <p className="text-xs text-stone-500">채널을 추가하시면 일정 알림을 카카오톡으로 보내드립니다.</p>
-                        </div>
-                        <a
-                            href="https://pf.kakao.com/_kQsVX/chat"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full py-3 bg-[#FEE500] text-[#3C1E1E] font-bold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-[.98] transition"
-                        >
-                            💬 카카오톡 채널 추가하기
-                        </a>
+                        <p className="text-xs font-bold text-stone-500">카카오톡 알림 (프리미엄)</p>
+                        {kakaoLinked ? (
+                            <>
+                                <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm bg-emerald-50 rounded-xl px-3 py-2">
+                                    <Check size={16} /> 카카오톡 연동 완료 — 매일 아침 일정 알림을 받습니다
+                                </div>
+                                <button
+                                    onClick={handleKakaoDisconnect}
+                                    className="w-full py-2 border border-stone-200 text-stone-400 font-bold rounded-2xl text-xs active:scale-[.98] transition"
+                                >
+                                    연동 해제
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="bg-yellow-50 rounded-2xl p-4 space-y-1">
+                                    <p className="text-sm font-bold text-stone-800">💬 카카오톡으로 일정 알림 받기</p>
+                                    <p className="text-xs text-stone-500">카카오 로그인 1회 후, 매일 아침 오늘 일정을 카카오톡으로 자동 발송합니다.</p>
+                                </div>
+                                <button
+                                    onClick={handleKakaoConnect}
+                                    className="w-full py-3 bg-[#FEE500] text-[#3C1E1E] font-bold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-[.98] transition"
+                                >
+                                    💬 카카오 로그인으로 연동하기
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             </section>
