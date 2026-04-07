@@ -1445,16 +1445,47 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
                                 {renewResult?.found && (<>
                                     <section className="bg-stone-900 rounded-3xl p-5 space-y-4">
                                         <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-                                            <Tag size={16} /> 연장 요금제
+                                            <Tag size={16} /> 연장 상품 선택
                                         </div>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {(Object.entries(PLANS) as [PlanType, typeof PLANS[PlanType]][]).map(([key, p]) => (
-                                                <button key={key} onClick={() => setPlan(key)}
-                                                    className={`p-3 rounded-2xl border text-center transition ${plan === key ? 'border-violet-500 bg-violet-900/30' : 'border-stone-700 bg-stone-800'}`}>
-                                                    <p className="text-xs font-bold text-stone-300">{p.label}</p>
-                                                    <p className="text-[10px] text-stone-500 mt-0.5">{p.days}일</p>
-                                                </button>
-                                            ))}
+                                        {/* 스탠다드 */}
+                                        <div>
+                                            <p className="text-stone-500 text-[10px] font-bold uppercase tracking-widest mb-2">스탠다드</p>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {(['month', '6month', 'year'] as PlanType[]).map(key => {
+                                                    const p = PLANS[key];
+                                                    const selected = plan === key && issueTier === 'standard';
+                                                    const avail = dealer ? ((dealer[CREDIT_COL.standard[key] as keyof DealerInfo] as number) ?? 0) : 0;
+                                                    return (
+                                                        <button key={key} onClick={() => { setPlan(key); setIssueTier('standard'); setDays(PLANS[key].days); }}
+                                                            className={`p-3 rounded-2xl border text-center transition ${selected ? 'border-emerald-500 bg-emerald-900/30' : 'border-stone-700 bg-stone-800'}`}>
+                                                            <p className="text-xs font-bold text-stone-300">{p.label}</p>
+                                                            <p className="text-[10px] text-stone-500 mt-0.5">{p.days}일</p>
+                                                            <p className="text-[11px] font-bold text-emerald-400 mt-1">₩{CONSUMER_PRICE.standard[key].toLocaleString()}</p>
+                                                            <p className={`text-[9px] mt-0.5 ${avail > 0 ? 'text-stone-500' : 'text-red-500'}`}>잔여 {avail}장</p>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                        {/* 프리미엄 */}
+                                        <div>
+                                            <p className="text-stone-500 text-[10px] font-bold uppercase tracking-widest mb-2">⭐ 프리미엄</p>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {(['month', '6month', 'year'] as PlanType[]).map(key => {
+                                                    const p = PLANS[key];
+                                                    const selected = plan === key && issueTier === 'premium';
+                                                    const avail = dealer ? ((dealer[CREDIT_COL.premium[key] as keyof DealerInfo] as number) ?? 0) : 0;
+                                                    return (
+                                                        <button key={key} onClick={() => { setPlan(key); setIssueTier('premium'); setDays(PLANS[key].days); }}
+                                                            className={`p-3 rounded-2xl border text-center transition ${selected ? 'border-amber-500 bg-amber-900/30' : 'border-stone-700 bg-stone-800'}`}>
+                                                            <p className="text-xs font-bold text-stone-300">{p.label}</p>
+                                                            <p className="text-[10px] text-stone-500 mt-0.5">{p.days}일</p>
+                                                            <p className="text-[11px] font-bold text-amber-400 mt-1">₩{CONSUMER_PRICE.premium[key].toLocaleString()}</p>
+                                                            <p className={`text-[9px] mt-0.5 ${avail > 0 ? 'text-stone-500' : 'text-red-500'}`}>잔여 {avail}장</p>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </section>
                                     <section className="bg-stone-900 rounded-3xl p-5">
