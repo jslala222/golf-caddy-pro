@@ -712,13 +712,13 @@ export default function AdminPage() {
                                 <p className="text-stone-400 text-[10px] font-bold uppercase tracking-widest mb-2">이용권 종류</p>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button onClick={() => setIssueTier('standard')}
-                                        className={`py-3 rounded-2xl text-sm font-bold transition ${issueTier === 'standard' ? 'bg-blue-700 text-white border-2 border-blue-500' : 'bg-stone-800 text-stone-400 border-2 border-transparent'}`}>
+                                        className={`py-3 rounded-2xl text-sm font-bold transition ${issueTier === 'standard' ? 'bg-emerald-700 text-white border-2 border-emerald-500' : 'bg-stone-800 text-stone-400 border-2 border-transparent'}`}>
                                         <p>스탠다드</p>
                                         <p className="text-[10px] mt-0.5 opacity-70">수동 복구</p>
                                     </button>
                                     <button onClick={() => setIssueTier('premium')}
-                                        className={`py-3 rounded-2xl text-sm font-bold transition relative ${issueTier === 'premium' ? 'bg-emerald-700 text-white border-2 border-emerald-500' : 'bg-stone-800 text-stone-400 border-2 border-transparent'}`}>
-                                        <span className="absolute top-1.5 right-1.5 bg-emerald-500/30 text-emerald-300 text-[8px] font-black px-1.5 py-0.5 rounded-full">추천</span>
+                                        className={`py-3 rounded-2xl text-sm font-bold transition relative ${issueTier === 'premium' ? 'bg-amber-600 text-white border-2 border-amber-400' : 'bg-stone-800 text-stone-400 border-2 border-transparent'}`}>
+                                        <span className="absolute top-1.5 right-1.5 bg-amber-500/30 text-amber-200 text-[8px] font-black px-1.5 py-0.5 rounded-full">추천</span>
                                         <p>⭐ 프리미엄</p>
                                         <p className="text-[10px] mt-0.5 opacity-70">자동 복구</p>
                                     </button>
@@ -734,7 +734,7 @@ export default function AdminPage() {
                                             className={`py-3 rounded-2xl text-center transition border-2 ${plan === key ? 'bg-stone-700 border-blue-500' : 'bg-stone-800 border-transparent'}`}>
                                             <p className="text-xs font-bold text-stone-200">{info.label}</p>
                                             <p className="text-[9px] text-stone-500 mt-0.5">{info.days}일</p>
-                                            <p className={`text-[11px] font-black mt-1 ${issueTier === 'premium' ? 'text-purple-400' : 'text-emerald-400'}`}>
+                                            <p className={`text-[11px] font-black mt-1 ${issueTier === 'premium' ? 'text-amber-400' : 'text-emerald-400'}`}>
                                                 ₩{TIER_PRICES[issueTier][key].toLocaleString()}
                                             </p>
                                         </button>
@@ -794,7 +794,7 @@ export default function AdminPage() {
                             <button onClick={handleIssue} disabled={isIssuing}
                                 className={`w-full py-5 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition disabled:opacity-50 ${
                                     issueTier === 'premium'
-                                        ? 'bg-gradient-to-r from-emerald-600 to-purple-600 hover:from-emerald-500 hover:to-purple-500 text-white'
+                                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-stone-900'
                                         : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                                 }`}>
                                 {isIssuing ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Key size={22} />}
@@ -804,7 +804,7 @@ export default function AdminPage() {
 
                         {/* 발급 결과 */}
                         {generatedKey && (
-                            <section className={`p-6 rounded-3xl text-white shadow-xl ${issueTier === 'premium' ? 'bg-gradient-to-br from-emerald-800 to-purple-800' : 'bg-emerald-700'}`}>
+                            <section className={`p-6 rounded-3xl text-white shadow-xl ${issueTier === 'premium' ? 'bg-gradient-to-br from-amber-700 to-yellow-600' : 'bg-emerald-700'}`}>
                                 <div className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-3">✅ 발급 완료</div>
                                 <div className="flex flex-col items-center gap-4">
                                     <div className="text-4xl font-black tracking-[0.2em] font-mono">{generatedKey}</div>
@@ -1403,6 +1403,29 @@ export default function AdminPage() {
                         <h2 className="text-white font-bold text-sm flex items-center gap-2">
                             <BadgeCheck size={16} className="text-emerald-400" /> 현금영수증 발행 (본사 명의)
                         </h2>
+
+                        {/* 🏢 사업자 딜러 경고 */}
+                        <div className="bg-blue-900/20 border border-blue-700 rounded-2xl p-5 space-y-3">
+                            <p className="font-black text-blue-300 text-base">🏢 사업자 딜러 — 본인 명의 직접 발행</p>
+                            <p className="text-blue-100 text-sm leading-relaxed">사업자등록증이 있으면 <strong>본인 사업자 명의</strong>로 직접 발행하세요.</p>
+                            <div className="bg-blue-950/60 rounded-xl p-4 space-y-1.5 text-xs text-blue-200 leading-relaxed">
+                                <p className="font-bold text-blue-100 mb-2">발행 방법</p>
+                                <p>① ARS <strong>126</strong> → 2번 → 사업자번호 → 금액 → 고객번호 (30초)</p>
+                                <p>② 스마트폰 <strong>손택스 앱</strong> → 현금영수증 → 발급</p>
+                                <p>③ PC <strong>홈택스 (hometax.go.kr)</strong> → 현금영수증 발급</p>
+                            </div>
+                        </div>
+
+                        {/* 👤 프리랜서 딜러 경고 */}
+                        <div className="bg-amber-900/20 border border-amber-700 rounded-2xl p-5 space-y-3">
+                            <p className="font-black text-amber-300 text-base">👤 프리랜서 딜러 — 직접 발행 불가</p>
+                            <p className="text-amber-100 text-sm leading-relaxed">사업자가 없으면 고객에게 <strong className="text-red-300">현금영수증을 직접 발행할 수 없습니다.</strong></p>
+                            <div className="bg-amber-950/60 rounded-xl p-4 space-y-1.5 text-xs text-amber-200 leading-relaxed">
+                                <p className="font-bold text-amber-100 mb-2">고객이 영수증 원할 때</p>
+                                <p>→ <strong>본사 결제 페이지로 유도</strong>하세요</p>
+                                <p>→ 포트원 결제 시 영수증 자동 발행됩니다 ✅</p>
+                            </div>
+                        </div>
 
                         {receiptResult && (
                             <div className={`rounded-3xl p-5 text-center space-y-3 ${receiptResult.success ? 'bg-emerald-900/20 border border-emerald-700' : 'bg-red-900/20 border border-red-700'}`}>
