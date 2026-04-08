@@ -29,6 +29,8 @@ export default function DealerPage({ params }: { params: { token: string } }) {
     const [customerPhone, setCustomerPhone] = useState('');
     const [memo, setMemo] = useState('');
     const [isIssuing, setIsIssuing] = useState(false);
+    const [smsToast, setSmsToast] = useState<string | null>(null);
+    const showSmsToast = (msg: string) => { setSmsToast(msg); setTimeout(() => setSmsToast(null), 3000); };
 
     // 결과
     const [issuedCode, setIssuedCode] = useState('');
@@ -114,7 +116,9 @@ export default function DealerPage({ params }: { params: { token: string } }) {
             setCustomerPhone('');
             setMemo('');
             if (result.smsOk === false) {
-                alert(`코드는 발급됐지만 가입 문자는 실패했습니다.\n사유: ${result.smsMessage ?? '알 수 없음'}`);
+                showSmsToast(`⚠️ 코드 발급 완료! 문자 발송 실패: ${result.smsMessage ?? '알 수 없음'}`);
+            } else if (customerPhone.trim()) {
+                showSmsToast('✅ 코드 발급 완료! 가입 문자 발송 성공');
             }
         } else {
             alert(`발급 실패: ${result.error}`);
@@ -228,8 +232,12 @@ export default function DealerPage({ params }: { params: { token: string } }) {
 
     // ── 메인 딜러 폼 ──
     return (
-        <div className="min-h-screen bg-stone-950 text-white pb-24">
-            {/* 입력 오류 모달 */}
+        <div className="min-h-screen bg-stone-950 text-white pb-24">            {/* ── SMS 토스트 ── */}
+            {smsToast && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] bg-stone-900 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl border border-stone-700 whitespace-nowrap">
+                    {smsToast}
+                </div>
+            )}            {/* 입력 오류 모달 */}
             {issueError && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setIssueError('')}>
                     <div className="bg-stone-900 rounded-3xl p-6 shadow-2xl max-w-xs w-full text-center space-y-4" onClick={e => e.stopPropagation()}>

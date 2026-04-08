@@ -109,6 +109,8 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     const [specialNote, setSpecialNote] = useState('');
     const [payMethod, setPayMethod] = useState<'cash' | 'virtual_account' | 'transfer'>('cash');
     const [isIssuing, setIsIssuing] = useState(false);
+    const [smsToast, setSmsToast] = useState<string | null>(null);
+    const showSmsToast = (msg: string) => { setSmsToast(msg); setTimeout(() => setSmsToast(null), 3000); };
     const [issueConfirm, setIssueConfirm] = useState<{ type: 'credit' | 'cash' | 'extend'; creditCol?: string; avail?: number; newExpiresAt?: string } | null>(null);
     const [noCreditModal, setNoCreditModal] = useState<{ planLabel: string; tier: 'standard' | 'premium' } | null>(null);
     const [cardWarnModal, setCardWarnModal] = useState(false);
@@ -338,7 +340,9 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
             setCopied(false);
             setCustomerName(''); setCustomerPhone(''); setGolfCourse(''); setSpecialNote('');
             if (result.smsOk === false) {
-                alert(`코드는 발급됐지만 가입 문자는 실패했습니다.\n사유: ${result.smsMessage ?? '알 수 없음'}`);
+                showSmsToast(`⚠️ 코드 발급 완료! 문자 발송 실패: ${result.smsMessage ?? '알 수 없음'}`);
+            } else if (customerPhone.trim()) {
+                showSmsToast('✅ 코드 발급 완료! 가입 문자 발송 성공');
             }
         } else {
             alert(`발급 실패: ${result.error}`);
@@ -394,7 +398,9 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
         setCopied(false);
         setCustomerName(''); setCustomerPhone(''); setGolfCourse(''); setSpecialNote('');
         if (result.smsOk === false) {
-            alert(`코드는 발급됐지만 가입 문자는 실패했습니다.\n사유: ${result.smsMessage ?? '알 수 없음'}`);
+            showSmsToast(`⚠️ 코드 발급 완료! 문자 발송 실패: ${result.smsMessage ?? '알 수 없음'}`);
+        } else if (customerPhone.trim()) {
+            showSmsToast('✅ 코드 발급 완료! 가입 문자 발송 성공');
         }
     };
 
@@ -832,6 +838,12 @@ export default function DealerDashboardPage({ params }: { params: { token: strin
     // ── 메인 대시보드 ──
     return (
         <div className="min-h-screen bg-stone-950 text-white pb-28">
+            {/* ── SMS 토스트 ── */}
+            {smsToast && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] bg-stone-900 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl border border-stone-700 whitespace-nowrap">
+                    {smsToast}
+                </div>
+            )}
             {/* ── 결제 결과 팝업 모달 ── */}
             {creditBuyResult === 'fail' && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center px-6"

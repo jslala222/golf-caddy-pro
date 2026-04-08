@@ -96,6 +96,8 @@ export default function AdminPage() {
     const [userPhone, setUserPhone] = useState('');
     const [isIssuing, setIsIssuing] = useState(false);
     const [generatedKey, setGeneratedKey] = useState('');
+    const [smsToast, setSmsToast] = useState<string | null>(null);
+    const showSmsToast = (msg: string) => { setSmsToast(msg); setTimeout(() => setSmsToast(null), 3000); };
     const [copied, setCopied] = useState(false);
     const [generatedCount, setGeneratedCount] = useState(0);
     const [issueTier, setIssueTier] = useState<TierType>('standard');
@@ -267,7 +269,9 @@ export default function AdminPage() {
             setUserName('');
             setUserPhone('');
             if (result.smsOk === false) {
-                alert(`코드는 발급됐지만 가입 문자는 실패했습니다.\n사유: ${result.smsMessage ?? '알 수 없음'}`);
+                showSmsToast(`⚠️ 코드 발급 완료! 문자 발송 실패: ${result.smsMessage ?? '알 수 없음'}`);
+            } else if (userPhone) {
+                showSmsToast('✅ 코드 발급 완료! 가입 문자 발송 성공');
             }
         } else {
             alert(`발급 실패: ${result.error}`);
@@ -599,6 +603,12 @@ export default function AdminPage() {
 
     return (
         <div className="bg-stone-950 min-h-screen pb-24 text-white">
+            {/* ── SMS 토스트 ── */}
+            {smsToast && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] bg-stone-900 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl border border-stone-700 whitespace-nowrap">
+                    {smsToast}
+                </div>
+            )}
             {/* ── 크레딧 충전 모달 ── */}
             {creditModalDealer && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4" onClick={() => setCreditModalDealer(null)}>
