@@ -26,8 +26,8 @@ export async function sendSMS(params: AligoSendParams): Promise<{ ok: boolean; m
     return { ok: false, message: '알리고 환경변수 미설정' };
   }
 
-  // 수신번호 하이픈 제거
-  const receiver = params.receiver.replace(/-/g, '');
+  // 수신번호 숫자만 남김 (하이픈/공백/기타 문자 제거)
+  const receiver = params.receiver.replace(/\D/g, '');
 
   // 메시지 길이로 자동 타입 결정
   const msgType = params.msg_type ?? (Buffer.byteLength(params.msg, 'utf8') > 90 ? 'LMS' : 'SMS');

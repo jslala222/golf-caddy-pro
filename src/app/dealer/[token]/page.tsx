@@ -113,6 +113,9 @@ export default function DealerPage({ params }: { params: { token: string } }) {
             setCustomerName('');
             setCustomerPhone('');
             setMemo('');
+            if (result.smsOk === false) {
+                alert(`코드는 발급됐지만 가입 문자는 실패했습니다.\n사유: ${result.smsMessage ?? '알 수 없음'}`);
+            }
         } else {
             alert(`발급 실패: ${result.error}`);
         }
