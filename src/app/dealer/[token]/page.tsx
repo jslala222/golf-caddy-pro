@@ -29,8 +29,7 @@ export default function DealerPage({ params }: { params: { token: string } }) {
     const [customerPhone, setCustomerPhone] = useState('');
     const [memo, setMemo] = useState('');
     const [isIssuing, setIsIssuing] = useState(false);
-    const [smsToast, setSmsToast] = useState<string | null>(null);
-    const showSmsToast = (msg: string) => { setSmsToast(msg); setTimeout(() => setSmsToast(null), 3000); };
+    const [smsModal, setSmsModal] = useState<{ ok: boolean; msg: string } | null>(null);
 
     // 결과
     const [issuedCode, setIssuedCode] = useState('');
@@ -116,9 +115,9 @@ export default function DealerPage({ params }: { params: { token: string } }) {
             setCustomerPhone('');
             setMemo('');
             if (result.smsOk === false) {
-                showSmsToast(`⚠️ 코드 발급 완료! 문자 발송 실패: ${result.smsMessage ?? '알 수 없음'}`);
+                setSmsModal({ ok: false, msg: result.smsMessage ?? '알 수 없음' });
             } else if (customerPhone.trim()) {
-                showSmsToast('✅ 코드 발급 완료! 가입 문자 발송 성공');
+                setSmsModal({ ok: true, msg: '가입 문자가 고객에게 발송되었습니다.' });
             }
         } else {
             alert(`발급 실패: ${result.error}`);
@@ -232,10 +231,19 @@ export default function DealerPage({ params }: { params: { token: string } }) {
 
     // ── 메인 딜러 폼 ──
     return (
-        <div className="min-h-screen bg-stone-950 text-white pb-24">            {/* ── SMS 토스트 ── */}
-            {smsToast && (
-                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] bg-stone-900 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl border border-stone-700 whitespace-nowrap">
-                    {smsToast}
+        <div className="min-h-screen bg-stone-950 text-white pb-24">            {/* ── SMS 결과 모달 ── */}
+            {smsModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-6" onClick={() => setSmsModal(null)}>
+                    <div className="bg-stone-900 border border-stone-700 rounded-3xl p-7 w-full max-w-xs text-center space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto text-3xl ${smsModal.ok ? 'bg-green-900/40' : 'bg-red-900/40'}`}>
+                            {smsModal.ok ? '✅' : '⚠️'}
+                        </div>
+                        <div>
+                            <p className="text-white font-bold text-base mb-1">{smsModal.ok ? '문자 발송 성공' : '문자 발송 실패'}</p>
+                            <p className="text-stone-400 text-sm">{smsModal.msg}</p>
+                        </div>
+                        <button onClick={() => setSmsModal(null)} className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 rounded-2xl text-sm">확인</button>
+                    </div>
                 </div>
             )}            {/* 입력 오류 모달 */}
             {issueError && (
