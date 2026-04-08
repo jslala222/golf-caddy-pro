@@ -42,57 +42,42 @@ export default function SettingsPage() {
     });
     const [customAlarm, setCustomAlarm] = useState('');
     const [alarmUnit, setAlarmUnit] = useState<'분' | '시간'>('분');
-    const [kakaoLinked, setKakaoLinked] = useState(() => {
-        if (typeof window === 'undefined') return false;
-        return localStorage.getItem('caddy_kakao_linked') === '1';
-    });
-    const [kakaoHour, setKakaoHour] = useState(6);
-    const [kakaoHourSaving, setKakaoHourSaving] = useState(false);
+    const [smsPhone, setSmsPhone] = useState('');
+    const [smsHour, setSmsHour] = useState(6);
+    const [smsSaving, setSmsSaving] = useState(false);
+    const [smsSaved, setSmsSaved] = useState(false);
 
     useEffect(() => {
-        // URL 파라미터로 카카오 연동 결과 처리
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('kakao') === 'success') {
-            setKakaoLinked(true);
-            localStorage.setItem('caddy_kakao_linked', '1');
-            window.history.replaceState({}, '', '/settings');
-        } else if (params.get('kakao') === 'error') {
-            const reason = decodeURIComponent(params.get('reason') ?? '알 수 없음');
-            alert(`카카오 연동 실패\n원인: ${reason}`);
-            window.history.replaceState({}, '', '/settings');
-        } else {
-            setKakaoLinked(localStorage.getItem('caddy_kakao_linked') === '1');
-        }
-        setKakaoHour(parseInt(localStorage.getItem('caddy_kakao_hour') ?? '6', 10));
+        const storedCode = localStorage.getItem('caddy_license_key');
+        if (!storedCode) return;
+        fetch(`/api/notify/settings?licenseCode=${encodeURIComponent(storedCode)}`)
+            .then(r => r.json())
+            .then(d => {
+                if (d.phone) setSmsPhone(d.phone);
+                if (d.notification_hour) setSmsHour(d.notification_hour);
+            })
+            .catch(() => {});
     }, []);
 
-    const handleKakaoHourChange = async (hour: number) => {
-        setKakaoHour(hour);
-        localStorage.setItem('caddy_kakao_hour', String(hour));
-        const licenseCode = localStorage.getItem('caddy_license_key');
-        if (!licenseCode) return;
-        setKakaoHourSaving(true);
-        await fetch('/api/auth/kakao/notification-hour', {
+    const formatPhoneNumber = (value: string) => {
+        const digits = value.replace(/[^0-9]/g, '');
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+        return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+    };
+
+    const handleSaveSmsSettings = async () => {
+        const storedCode = localStorage.getItem('caddy_license_key');
+        if (!storedCode) { alert('이용권 코드가 없습니다.'); return; }
+        setSmsSaving(true);
+        await fetch('/api/notify/settings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ licenseCode, hour }),
+            body: JSON.stringify({ licenseCode: storedCode, phone: smsPhone, notificationHour: smsHour }),
         });
-        setKakaoHourSaving(false);
-    };
-
-    const handleKakaoConnect = () => {
-        const licenseCode = localStorage.getItem('caddy_license_key') ?? '';
-        const restApiKey = '02b967412c347c9c8eea770b5843e4e6';
-        const redirectUri = encodeURIComponent(`https://caddy-pink.vercel.app/api/auth/kakao/callback`);
-        const state = encodeURIComponent(licenseCode);
-        const url = `https://kauth.kakao.com/oauth/authorize?client_id=${restApiKey}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
-        alert('이동 URL: ' + url);
-        window.location.href = url;
-    };
-
-    const handleKakaoDisconnect = () => {
-        localStorage.removeItem('caddy_kakao_linked');
-        setKakaoLinked(false);
+        setSmsSaving(false);
+        setSmsSaved(true);
+        setTimeout(() => setSmsSaved(false), 3000);
     };
 
     const handleSaveAlarm = (minutes: number) => {
@@ -340,58 +325,49 @@ export default function SettingsPage() {
             {/* 알림 설정 섹션 */}
             <section className="space-y-4">
                 <h2 className="text-lg font-bold text-stone-800 flex items-center">
-                    <div className="w-1 h-6 bg-orange-500 rounded-full mr-2"></div> 약속 알림 설정
+                    <div className="w-1 h-6 bg-orange-500 rounded-full mr-2"></div> 문자 알림 설정
                 </h2>
                 <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-4">
-                    {/* 카카오톡 알림 */}
-                    <div className="space-y-3">
-                        <p className="text-xs font-bold text-stone-500">카카오톡으로 매일 아침 일정 알림</p>
-                        {kakaoLinked ? (
-                            <>
-                                <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm bg-emerald-50 rounded-xl px-3 py-2">
-                                    <Check size={16} /> 카카오톡 연동 완료
-                                </div>
-                                {/* 알림 시각 선택 */}
-                                <div className="space-y-2">
-                                    <p className="text-xs font-bold text-stone-500">매일 카톡 발송 시각</p>
-                                    <div className="grid grid-cols-5 gap-1.5">
-                                        {[5, 6, 7, 8, 9].map(h => (
-                                            <button
-                                                key={h}
-                                                onClick={() => handleKakaoHourChange(h)}
-                                                className={`py-2 rounded-xl text-xs font-bold border transition ${kakaoHour === h ? 'bg-[#FEE500] border-yellow-400 text-[#3C1E1E]' : 'bg-stone-50 border-stone-200 text-stone-600'}`}
-                                            >
-                                                {h}시
-                                            </button>
-                                        ))}
-                                    </div>
-                                    {kakaoHourSaving
-                                        ? <p className="text-xs text-stone-400">저장 중...</p>
-                                        : <p className="text-xs text-emerald-600 font-semibold">매일 오전 <strong>{kakaoHour}시</strong>에 오늘 일정을 카카오톡으로 보내드립니다</p>
-                                    }
-                                </div>
-                                <button
-                                    onClick={handleKakaoDisconnect}
-                                    className="w-full py-2 border border-stone-200 text-stone-400 font-bold rounded-2xl text-xs active:scale-[.98] transition"
-                                >
-                                    연동 해제
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <div className="bg-yellow-50 rounded-2xl p-4 space-y-1">
-                                    <p className="text-sm font-bold text-stone-800">💬 카카오톡으로 일정 알림 받기</p>
-                                    <p className="text-xs text-stone-500">카카오 로그인 1회 후, 매일 아침 오늘 일정을 카카오톡으로 자동 발송합니다.</p>
-                                </div>
-                                <button
-                                    onClick={handleKakaoConnect}
-                                    className="w-full py-3 bg-[#FEE500] text-[#3C1E1E] font-bold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-[.98] transition"
-                                >
-                                    💬 카카오 로그인으로 연동하기
-                                </button>
-                            </>
-                        )}
+                    <div className="bg-orange-50 rounded-2xl p-4 space-y-1">
+                        <p className="text-sm font-bold text-stone-800">📱 매일 아침 오늘 일정을 문자(SMS)로 받기</p>
+                        <p className="text-xs text-stone-500">전화번호를 등록하면 매일 아침 설정한 시각에 오늘 일정을 문자로 보내드립니다.</p>
                     </div>
+                    {/* 전화번호 입력 */}
+                    <div className="space-y-2">
+                        <p className="text-xs font-bold text-stone-500">알림 받을 전화번호</p>
+                        <input
+                            type="tel"
+                            value={smsPhone}
+                            onChange={e => setSmsPhone(formatPhoneNumber(e.target.value))}
+                            placeholder="010-0000-0000"
+                            maxLength={13}
+                            className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-bold text-stone-800 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none transition"
+                        />
+                    </div>
+                    {/* 알림 시각 선택 */}
+                    <div className="space-y-2">
+                        <p className="text-xs font-bold text-stone-500">매일 문자 발송 시각</p>
+                        <div className="grid grid-cols-5 gap-1.5">
+                            {[5, 6, 7, 8, 9].map(h => (
+                                <button
+                                    key={h}
+                                    onClick={() => setSmsHour(h)}
+                                    className={`py-2.5 rounded-xl text-xs font-bold border transition active:scale-[.96] ${smsHour === h ? 'bg-orange-500 border-orange-500 text-white shadow-sm' : 'bg-stone-50 border-stone-200 text-stone-600'}`}
+                                >
+                                    {h}시
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-stone-400">매일 오전 <strong className="text-orange-500">{smsHour}시</strong>에 오늘 일정을 문자로 보내드립니다</p>
+                    </div>
+                    {/* 저장 버튼 */}
+                    <button
+                        onClick={handleSaveSmsSettings}
+                        disabled={smsSaving}
+                        className="w-full py-3 bg-orange-500 text-white font-bold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-[.98] transition disabled:opacity-60"
+                    >
+                        {smsSaving ? '저장 중...' : smsSaved ? <><Check size={16} /> 저장 완료!</> : <><Bell size={16} /> 알림 설정 저장</>}
+                    </button>
                 </div>
             </section>
 
