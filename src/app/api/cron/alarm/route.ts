@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
-import { sendSMS, buildScheduleMsg } from '@/lib/aligo';
+import { sendSMS, buildScheduleMsg, buildPersonalEventMsg } from '@/lib/aligo';
 
 export async function GET(request: NextRequest) {
   // Vercel Cron 인증
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     const { data: schedules } = await supabase
       .from('aone_pro_caddypro_schedules')
-      .select('date, title, shift, start_time, type')
+      .select('date, title, shift, start_time, time, type')
       .eq('license_code', lic.code)
       .eq('date', todayKST)
       .neq('type', 'holiday')
@@ -47,9 +47,21 @@ export async function GET(request: NextRequest) {
 
     if (!schedules || schedules.length === 0) continue;
 
+    // 템플릿 2: 오늘 전체 일정 오전 브리핑 (근무 + 개인 통합)
     const msg = buildScheduleMsg({ date: todayKST, schedules });
     const result = await sendSMS({ receiver: lic.phone, msg, msg_type: 'LMS', title: '오늘의 일정' });
     if (result.ok) sentCount++;
+
+    // 템플릿 3: 개인일정 전용 별도 SMS (시간이 있는 개인 일정만)
+    const personalEvents = schedules.filter(
+      (s) => s.type === 'personal' && s.title && (s.time || s.start_time)
+    );
+    for (const ev of personalEvents) {
+      const evTime = (ev.time && ev.time !== '00:00') ? ev.time : (ev.start_time?.slice(0, 5) ?? '');
+      if (!evTime) continue;
+      const pmsg = buildPersonalEventMsg({ title: ev.title ?? '일정', time: evTime, date: todayKST });
+      await sendSMS({ receiver: lic.phone, msg: pmsg, title: '개인일정 알림' });
+    }
   }
 
   return NextResponse.json({ sent: sentCount, total: licenses.length, date: todayKST, hour: targetHour });

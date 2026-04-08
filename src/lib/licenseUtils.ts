@@ -178,6 +178,19 @@ export const issueVoucher = async ({
         issued_by: issuedBy,
     });
     if (error) return { success: false, error: error.message };
+
+    // 전화번호가 있으면 환영 SMS 발송 (fire-and-forget)
+    if (userPhone) {
+        const baseUrl = typeof window !== 'undefined'
+            ? ''
+            : (process.env.NEXT_PUBLIC_APP_URL || 'https://caddy-pink.vercel.app');
+        fetch(`${baseUrl}/api/notify/welcome`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: userPhone, licenseCode: code, tier, expiresAt: expiresAt.toISOString() }),
+        }).catch(() => {});
+    }
+
     return { success: true, code };
 };
 
@@ -312,7 +325,7 @@ export const extendLicense = async ({
 }): Promise<{ success: boolean; newExpiresAt?: string; error?: string }> => {
     const { data: current, error: fetchError } = await supabase
         .from('aone_pro_caddypro_licenses')
-        .select('expires_at')
+        .select('expires_at, code, phone, tier')
         .eq('id', licenseId)
         .maybeSingle();
     if (fetchError || !current) return { success: false, error: '이용권을 찾을 수 없습니다.' };
@@ -338,6 +351,20 @@ export const extendLicense = async ({
         .eq('id', licenseId);
 
     if (error) return { success: false, error: error.message };
+
+    // 연장 완료 SMS fire-and-forget
+    if (current.phone) {
+        const finalTier = tier || current.tier || 'standard';
+        const baseUrl = typeof window !== 'undefined'
+            ? ''
+            : (process.env.NEXT_PUBLIC_APP_URL || 'https://caddy-pink.vercel.app');
+        fetch(`${baseUrl}/api/notify/extend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: current.phone, licenseCode: current.code, tier: finalTier, newExpiresAt: newExpiresAt.toISOString() }),
+        }).catch(() => {});
+    }
+
     return { success: true, newExpiresAt: newExpiresAt.toISOString() };
 };
 

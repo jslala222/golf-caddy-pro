@@ -98,3 +98,42 @@ export function buildScheduleMsg(params: {
 
   return `[캐디 매니저] 오늘 일정 (${params.date})\n\n${lines.join('\n')}\n\n${summary}`;
 }
+
+/**
+ * 개인일정 사전 알림 메시지 생성 (템플릿 3)
+ */
+export function buildPersonalEventMsg(params: {
+  title: string;
+  time: string; // 'HH:MM'
+  date: string;
+}): string {
+  const timeLabel = params.time && params.time !== '00:00' ? ` ${params.time}` : '';
+  return `[캐디 매니저] 개인 일정 알림\n\n오늘${timeLabel} 개인 약속이 있습니다.\n일정: ${params.title}\n날짜: ${params.date}\n\n일정을 확인해 주세요.`;
+}
+
+/**
+ * 이용권 연장 완료 메시지 생성 (템플릿 5)
+ */
+export function buildExtendMsg(params: {
+  licenseCode: string;
+  tier: string;
+  newExpiresAt: string;
+}): string {
+  const tierLabel = params.tier === 'premium' ? '프리미엄' : '스탠다드';
+  const expDate = params.newExpiresAt.slice(0, 10);
+  return `[캐디 매니저 Pro] 이용권 연장이 완료되었습니다.\n\n이용코드: ${params.licenseCode}\n플랜: ${tierLabel}\n새 유효기간: ${expDate}\n\n계속 이용해 주셔서 감사합니다.\nhttps://caddy-pink.vercel.app`;
+}
+
+/**
+ * 이용권 만료 알림 메시지 생성
+ */
+export function buildExpireMsg(params: {
+  licenseCode: string;
+  tier: string;
+  expiresAt: string;
+  daysLeft: number;
+}): string {
+  const tierLabel = params.tier === 'premium' ? '프리미엄' : '스탠다드';
+  const expDate = params.expiresAt.slice(0, 10);
+  return `[캐디 매니저 Pro] 이용권 만료 안내\n\n이용코드: ${params.licenseCode}\n플랜: ${tierLabel}\n만료일: ${expDate} (${params.daysLeft}일 후)\n\n만료 전 연장하시면 일정 데이터가 유지됩니다.\n연장문의: https://caddy-pink.vercel.app`;
+}
