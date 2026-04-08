@@ -1,46 +1,12 @@
 /**
  * GET /api/cron/alarm
- * Vercel Cron (매일 아침 6:30 KST) → 오늘 일정 조회 → 카카오 "나에게 보내기" 발송
+ * Vercel Cron → 오늘 일정 조회 → 알리고 SMS 발송
  */
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
-
-/** 카카오 액세스 토큰 갱신 */
-async function refreshKakaoToken(refreshToken: string, restApiKey: string): Promise<string | null> {
-  const res = await fetch('https://kauth.kakao.com/oauth/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      client_id: restApiKey,
-      refresh_token: refreshToken,
-    }),
-  });
-  const data = await res.json();
-  return data.access_token ?? null;
-}
-
-/** 카카오 나에게 보내기 */
-async function sendKakaoMessage(accessToken: string, text: string): Promise<boolean> {
-  const res = await fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      template_object: JSON.stringify({
-        object_type: 'text',
-        text,
-        link: { mobile_web_url: 'https://caddy-pink.vercel.app', web_url: 'https://caddy-pink.vercel.app' },
-        button_title: '앱 열기',
-      }),
-    }),
-  });
-  return res.ok;
-}
+import { sendSMS, buildScheduleMsg } from '@/lib/aligo';
 
 export async function GET(request: NextRequest) {
   // Vercel Cron 인증
@@ -49,82 +15,42 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const restApiKey = process.env.KAKAO_REST_API_KEY;
-  if (!restApiKey) {
-    return NextResponse.json({ error: 'KAKAO_REST_API_KEY 미설정' }, { status: 500 });
-  }
-
-  // 요청 hour 파라미터 (KST 기준, 기본 6시)
   const hourParam = request.nextUrl.searchParams.get('hour');
   const targetHour = hourParam ? parseInt(hourParam, 10) : 6;
 
   // 오늘 날짜 (KST)
   const todayKST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  // 해당 시각을 설정한 카카오 연동 사용자 토큰 조회
-  const { data: tokens, error: tokenErr } = await supabase
-    .from('aone_pro_caddypro_kakao_tokens')
-    .select('license_code, access_token, refresh_token, expires_at')
-    .eq('notification_hour', targetHour);
+  // 해당 시각으로 알림 설정한 사용자 조회
+  const { data: licenses, error: licErr } = await supabase
+    .from('aone_pro_caddypro_licenses')
+    .select('code, phone, notification_hour')
+    .eq('notification_hour', targetHour)
+    .not('phone', 'is', null);
 
-  if (tokenErr || !tokens || tokens.length === 0) {
-    return NextResponse.json({ sent: 0, reason: '연동 사용자 없음' });
+  if (licErr || !licenses || licenses.length === 0) {
+    return NextResponse.json({ sent: 0, reason: '알림 대상 없음', hour: targetHour });
   }
 
   let sentCount = 0;
 
-  for (const tokenRow of tokens) {
-    // 토큰 만료 여부 확인 → 갱신
-    let accessToken = tokenRow.access_token;
-    if (tokenRow.expires_at && new Date(tokenRow.expires_at) < new Date()) {
-      if (tokenRow.refresh_token) {
-        const newToken = await refreshKakaoToken(tokenRow.refresh_token, restApiKey);
-        if (newToken) {
-          accessToken = newToken;
-          const expiresAt = new Date(Date.now() + 21600 * 1000).toISOString(); // 6시간
-          await supabase
-            .from('aone_pro_caddypro_kakao_tokens')
-            .update({ access_token: newToken, expires_at: expiresAt })
-            .eq('license_code', tokenRow.license_code);
-        } else {
-          continue; // 갱신 실패 → 스킵
-        }
-      } else {
-        continue;
-      }
-    }
+  for (const lic of licenses) {
+    if (!lic.phone) continue;
 
-    // 해당 사용자의 오늘 일정 조회 (근무 + 개인, 공휴일 제외)
     const { data: schedules } = await supabase
       .from('aone_pro_caddypro_schedules')
       .select('date, title, shift, start_time, type')
-      .eq('license_code', tokenRow.license_code)
+      .eq('license_code', lic.code)
       .eq('date', todayKST)
       .neq('type', 'holiday')
       .order('start_time', { ascending: true });
 
     if (!schedules || schedules.length === 0) continue;
 
-    // 메시지 구성
-    const lines = schedules.map((s: { title?: string; shift?: string | number; start_time?: string; type?: string }) => {
-      const time = s.start_time ? s.start_time.slice(0, 5) : '';
-      if (s.type === 'personal') {
-        return `• ${time ? time + ' ' : ''}[개인] ${s.title ?? '일정'}`;
-      }
-      const shift = s.shift ? `${s.shift}부` : '';
-      return `• ${time ? time + ' ' : ''}${shift ? '[' + shift + '] ' : ''}${s.title ?? '일정'}`;
-    });
-
-    const workCount = schedules.filter((s: { type?: string }) => s.type === 'work').length;
-    const personalCount = schedules.filter((s: { type?: string }) => s.type === 'personal').length;
-    const summary = [workCount > 0 ? `근무 ${workCount}건` : '', personalCount > 0 ? `개인 ${personalCount}건` : ''].filter(Boolean).join(', ');
-
-    const message = `[캐디 매니저 알림] 오늘 일정 (${todayKST})\n\n${lines.join('\n')}\n\n${summary}`;
-
-    const ok = await sendKakaoMessage(accessToken, message);
-    if (ok) sentCount++;
+    const msg = buildScheduleMsg({ date: todayKST, schedules });
+    const result = await sendSMS({ receiver: lic.phone, msg, msg_type: 'LMS', title: '오늘의 일정' });
+    if (result.ok) sentCount++;
   }
 
-  return NextResponse.json({ sent: sentCount, total: tokens.length, date: todayKST });
+  return NextResponse.json({ sent: sentCount, total: licenses.length, date: todayKST, hour: targetHour });
 }
-
