@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>알리고 SMS 연동 진행보고서 — Caddy Manager Pro</title>
+  <style>
+    :root {
+      --green: #10b981;
+      --orange: #f97316;
+      --blue: #3b82f6;
+      --red: #ef4444;
+      --gray: #6b7280;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 32px 16px;
+      max-width: 860px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      color: #fff;
+      border-radius: 20px;
+      padding: 36px 40px;
+      margin-bottom: 32px;
+    }
+    .header-badge {
+      display: inline-block;
+      background: rgba(16,185,129,.25);
+      color: #6ee7b7;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(16,185,129,.4);
+      margin-bottom: 14px;
+    }
+    .header h1 { font-size: 26px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 8px; }
+    .header p { font-size: 14px; color: #94a3b8; }
+    .header-meta {
+      display: flex; gap: 24px; margin-top: 24px; flex-wrap: wrap;
+    }
+    .meta-item { font-size: 12px; color: #94a3b8; }
+    .meta-item strong { color: #e2e8f0; }
+
+    /* SECTION */
+    section { margin-bottom: 32px; }
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      padding-left: 12px;
+      border-left: 3px solid var(--green);
+    }
+    .section-title.orange { border-left-color: var(--orange); }
+    .section-title.blue   { border-left-color: var(--blue); }
+    .section-title.red    { border-left-color: var(--red); }
+
+    /* CARD */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 12px;
+      transition: box-shadow .2s;
+    }
+    .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.07); }
+
+    /* FLOW */
+    .flow-wrap {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      flex: 1;
+      min-width: 140px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 14px;
+      text-align: center;
+      position: relative;
+    }
+    .flow-step .icon {
+      font-size: 28px;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .flow-step .step-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .flow-step .step-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .flow-step .step-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .flow-arrow {
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+      font-size: 20px;
+      color: var(--border);
+      flex-shrink: 0;
+    }
+    @media (max-width: 600px) {
+      .flow-arrow { transform: rotate(90deg); padding: 6px 0; }
+      .flow-wrap { flex-direction: column; }
+    }
+
+    /* STATUS TABLE */
+    .status-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    .status-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-muted);
+      background: #f1f5f9;
+      border-bottom: 1px solid var(--border);
+    }
+    .status-table th:first-child { border-radius: 8px 0 0 0; }
+    .status-table th:last-child  { border-radius: 0 8px 0 0; }
+    .status-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+    }
+    .status-table tr:last-child td { border-bottom: none; }
+    .status-table tr:hover td { background: #fafafa; }
+
+    /* BADGE */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .badge-done   { background: #d1fae5; color: #065f46; }
+    .badge-todo   { background: #fee2e2; color: #991b1b; }
+    .badge-partial{ background: #fef3c7; color: #92400e; }
+    .badge-dot::before { content: '●'; font-size: 7px; }
+
+    /* CODE BLOCK */
+    .code-block {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 20px 22px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 12.5px;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin-top: 8px;
+    }
+    .code-block .kw  { color: #c084fc; }
+    .code-block .str { color: #86efac; }
+    .code-block .cm  { color: #64748b; font-style: italic; }
+    .code-block .fn  { color: #7dd3fc; }
+    .code-block .num { color: #fbbf24; }
+
+    /* FILE LIST */
+    .file-list { list-style: none; padding: 0; }
+    .file-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .file-list li:last-child { border-bottom: none; }
+    .file-path {
+      font-family: monospace;
+      font-size: 12.5px;
+      color: #3b82f6;
+      font-weight: 600;
+    }
+    .file-desc { font-size: 12.5px; color: var(--text-muted); }
+    .file-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .tag-new  { background: #dbeafe; color: #1d4ed8; }
+    .tag-edit { background: #fef9c3; color: #854d0e; }
+    .tag-db   { background: #ede9fe; color: #5b21b6; }
+
+    /* PROGRESS BAR */
+    .progress-bar-wrap { background: #e2e8f0; border-radius: 999px; height: 8px; overflow: hidden; }
+    .progress-bar { height: 100%; border-radius: 999px; }
+    .progress-green  { background: linear-gradient(90deg, #10b981, #059669); }
+    .progress-orange { background: linear-gradient(90deg, #f97316, #ea580c); }
+
+    /* CRON TABLE */
+    .cron-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      font-family: monospace;
+    }
+    .cron-table th, .cron-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    .cron-table th {
+      background: #f8fafc;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .cron-table tr:last-child td { border-bottom: none; }
+    .cron-kst { font-weight: 700; color: var(--orange); }
+
+    /* NEXT STEPS */
+    .next-steps { counter-reset: step; }
+    .next-step {
+      display: flex;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .next-step:last-child { border-bottom: none; }
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .step-num-1 { background: var(--orange); }
+    .step-num-2 { background: var(--blue); }
+    .step-num-3 { background: var(--green); }
+    .step-num-4 { background: #a855f7; }
+    .next-step-content h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .next-step-content p  { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; }
+    .priority {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .priority-high   { background: #fee2e2; color: #991b1b; }
+    .priority-medium { background: #fef3c7; color: #92400e; }
+    .priority-low    { background: #dbeafe; color: #1d4ed8; }
+
+    /* ENV VARS */
+    .env-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13px;
+    }
+    .env-row:last-child { border-bottom: none; }
+    .env-key   { font-family: monospace; font-weight: 700; color: #7c3aed; min-width: 200px; }
+    .env-val   { font-family: monospace; color: var(--text-muted); font-size: 12px; }
+    .env-where { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+    /* ALIGO ACCOUNT */
+    .account-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .account-item {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .account-item .ai-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 5px;
+    }
+    .account-item .ai-val {
+      font-family: monospace;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    /* FOOTER */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      margin-top: 12px;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .header { padding: 24px 20px; }
+      .header h1 { font-size: 20px; }
+      .card { padding: 18px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<div class="header">
+  <div class="header-badge">진행보고서 · 2026년 4월 8일</div>
+  <h1>📱 알리고 SMS 연동 현황</h1>
+  <p>Caddy Manager Pro — 카카오 알림 → 알리고 SMS 전환 상황 정리</p>
+  <div class="header-meta">
+    <div class="meta-item">프로젝트 <strong>golf-caddy</strong></div>
+    <div class="meta-item">배포 <strong>caddy-pink.vercel.app</strong></div>
+    <div class="meta-item">최신 커밋 <strong>e5d0860</strong></div>
+    <div class="meta-item">전체 진행률 <strong style="color:#6ee7b7;">55%</strong></div>
+  </div>
+</div>
+
+<!-- ══════════ 전체 진행률 ══════════ -->
+<section>
+  <div class="section-title">전체 진행률</div>
+  <div class="card">
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:12px;">
+      <div style="flex:1;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-size:13px; font-weight:700;">완료된 작업</span>
+          <span style="font-size:13px; font-weight:800; color:var(--green);">6 / 10</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar progress-green" style="width:60%;"></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; margin-top:4px;">
+      <div style="background:#d1fae5; border-radius:10px; padding:10px 14px;">
+        <div style="font-size:20px; font-weight:800; color:#065f46;">6</div>
+        <div style="font-size:11px; font-weight:700; color:#059669;">완료</div>
+      </div>
+      <div style="background:#fee2e2; border-radius:10px; padding:10px 14px;">
+        <div style="font-size:20px; font-weight:800; color:#991b1b;">4</div>
+        <div style="font-size:11px; font-weight:700; color:#dc2626;">미완료</div>
+      </div>
+      <div style="background:#dbeafe; border-radius:10px; padding:10px 14px;">
+        <div style="font-size:20px; font-weight:800; color:#1d4ed8;">✓</div>
+        <div style="font-size:11px; font-weight:700; color:#3b82f6;">배포됨</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ SMS 발송 흐름 ══════════ -->
+<section>
+  <div class="section-title">SMS 발송 흐름 (아침 일정 알림)</div>
+  <div class="card">
+    <div class="flow-wrap" style="gap:4px;">
+      <div class="flow-step">
+        <span class="icon">⏰</span>
+        <div class="step-label">Trigger</div>
+        <div class="step-title">Vercel Cron</div>
+        <div class="step-desc">매일 KST<br>5~9시 중 각 시각에 실행</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <span class="icon">🗄️</span>
+        <div class="step-label">조회</div>
+        <div class="step-title">Supabase DB</div>
+        <div class="step-desc">notification_hour가<br>해당 시각인 사용자 조회</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <span class="icon">📅</span>
+        <div class="step-label">조회</div>
+        <div class="step-title">오늘 일정</div>
+        <div class="step-desc">사용자별<br>오늘 스케줄 조회</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <span class="icon">📲</span>
+        <div class="step-label">발송</div>
+        <div class="step-title">알리고 API</div>
+        <div class="step-desc">LMS 문자<br>"오늘의 일정" 발송</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <span class="icon">📱</span>
+        <div class="step-label">수신</div>
+        <div class="step-title">캐디 폰</div>
+        <div class="step-desc">매일 아침<br>오늘 일정 확인</div>
+      </div>
+    </div>
+    <div class="code-block" style="margin-top:18px;">
+<span class="cm">// 발송되는 메시지 예시</span>
+[캐디 매니저] 오늘 일정 (2026-04-08)
+
+• 08:00 [1부] 김민준 고객
+• 13:00 [2부] 이수진 고객
+• 16:30 [개인] 병원 예약
+
+근무 2건, 개인 1건
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 알리고 계정 정보 ══════════ -->
+<section>
+  <div class="section-title blue">알리고 계정 & 환경 변수</div>
+  <div class="card">
+    <div class="account-grid">
+      <div class="account-item">
+        <div class="ai-label">서비스</div>
+        <div class="ai-val" style="color:var(--blue);">smartsms.aligo.in</div>
+      </div>
+      <div class="account-item">
+        <div class="ai-label">User ID</div>
+        <div class="ai-val">supersm3</div>
+      </div>
+      <div class="account-item">
+        <div class="ai-label">발신 번호</div>
+        <div class="ai-val">010-2737-7229</div>
+      </div>
+      <div class="account-item">
+        <div class="ai-label">API KEY (환경변수)</div>
+        <div class="ai-val" style="font-size:11px;">ALIGO_API_KEY<br>✅ Vercel 등록완료</div>
+      </div>
+    </div>
+    <div style="margin-top:20px; border-top:1px solid var(--border); padding-top:16px;">
+      <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:10px;">등록된 환경변수 (Vercel Production)</div>
+      <div class="env-row">
+        <span class="env-key">ALIGO_API_KEY</span>
+        <span class="env-val">yczi82961yse·····</span>
+        <span class="env-where">✅ Vercel + .env.local</span>
+      </div>
+      <div class="env-row">
+        <span class="env-key">ALIGO_USER_ID</span>
+        <span class="env-val">supersm3</span>
+        <span class="env-where">✅ Vercel + .env.local</span>
+      </div>
+      <div class="env-row">
+        <span class="env-key">ALIGO_SENDER</span>
+        <span class="env-val">01027377229</span>
+        <span class="env-where">✅ Vercel + .env.local</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ Cron 스케줄 ══════════ -->
+<section>
+  <div class="section-title">Vercel Cron 스케줄 (vercel.json)</div>
+  <div class="card">
+    <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:14px;">5시부터 9시까지 시간대별로 각각 Cron이 실행됩니다. 사용자가 설정한 시각에 맞춰 SMS가 발송됩니다.</p>
+    <table class="cron-table">
+      <thead>
+        <tr>
+          <th>Path</th>
+          <th>UTC Schedule</th>
+          <th>KST 발송시각</th>
+          <th>사용자 설정값</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>/api/cron/alarm?hour=5</td><td>0 20 * * *</td><td class="cron-kst">오전 5:00</td><td>5시 선택 사용자</td></tr>
+        <tr><td>/api/cron/alarm?hour=6</td><td>0 21 * * *</td><td class="cron-kst">오전 6:00</td><td>6시 선택 사용자 (기본값)</td></tr>
+        <tr><td>/api/cron/alarm?hour=7</td><td>0 22 * * *</td><td class="cron-kst">오전 7:00</td><td>7시 선택 사용자</td></tr>
+        <tr><td>/api/cron/alarm?hour=8</td><td>0 23 * * *</td><td class="cron-kst">오전 8:00</td><td>8시 선택 사용자</td></tr>
+        <tr><td>/api/cron/alarm?hour=9</td><td>0 0 * * *</td><td class="cron-kst">오전 9:00</td><td>9시 선택 사용자</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px; font-size:11.5px; color:#f97316; background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:10px 14px;">
+      ⚠️ Vercel Hobby 플랜은 하루 1회 Cron만 허용 → Cron 5개 중 실제로 1개만 실행될 수 있음. Pro 플랜으로 업그레이드 필요.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 작업 현황 표 ══════════ -->
+<section>
+  <div class="section-title">완료/미완료 작업 현황</div>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="status-table">
+      <thead>
+        <tr>
+          <th>작업</th>
+          <th>상태</th>
+          <th>비고</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>알리고 유틸 함수</strong>
+            <div class="file-desc">sendSMS / buildWelcomeMsg / buildScheduleMsg</div>
+          </td>
+          <td><span class="badge badge-done badge-dot">완료</span></td>
+          <td><span style="font-family:monospace;font-size:12px;">src/lib/aligo.ts</span></td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Cron 알람 → SMS 교체</strong>
+            <div class="file-desc">카카오 나에게 보내기 → 알리고 LMS</div>
+          </td>
+          <td><span class="badge badge-done badge-dot">완료</span></td>
+          <td><span style="font-family:monospace;font-size:12px;">api/cron/alarm/route.ts</span></td>
+        </tr>
+        <tr>
+          <td>
+            <strong>가입 환영 SMS API</strong>
+            <div class="file-desc">POST /api/notify/welcome</div>
+          </td>
+          <td><span class="badge badge-done badge-dot">완료</span></td>
+          <td><span style="font-family:monospace;font-size:12px;">api/notify/welcome/route.ts</span></td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Vercel 환경변수 등록</strong>
+            <div class="file-desc">ALIGO_API_KEY, USER_ID, SENDER</div>
+          </td>
+          <td><span class="badge badge-done badge-dot">완료</span></td>
+          <td>Production 반영됨</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>DB 컬럼 추가</strong>
+            <div class="file-desc">aone_pro_caddypro_licenses.phone / notification_hour</div>
+          </td>
+          <td><span class="badge badge-done badge-dot">완료</span></td>
+          <td>Supabase Migration 적용됨</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>설정 페이지 UI (SMS)</strong>
+            <div class="file-desc">전화번호 입력 + 발송시각 선택 (5~9시)</div>
+          </td>
+          <td><span class="badge badge-done badge-dot">완료</span></td>
+          <td><span style="font-family:monospace;font-size:12px;">settings/page.tsx</span></td>
+        </tr>
+        <tr style="opacity:.75;">
+          <td>
+            <strong>가입 시 환영 SMS 자동 발송</strong>
+            <div class="file-desc">licenseUtils.ts → issueVoucher() 연결</div>
+          </td>
+          <td><span class="badge badge-todo badge-dot">미완료</span></td>
+          <td>이용권 발급 flow에 훅 필요</td>
+        </tr>
+        <tr style="opacity:.75;">
+          <td>
+            <strong>설정 저장 → 알림 설정 API 연결 확인</strong>
+            <div class="file-desc">/api/notify/settings GET/PUT 실제 동작 테스트</div>
+          </td>
+          <td><span class="badge badge-todo badge-dot">미완료</span></td>
+          <td>실기기 테스트 필요</td>
+        </tr>
+        <tr style="opacity:.75;">
+          <td>
+            <strong>개인 약속 사전 알림</strong>
+            <div class="file-desc">일정 N분 전 SMS (event-driven)</div>
+          </td>
+          <td><span class="badge badge-todo badge-dot">미완료</span></td>
+          <td>별도 기획 필요</td>
+        </tr>
+        <tr style="opacity:.75;">
+          <td>
+            <strong>Vercel Cron 플랜 확인</strong>
+            <div class="file-desc">Hobby → Pro 업그레이드 여부 결정</div>
+          </td>
+          <td><span class="badge badge-partial badge-dot">보류</span></td>
+          <td>Hobby는 1개만 실행 가능</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════ 파일 목록 ══════════ -->
+<section>
+  <div class="section-title blue">생성 / 수정된 파일</div>
+  <div class="card">
+    <ul class="file-list">
+      <li>
+        <span class="file-tag tag-new">NEW</span>
+        <div>
+          <div class="file-path">src/lib/aligo.ts</div>
+          <div class="file-desc">SMS 발송 유틸. sendSMS(), buildWelcomeMsg(), buildScheduleMsg() 포함. 90바이트 초과 시 LMS 자동 전환.</div>
+        </div>
+      </li>
+      <li>
+        <span class="file-tag tag-edit">EDIT</span>
+        <div>
+          <div class="file-path">src/app/api/cron/alarm/route.ts</div>
+          <div class="file-desc">카카오 "나에게 보내기" 완전 제거 → 알리고 sendSMS() + buildScheduleMsg() 로 교체. notification_hour 시각별 대상자 조회.</div>
+        </div>
+      </li>
+      <li>
+        <span class="file-tag tag-new">NEW</span>
+        <div>
+          <div class="file-path">src/app/api/notify/welcome/route.ts</div>
+          <div class="file-desc">POST — 이용권 코드, 플랜, 만료일을 받아 환영 LMS 발송.</div>
+        </div>
+      </li>
+      <li>
+        <span class="file-tag tag-new">NEW</span>
+        <div>
+          <div class="file-path">src/app/api/notify/settings/route.ts</div>
+          <div class="file-desc">GET — 전화번호·알림시각 조회 / PUT — 전화번호·알림시각 DB 저장.</div>
+        </div>
+      </li>
+      <li>
+        <span class="file-tag tag-edit">EDIT</span>
+        <div>
+          <div class="file-path">src/app/settings/page.tsx</div>
+          <div class="file-desc">카카오 UI (kakaoLinked, handleKakaoConnect, handleKakaoDisconnect) 완전 제거 → 전화번호 입력 + 발송시각 선택 (오렌지 테마) + "알림 설정 저장" 버튼.</div>
+        </div>
+      </li>
+      <li>
+        <span class="file-tag tag-db">DB</span>
+        <div>
+          <div class="file-path">aone_pro_caddypro_licenses</div>
+          <div class="file-desc">phone TEXT 컬럼 추가 / notification_hour INT DEFAULT 6 컬럼 추가 (Supabase Migration 적용 완료).</div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════ 다음 작업 ══════════ -->
+<section>
+  <div class="section-title orange">다음에 해야 할 작업 (우선순위 순)</div>
+  <div class="card">
+    <div class="next-steps">
+
+      <div class="next-step">
+        <div class="step-num step-num-1">1</div>
+        <div class="next-step-content">
+          <h4>가입 환영 SMS 자동 발송 연결
+            <span class="priority priority-high">긴급</span>
+          </h4>
+          <p>
+            현재 <code>POST /api/notify/welcome</code> API는 만들어졌지만, 실제 이용권 발급 로직인
+            <code>src/lib/licenseUtils.ts</code>의 <code>issueVoucher()</code> 함수에서 호출이 안 됨.
+            <br><br>
+            📌 수정할 위치: <code>licenseUtils.ts</code> → issueVoucher() 내부, INSERT 완료 직후<br>
+            📌 필요한 것: 사용자가 입력한 전화번호를 이용권 발급 폼에서 받아야 함
+          </p>
+        </div>
+      </div>
+
+      <div class="next-step">
+        <div class="step-num step-num-2">2</div>
+        <div class="next-step-content">
+          <h4>실기기 SMS 수신 테스트
+            <span class="priority priority-high">긴급</span>
+          </h4>
+          <p>
+            설정 페이지에서 전화번호 입력 + 시각 선택 후 저장 → DB 반영 확인<br>
+            Cron 수동 테스트: <code>GET https://caddy-pink.vercel.app/api/cron/alarm?hour=6</code>
+            (Authorization 헤더 필요: <code>Bearer {CRON_SECRET}</code>)<br><br>
+            📌 <strong>아직 실제로 SMS가 발송된 적 없음</strong> → 반드시 테스트 필요
+          </p>
+        </div>
+      </div>
+
+      <div class="next-step">
+        <div class="step-num step-num-3">3</div>
+        <div class="next-step-content">
+          <h4>Vercel Cron 플랜 이슈 해결
+            <span class="priority priority-medium">보통</span>
+          </h4>
+          <p>
+            Vercel <strong>Hobby 플랜</strong>은 Cron Job 하루 1개만 가능.
+            현재 vercel.json에 5개 등록 → 1개만 실행될 수 있음.<br><br>
+            옵션 ①: Vercel Pro 업그레이드 ($20/월)<br>
+            옵션 ②: 단일 Cron으로 통합 (15분마다 실행 → 현재 시각 확인)<br>
+            옵션 ③: 기본값 6시 1개만 운영 (단순화)
+          </p>
+        </div>
+      </div>
+
+      <div class="next-step">
+        <div class="step-num step-num-4">4</div>
+        <div class="next-step-content">
+          <h4>개인 약속 사전 알림
+            <span class="priority priority-low">낮음</span>
+          </h4>
+          <p>
+            캐디가 골프 약속 30분/1시간 전에 SMS 알림 받는 기능.<br>
+            현재는 "아침 일정 요약"만 가능. 개별 약속 N분 전 알림은 Cron으로 구현 시
+            1분 단위 실행이 필요 → 별도 방식(예약 시 SMS 예약 발송) 검토 필요.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ SMS 메시지 미리보기 ══════════ -->
+<section>
+  <div class="section-title">SMS 메시지 미리보기</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; flex-wrap:wrap;">
+
+    <div class="card">
+      <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:.05em;">환영 메시지 (LMS)</div>
+      <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:14px 16px; font-family:monospace; font-size:12.5px; line-height:1.8; white-space:pre-wrap;">[캐디 매니저 Pro] 가입을 환영합니다!
+
+이용코드: SM-ABC-123
+플랜: 프리미엄
+이용기한: 2027-04-08
+
+앱 접속: https://caddy-pink.vercel.app</div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:.05em;">일정 알림 메시지 (LMS)</div>
+      <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:14px 16px; font-family:monospace; font-size:12.5px; line-height:1.8; white-space:pre-wrap;">[캐디 매니저] 오늘 일정 (2026-04-08)
+
+• 08:00 [1부] 김민준 고객
+• 13:00 [2부] 이수진 고객
+• 16:30 [개인] 병원 예약
+
+근무 2건, 개인 1건</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<div class="footer">
+  Caddy Manager Pro — 알리고 SMS 진행보고서 | 2026년 4월 8일 | 커밋 e5d0860
+</div>
+
+</body>
+</html>

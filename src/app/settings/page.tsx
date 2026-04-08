@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X, Bell } from 'lucide-react';
+import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X, Bell, MessageCircle } from 'lucide-react';
 import { migrateLocalDataToSupabase } from '@/lib/supabaseDB';
 import { formatNumber, todayKST } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
@@ -325,12 +325,14 @@ export default function SettingsPage() {
             {/* 알림 설정 섹션 */}
             <section className="space-y-4">
                 <h2 className="text-lg font-bold text-stone-800 flex items-center">
-                    <div className="w-1 h-6 bg-orange-500 rounded-full mr-2"></div> 문자 알림 설정
+                    <div className="w-1 h-6 bg-orange-500 rounded-full mr-2"></div>
+                    <MessageCircle size={18} className="mr-1.5 text-yellow-500" /> 카카오톡/문자 알림 설정
                 </h2>
                 <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-4">
                     <div className="bg-orange-50 rounded-2xl p-4 space-y-1">
-                        <p className="text-sm font-bold text-stone-800">📱 매일 아침 오늘 일정을 문자(SMS)로 받기</p>
+                        <p className="text-sm font-bold text-stone-800">💬 카카오톡/문자 알림 받기 (현재 문자 우선)</p>
                         <p className="text-xs text-stone-500">전화번호를 등록하면 매일 아침 설정한 시각에 오늘 일정을 문자로 보내드립니다.</p>
+                        <p className="text-xs text-stone-400">오늘 일정이 없으면 알림이 발송되지 않습니다.</p>
                     </div>
                     {/* 전화번호 입력 */}
                     <div className="space-y-2">

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>알리고 알림톡 템플릿 등록 완료 — Caddy Manager Pro</title>
+  <style>
+    :root {
+      --green: #10b981;
+      --orange: #f97316;
+      --blue: #3b82f6;
+      --kakao: #FEE500;
+      --kakao-text: #3C1E1E;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 28px 16px;
+      max-width: 800px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      border-radius: 20px;
+      padding: 32px 36px;
+      margin-bottom: 28px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(254,229,0,.2);
+      color: #FEE500;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(254,229,0,.4);
+      margin-bottom: 12px;
+    }
+    .header h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+    .header p { font-size: 13px; color: #94a3b8; }
+    .header-meta { display:flex; gap:20px; margin-top:20px; flex-wrap:wrap; }
+    .meta-item { font-size:12px; color:#94a3b8; }
+    .meta-item strong { color:#e2e8f0; }
+
+    /* PROGRESS */
+    .progress-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .progress-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+    .progress-box .num { font-size: 28px; font-weight: 800; }
+    .progress-box .lbl { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 2px; }
+    .num-green { color: var(--green); }
+    .num-orange { color: var(--orange); }
+    .num-blue { color: var(--blue); }
+
+    /* SECTION TITLE */
+    .sec-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding-left: 12px;
+      border-left: 3px solid var(--kakao);
+      margin-bottom: 14px;
+    }
+
+    /* TEMPLATE CARD */
+    .tmpl-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .tmpl-header {
+      background: var(--kakao);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tmpl-num {
+      width: 26px; height: 26px;
+      background: var(--kakao-text);
+      color: var(--kakao);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .tmpl-name {
+      font-family: monospace;
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--kakao-text);
+      margin-left: 10px;
+      flex: 1;
+    }
+    .tmpl-status {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(60,30,30,.15);
+      color: var(--kakao-text);
+    }
+    .tmpl-body { padding: 20px; }
+
+    /* BUBBLE */
+    .bubble-wrap {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .bubble-col { flex: 1; min-width: 200px; }
+    .bubble-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 8px;
+    }
+    .bubble {
+      background: #f1f5f9;
+      border-radius: 0 14px 14px 14px;
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      font-family: 'Malgun Gothic', sans-serif;
+      border: 1px solid var(--border);
+    }
+    .bubble .var { color: #7c3aed; font-weight: 700; }
+    .fallback-bubble {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 12.5px;
+      font-family: monospace;
+      color: #9a3412;
+    }
+
+    /* VAR TABLE */
+    .var-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      margin-top: 14px;
+    }
+    .var-table th {
+      background: #f8fafc;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .var-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+    }
+    .var-table tr:last-child td { border-bottom: none; }
+    .var-name { font-family: monospace; color: #7c3aed; font-weight: 700; }
+    .var-ex { color: var(--muted); }
+
+    /* BUTTON CHIP */
+    .btn-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-top: 12px;
+    }
+
+    /* NEXT STEPS */
+    .next-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 10px;
+    }
+    .next-card ol {
+      padding-left: 20px;
+      font-size: 13.5px;
+    }
+    .next-card li { margin-bottom: 8px; }
+    .next-card li strong { color: var(--orange); }
+
+    /* FOOTER */
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 12px;
+    }
+    section { margin-bottom: 28px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="badge">💬 카카오 알림톡 템플릿 등록 완료</div>
+  <h1>알리고 알림톡 템플릿 5종</h1>
+  <p>Caddy Manager Pro — 2026년 4월 8일 등록 완료</p>
+  <div class="header-meta">
+    <div class="meta-item">채널 <strong>@응용_바이브프로그램_서비스</strong></div>
+    <div class="meta-item">상태 <strong style="color:#FEE500;">심사 중</strong></div>
+    <div class="meta-item">심사 소요 <strong>영업일 3~5일</strong></div>
+  </div>
+</div>
+
+<!-- 진행 현황 -->
+<div class="progress-row">
+  <div class="progress-box">
+    <div class="num num-green">5</div>
+    <div class="lbl">등록 완료</div>
+  </div>
+  <div class="progress-box">
+    <div class="num num-orange">0</div>
+    <div class="lbl">승인 완료</div>
+  </div>
+  <div class="progress-box">
+    <div class="num num-blue">5</div>
+    <div class="lbl">심사 대기</div>
+  </div>
+</div>
+
+<!-- 템플릿 목록 -->
+<section>
+  <div class="sec-title">등록된 템플릿 5종</div>
+
+  <!-- 1번 -->
+  <div class="tmpl-card">
+    <div class="tmpl-header">
+      <div class="tmpl-num">1</div>
+      <div class="tmpl-name">가입완료_이용코드안내</div>
+      <div class="tmpl-status">심사중</div>
+    </div>
+    <div class="tmpl-body">
+      <div class="bubble-wrap">
+        <div class="bubble-col">
+          <div class="bubble-label">알림톡 본문</div>
+          <div class="bubble">[캐디 매니저 Pro] 가입이 완료되었습니다.
+
+이용코드: <span class="var">#{이용코드}</span>
+플랜: <span class="var">#{티어}</span>
+이용기한: <span class="var">#{유효기간}</span>
+
+서비스 이용: https://caddy-pink.vercel.app
+감사합니다.</div>
+          <div class="btn-chip">🔗 앱 접속 → https://caddy-pink.vercel.app</div>
+        </div>
+        <div class="bubble-col">
+          <div class="bubble-label">대체문자 (SMS fallback)</div>
+          <div class="fallback-bubble">[캐디매니저Pro]가입완료!!
+이용코드:#{이용코드}
+플랜:#{티어}
+만료:#{유효기간}</div>
+        </div>
+      </div>
+      <table class="var-table">
+        <thead><tr><th>변수</th><th>예시값</th></tr></thead>
+        <tbody>
+          <tr><td class="var-name">#{이용코드}</td><td class="var-ex">DC-Q73-9FZ</td></tr>
+          <tr><td class="var-name">#{티어}</td><td class="var-ex">스탠다드 / 프리미엄</td></tr>
+          <tr><td class="var-name">#{유효기간}</td><td class="var-ex">2027-04-06</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2번 -->
+  <div class="tmpl-card">
+    <div class="tmpl-header">
+      <div class="tmpl-num">2</div>
+      <div class="tmpl-name">오늘일정_오전브리핑</div>
+      <div class="tmpl-status">심사중</div>
+    </div>
+    <div class="tmpl-body">
+      <div class="bubble-wrap">
+        <div class="bubble-col">
+          <div class="bubble-label">알림톡 본문</div>
+          <div class="bubble">[캐디 매니저] <span class="var">#{기준일}</span> 오늘 일정 안내
+
+<span class="var">#{일정요약}</span>
+
+설정된 알림 시각: 오전 <span class="var">#{알림시각}</span>시
+좋은 하루 되세요.</div>
+          <div class="btn-chip">🔗 일정 확인 → https://caddy-pink.vercel.app/schedule</div>
+        </div>
+        <div class="bubble-col">
+          <div class="bubble-label">대체문자 (LMS 장문)</div>
+          <div class="fallback-bubble">[캐디]오늘일정 #{기준일}
+#{일정요약}
+알림: 오전 #{알림시각}시</div>
+          <div style="font-size:11.5px; color:#f97316; margin-top:8px;">⚠️ 일정요약 길이 변동으로 장문(LMS) 저장 권장</div>
+        </div>
+      </div>
+      <table class="var-table">
+        <thead><tr><th>변수</th><th>예시값</th></tr></thead>
+        <tbody>
+          <tr><td class="var-name">#{기준일}</td><td class="var-ex">2026-04-08</td></tr>
+          <tr><td class="var-name">#{일정요약}</td><td class="var-ex">08:00 [1부] 김OO / 13:00 [2부] 이OO</td></tr>
+          <tr><td class="var-name">#{알림시각}</td><td class="var-ex">5 / 6 / 7 / 8 / 9</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3번 -->
+  <div class="tmpl-card">
+    <div class="tmpl-header">
+      <div class="tmpl-num">3</div>
+      <div class="tmpl-name">개인일정_사전알림</div>
+      <div class="tmpl-status">심사중</div>
+    </div>
+    <div class="tmpl-body">
+      <div class="bubble-wrap">
+        <div class="bubble-col">
+          <div class="bubble-label">알림톡 본문</div>
+          <div class="bubble">[캐디 매니저] 개인일정 알림
+
+<span class="var">#{일정시간}</span> <span class="var">#{일정제목}</span>
+알림 시각: <span class="var">#{사전알림시간}</span>
+
+일정을 확인해 주세요.</div>
+          <div class="btn-chip">🔗 일정 확인 → https://caddy-pink.vercel.app/schedule</div>
+        </div>
+        <div class="bubble-col">
+          <div class="bubble-label">대체문자 (단문)</div>
+          <div class="fallback-bubble">[캐디]개인일정 #{일정시간} #{일정제목}</div>
+        </div>
+      </div>
+      <table class="var-table">
+        <thead><tr><th>변수</th><th>예시값</th></tr></thead>
+        <tbody>
+          <tr><td class="var-name">#{일정시간}</td><td class="var-ex">16:30</td></tr>
+          <tr><td class="var-name">#{일정제목}</td><td class="var-ex">병원 예약</td></tr>
+          <tr><td class="var-name">#{사전알림시간}</td><td class="var-ex">30분 전 / 1시간 전</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4번 -->
+  <div class="tmpl-card">
+    <div class="tmpl-header">
+      <div class="tmpl-num">4</div>
+      <div class="tmpl-name">이용권만료_D7</div>
+      <div class="tmpl-status">심사중</div>
+    </div>
+    <div class="tmpl-body">
+      <div class="bubble-wrap">
+        <div class="bubble-col">
+          <div class="bubble-label">알림톡 본문</div>
+          <div class="bubble">[캐디 매니저 Pro] 이용권 만료 예정 안내
+
+이용코드: <span class="var">#{이용코드}</span>
+현재 등급: <span class="var">#{티어}</span>
+만료일: <span class="var">#{만료일}</span>
+남은 기간: <span class="var">#{남은일수}</span>일
+
+만료 전에 기간 연장을 진행해 주세요.</div>
+          <div class="btn-chip">🔗 기간 연장 → https://caddy-pink.vercel.app/subscribe</div>
+        </div>
+        <div class="bubble-col">
+          <div class="bubble-label">대체문자 (단문)</div>
+          <div class="fallback-bubble">[캐디]만료예정 #{이용코드} #{티어} D-#{남은일수}</div>
+        </div>
+      </div>
+      <table class="var-table">
+        <thead><tr><th>변수</th><th>예시값</th></tr></thead>
+        <tbody>
+          <tr><td class="var-name">#{이용코드}</td><td class="var-ex">DC-Q73-9FZ</td></tr>
+          <tr><td class="var-name">#{티어}</td><td class="var-ex">스탠다드 / 프리미엄</td></tr>
+          <tr><td class="var-name">#{만료일}</td><td class="var-ex">2026-04-15</td></tr>
+          <tr><td class="var-name">#{남은일수}</td><td class="var-ex">7 (고정)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5번 -->
+  <div class="tmpl-card">
+    <div class="tmpl-header">
+      <div class="tmpl-num">5</div>
+      <div class="tmpl-name">이용권연장_완료안내</div>
+      <div class="tmpl-status">심사중</div>
+    </div>
+    <div class="tmpl-body">
+      <div class="bubble-wrap">
+        <div class="bubble-col">
+          <div class="bubble-label">알림톡 본문</div>
+          <div class="bubble">[캐디 매니저 Pro] 이용권 연장이 완료되었습니다.
+
+이용코드: <span class="var">#{이용코드}</span>
+플랜: <span class="var">#{티어}</span>
+새 유효기간: <span class="var">#{유효기간}</span>
+
+계속 이용해 주셔서 감사합니다.</div>
+          <div class="btn-chip">🔗 앱 접속 → https://caddy-pink.vercel.app</div>
+        </div>
+        <div class="bubble-col">
+          <div class="bubble-label">대체문자 (단문)</div>
+          <div class="fallback-bubble">[캐디]연장완료 #{이용코드} #{유효기간}</div>
+        </div>
+      </div>
+      <table class="var-table">
+        <thead><tr><th>변수</th><th>예시값</th></tr></thead>
+        <tbody>
+          <tr><td class="var-name">#{이용코드}</td><td class="var-ex">DC-Q73-9FZ</td></tr>
+          <tr><td class="var-name">#{티어}</td><td class="var-ex">스탠다드 / 프리미엄</td></tr>
+          <tr><td class="var-name">#{유효기간}</td><td class="var-ex">2027-10-06</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+
+<!-- 다음 할 일 -->
+<section>
+  <div class="sec-title">승인 후 해야 할 일</div>
+  <div class="next-card">
+    <ol>
+      <li>알리고 <strong>신청/인증 탭</strong>에서 5개 템플릿 상태 확인</li>
+      <li>상태가 <strong>승인</strong>으로 바뀌면 각 템플릿의 <strong>템플릿 코드(ID)</strong> 메모</li>
+      <li>코드 5개를 개발자(코파일럿)에게 전달 → 서버 코드에 매핑</li>
+      <li>테스트 발송: 가입 완료 → 알림톡 수신 확인</li>
+      <li>Cron 테스트: 아침 일정 알림 수신 확인</li>
+    </ol>
+  </div>
+  <div style="background:#fef9c3; border:1px solid #fde047; border-radius:12px; padding:14px 18px; font-size:13px; color:#854d0e;">
+    ⏳ 심사 기간: <strong>영업일 기준 3~5일</strong> 소요됩니다. 반려 시 문구 수정 후 재신청 가능합니다.
+  </div>
+</section>
+
+<div class="footer">
+  Caddy Manager Pro — 알리고 알림톡 템플릿 등록 완료 | 2026년 4월 8일
+</div>
+
+</body>
+</html>

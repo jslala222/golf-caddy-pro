@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>알리고 SMS 사용법 — Caddy Manager Pro</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Malgun Gothic', sans-serif; background: #f4f6f9; color: #1a1a2e; }
+
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white;
+    padding: 40px 24px 32px;
+    text-align: center;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  .header p { font-size: 14px; opacity: 0.75; }
+  .badge {
+    display: inline-block;
+    background: #e94560;
+    color: white;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 10px;
+    font-weight: 600;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 28px 16px 60px; }
+
+  /* 요약 카드 */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+  @media(max-width:700px){ .summary-grid { grid-template-columns: repeat(2,1fr); } }
+  .summary-card {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    border-top: 3px solid;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .summary-card .num { font-size: 26px; font-weight: 800; }
+  .summary-card .label { font-size: 11px; color: #666; margin-top: 4px; line-height: 1.4; }
+  .c1 { border-color: #4caf50; } .c1 .num { color: #4caf50; }
+  .c2 { border-color: #2196f3; } .c2 .num { color: #2196f3; }
+  .c3 { border-color: #9c27b0; } .c3 .num { color: #9c27b0; }
+  .c4 { border-color: #ff5722; } .c4 .num { color: #ff5722; }
+  .c5 { border-color: #00bcd4; } .c5 .num { color: #00bcd4; }
+
+  /* 섹션 */
+  .section { margin-bottom: 28px; }
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    padding-left: 10px;
+    border-left: 4px solid #e94560;
+    color: #0f3460;
+  }
+
+  /* 템플릿 카드 */
+  .template-card {
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .template-header {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .template-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #0f3460;
+    color: white;
+    font-weight: 800;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .template-title { font-weight: 700; font-size: 15px; }
+  .template-trigger {
+    margin-left: auto;
+    background: #e8f4fd;
+    color: #1565c0;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .template-body { padding: 16px 18px; }
+  .template-msg {
+    background: #f8f9fa;
+    border-left: 3px solid #dee2e6;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.9;
+    border-radius: 0 8px 8px 0;
+    font-family: monospace;
+    white-space: pre-line;
+    color: #333;
+    margin-bottom: 12px;
+  }
+  .info-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .info-chip {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .chip-green { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+  .chip-blue  { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+  .chip-orange{ background: #fff3e0; color: #e65100; border-color: #ffcc80; }
+  .chip-purple{ background: #f3e5f5; color: #6a1b9a; border-color: #ce93d8; }
+
+  /* 설정 가이드 */
+  .step-list { list-style: none; counter-reset: step; }
+  .step-list li {
+    counter-increment: step;
+    padding: 14px 16px 14px 58px;
+    position: relative;
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .step-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: 14px; top: 50%; transform: translateY(-50%);
+    width: 30px; height: 30px;
+    background: #e94560;
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    font-size: 13px;
+  }
+  .step-list li strong { color: #0f3460; }
+  code {
+    background: #f0f0f0;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+    color: #c62828;
+  }
+
+  /* 환경변수 테이블 */
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  th { background: #0f3460; color: white; padding: 12px 16px; text-align: left; font-size: 13px; }
+  td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 600; color: #c62828; font-family: monospace; font-size: 12px; }
+  td.ok { color: #2e7d32; font-weight: 700; }
+
+  /* Cron 테이블 */
+  .cron-block {
+    background: #1a1a2e;
+    border-radius: 10px;
+    padding: 16px 18px;
+    color: #a8e6cf;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 2;
+    margin-bottom: 16px;
+  }
+  .cron-block .comment { color: #888; }
+
+  /* 알림톡 전환 안내 */
+  .future-box {
+    background: linear-gradient(135deg, #fff8e1, #fff3cd);
+    border: 1px solid #ffe082;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .future-box h4 { color: #e65100; font-size: 14px; margin-bottom: 8px; }
+  .future-box ul { list-style: none; font-size: 13px; line-height: 2; padding-left: 4px; }
+  .future-box ul li::before { content: "⏳ "; }
+
+  .done-box {
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .done-box h4 { color: #1b5e20; font-size: 14px; margin-bottom: 8px; }
+  .done-box ul { list-style: none; font-size: 13px; line-height: 2; padding-left: 4px; }
+  .done-box ul li::before { content: "✅ "; }
+
+  .footer { text-align: center; font-size: 12px; color: #999; padding-top: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📱 알리고 SMS 알림 — 사용법 문서</h1>
+  <p>Caddy Manager Pro · 2026년 4월 8일 배포 (커밋 7598802)</p>
+  <span class="badge">5개 템플릿 전체 구현 완료</span>
+</div>
+
+<div class="container">
+
+  <!-- 요약 -->
+  <div class="summary-grid" style="margin-top:24px;">
+    <div class="summary-card c1"><div class="num">1</div><div class="label">가입 완료<br>환영 SMS</div></div>
+    <div class="summary-card c2"><div class="num">2</div><div class="label">오늘 일정<br>오전 브리핑</div></div>
+    <div class="summary-card c3"><div class="num">3</div><div class="label">개인일정<br>사전 알림</div></div>
+    <div class="summary-card c4"><div class="num">4</div><div class="label">만료<br>D-7/3/1</div></div>
+    <div class="summary-card c5"><div class="num">5</div><div class="label">연장 완료<br>안내 SMS</div></div>
+  </div>
+
+  <!-- ─────────────────────────────────── -->
+  <!-- 1. 사용자가 해야 할 설정 -->
+  <!-- ─────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">사용자가 해야 할 설정 (앱 내)</div>
+    <ul class="step-list">
+      <li>
+        <strong>앱 접속</strong> → 이용코드 입력 후 로그인<br>
+        <span style="color:#555">이용코드 예: <code>DC-Q73-9FZ</code></span>
+      </li>
+      <li>
+        <strong>설정 페이지 이동</strong><br>
+        하단 탭 → ⚙️ 설정 → <strong>SMS 알림 설정</strong> 섹션
+      </li>
+      <li>
+        <strong>전화번호 입력</strong><br>
+        <code>010-0000-0000</code> 형식으로 입력 (자동 하이픈 적용)<br>
+        <span style="color:#888; font-size:12px">※ 이전에 저장된 번호는 자동으로 불러옵니다</span>
+      </li>
+      <li>
+        <strong>알림 받을 시각 선택</strong><br>
+        오전 5시 / 6시 / 7시 / 8시 / 9시 중 선택<br>
+        설정한 시각에 오늘의 일정 SMS가 발송됩니다
+      </li>
+      <li>
+        <strong>저장 버튼 클릭</strong><br>
+        → "알림 설정이 저장되었습니다" 메시지 확인
+      </li>
+    </ul>
+  </div>
+
+  <!-- ─────────────────────────────────── -->
+  <!-- 2. SMS 발송 시나리오 5개 -->
+  <!-- ─────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">SMS 발송 시나리오 5가지</div>
+
+    <!-- 1번 -->
+    <div class="template-card">
+      <div class="template-header">
+        <div class="template-num">1</div>
+        <div>
+          <div class="template-title">가입 완료 — 환영 SMS</div>
+          <div style="font-size:12px; color:#888;">이용권 발급 즉시 자동 발송</div>
+        </div>
+        <span class="template-trigger">자동 (발급 시)</span>
+      </div>
+      <div class="template-body">
+        <div class="template-msg">[캐디 매니저 Pro] 가입을 환영합니다!
+
+이용코드: DC-Q73-9FZ
+플랜: 스탠다드
+이용기한: 2027-04-08
+
+앱 접속: https://caddy-pink.vercel.app</div>
+        <div class="info-row">
+          <span class="info-chip chip-green">관리자 발급 시 자동</span>
+          <span class="info-chip chip-green">딜러 발급 시 자동</span>
+          <span class="info-chip chip-green">결제 완료 시 자동</span>
+          <span class="info-chip chip-blue">전화번호 있는 경우만</span>
+        </div>
+        <p style="font-size:12px; color:#888; margin-top:10px;">📌 발급 폼에서 전화번호를 입력해야 발송됩니다. 발급 후 번호 추가 시에는 설정 페이지에서 저장하세요.</p>
+      </div>
+    </div>
+
+    <!-- 2번 -->
+    <div class="template-card">
+      <div class="template-header">
+        <div class="template-num">2</div>
+        <div>
+          <div class="template-title">오늘 일정 오전 브리핑</div>
+          <div style="font-size:12px; color:#888;">설정한 시각에 자동 발송 (매일)</div>
+        </div>
+        <span class="template-trigger">Cron 자동</span>
+      </div>
+      <div class="template-body">
+        <div class="template-msg">[캐디 매니저] 오늘 일정 (2026-04-08)
+
+• 08:00 [1부] 김OO 고객
+• 13:00 [2부] 이OO 고객
+• 16:00 [개인] 병원 예약
+
+근무 2건, 개인 1건</div>
+        <div class="info-row">
+          <span class="info-chip chip-orange">오전 5~9시 중 선택한 시각</span>
+          <span class="info-chip chip-blue">오늘 일정 있는 경우만</span>
+          <span class="info-chip chip-purple">근무+개인 통합</span>
+        </div>
+        <p style="font-size:12px; color:#888; margin-top:10px;">📌 설정 페이지에서 알림 시각을 설정해야 합니다. 오늘 일정이 없으면 SMS가 발송되지 않습니다.</p>
+      </div>
+    </div>
+
+    <!-- 3번 -->
+    <div class="template-card">
+      <div class="template-header">
+        <div class="template-num">3</div>
+        <div>
+          <div class="template-title">개인일정 사전 알림</div>
+          <div style="font-size:12px; color:#888;">오전 브리핑 Cron 실행 시 개인일정 별도 발송</div>
+        </div>
+        <span class="template-trigger">Cron 자동 (2번 연동)</span>
+      </div>
+      <div class="template-body">
+        <div class="template-msg">[캐디 매니저] 개인 일정 알림
+
+오늘 16:00 개인 약속이 있습니다.
+일정: 병원 예약
+날짜: 2026-04-08
+
+일정을 확인해 주세요.</div>
+        <div class="info-row">
+          <span class="info-chip chip-purple">type=personal 일정만</span>
+          <span class="info-chip chip-blue">시간 입력된 일정만 발송</span>
+          <span class="info-chip chip-orange">2번 SMS 이후 추가 발송</span>
+        </div>
+        <p style="font-size:12px; color:#888; margin-top:10px;">📌 일정 등록 시 시간(<code>time</code>)을 입력해야 발송됩니다. 시간 없는 개인일정은 2번 브리핑에만 포함됩니다.</p>
+      </div>
+    </div>
+
+    <!-- 4번 -->
+    <div class="template-card">
+      <div class="template-header">
+        <div class="template-num">4</div>
+        <div>
+          <div class="template-title">이용권 만료 D-7 / D-3 / D-1 알림</div>
+          <div style="font-size:12px; color:#888;">만료 7일·3일·1일 전 자동 발송</div>
+        </div>
+        <span class="template-trigger">Cron 자동 (매일 10시)</span>
+      </div>
+      <div class="template-body">
+        <div class="template-msg">[캐디 매니저 Pro] 이용권 만료 안내
+
+이용코드: DC-Q73-9FZ
+플랜: 스탠다드
+만료일: 2026-04-15 (7일 후)
+
+만료 전에 기간 연장을 진행해 주세요.
+연장문의: https://caddy-pink.vercel.app</div>
+        <div class="info-row">
+          <span class="info-chip chip-orange">D-7, D-3, D-1만 발송</span>
+          <span class="info-chip chip-blue">매일 KST 10시 Cron</span>
+          <span class="info-chip chip-green">phone 저장 필수</span>
+        </div>
+        <p style="font-size:12px; color:#888; margin-top:10px;">📌 설정 페이지에서 전화번호를 저장해야 발송됩니다. D-7/3/1 외 다른 날은 발송되지 않습니다.</p>
+      </div>
+    </div>
+
+    <!-- 5번 -->
+    <div class="template-card">
+      <div class="template-header">
+        <div class="template-num">5</div>
+        <div>
+          <div class="template-title">이용권 연장 완료 안내</div>
+          <div style="font-size:12px; color:#888;">딜러가 연장 처리 시 자동 발송</div>
+        </div>
+        <span class="template-trigger">자동 (연장 시)</span>
+      </div>
+      <div class="template-body">
+        <div class="template-msg">[캐디 매니저 Pro] 이용권 연장이 완료되었습니다.
+
+이용코드: DC-Q73-9FZ
+플랜: 스탠다드
+새 유효기간: 2027-04-08
+
+계속 이용해 주셔서 감사합니다.
+https://caddy-pink.vercel.app</div>
+        <div class="info-row">
+          <span class="info-chip chip-green">딜러 대시보드 연장 시 자동</span>
+          <span class="info-chip chip-blue">phone 저장 필 수</span>
+        </div>
+        <p style="font-size:12px; color:#888; margin-top:10px;">📌 DB에 전화번호가 없으면 발송되지 않습니다. 연장 전 딜러가 전화번호를 등록해주어야 합니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────── -->
+  <!-- 3. 관리자/딜러 운영 가이드 -->
+  <!-- ─────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">관리자 / 딜러 운영 가이드</div>
+    <ul class="step-list">
+      <li>
+        <strong>이용권 발급 시 전화번호 입력</strong><br>
+        발급 폼 <code>전화번호</code> 필드를 채워야 가입 환영 SMS(1번)가 즉시 발송됩니다.<br>
+        <span style="color:#888; font-size:12px">입력 없이 발급하면 SMS 미발송 — 나중에 사용자가 설정에서 직접 등록</span>
+      </li>
+      <li>
+        <strong>연장 처리 시 전화번호 확인</strong><br>
+        딜러 대시보드 연장 버튼 클릭 시 DB에 phone이 있으면 연장완료 SMS(5번) 자동 발송
+      </li>
+      <li>
+        <strong>사용자가 SMS 못 받는다고 할 때</strong><br>
+        → 설정 페이지에서 전화번호가 저장됐는지 확인<br>
+        → Vercel 함수 로그 확인: <code>https://vercel.com/jslala222/caddy-pro-enterprise/logs</code>
+      </li>
+      <li>
+        <strong>Cron 작동 확인 (관리자)</strong><br>
+        Vercel 대시보드 → Functions → <code>/api/cron/alarm</code>, <code>/api/cron/expire-notify</code> 로그 확인<br>
+        <span style="color:#888; font-size:12px">※ Hobby 플랜은 Cron이 1개만 실행 — 5시 브리핑만 동작, 나머지는 배포 후 수동 테스트</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ─────────────────────────────────── -->
+  <!-- 4. Cron 스케줄 -->
+  <!-- ─────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Vercel Cron 스케줄</div>
+    <div class="cron-block"><span class="comment"># KST 기준 (UTC+9)</span>
+/api/cron/alarm?hour=5   → UTC 20:00 = <strong style="color:#fff">KST 05:00</strong>  오전 5시 브리핑
+/api/cron/alarm?hour=6   → UTC 21:00 = <strong style="color:#fff">KST 06:00</strong>  오전 6시 브리핑
+/api/cron/alarm?hour=7   → UTC 22:00 = <strong style="color:#fff">KST 07:00</strong>  오전 7시 브리핑
+/api/cron/alarm?hour=8   → UTC 23:00 = <strong style="color:#fff">KST 08:00</strong>  오전 8시 브리핑
+/api/cron/alarm?hour=9   → UTC 00:00 = <strong style="color:#fff">KST 09:00</strong>  오전 9시 브리핑
+/api/cron/expire-notify  → UTC 01:00 = <strong style="color:#fff">KST 10:00</strong>  만료 D-7/3/1 알림</div>
+    <p style="font-size:12px; color:#888;">⚠️ Vercel Hobby 플랜은 Cron 1개 제한 → Pro 플랜 업그레이드 시 모든 시각 정상 작동</p>
+  </div>
+
+  <!-- ─────────────────────────────────── -->
+  <!-- 5. 환경변수 -->
+  <!-- ─────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Vercel 환경변수 (이미 등록 완료)</div>
+    <table>
+      <tr><th>변수명</th><th>값</th><th>상태</th></tr>
+      <tr><td>ALIGO_API_KEY</td><td>yczi82961yse34dwljg0wzk82n2h1v7d</td><td class="ok">✅ 등록됨</td></tr>
+      <tr><td>ALIGO_USER_ID</td><td>supersm3</td><td class="ok">✅ 등록됨</td></tr>
+      <tr><td>ALIGO_SENDER</td><td>01027377229</td><td class="ok">✅ 등록됨</td></tr>
+      <tr><td>CRON_SECRET</td><td>(비공개)</td><td class="ok">✅ 등록됨</td></tr>
+      <tr><td>NEXT_PUBLIC_APP_URL</td><td>https://caddy-pink.vercel.app</td><td class="ok">✅ 등록됨</td></tr>
+    </table>
+  </div>
+
+  <!-- ─────────────────────────────────── -->
+  <!-- 6. 알림톡 전환 계획 -->
+  <!-- ─────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">알림톡 템플릿 승인 후 할 일</div>
+
+    <div class="done-box">
+      <h4>✅ 현재 상태 (SMS로 전부 동작 중)</h4>
+      <ul>
+        <li>5개 템플릿 모두 일반 LMS(SMS)로 구현 완료 · 배포됨</li>
+        <li>알리고 알림톡 템플릿 5종 심사 접수됨 (영업일 3~5일 소요)</li>
+      </ul>
+    </div>
+
+    <div class="future-box">
+      <h4>⏳ 알림톡 승인 후 교체 작업 (코드 변경 최소)</h4>
+      <ul>
+        <li>알리고 → 신청/인증 탭 → 각 템플릿 코드(ID) 수집</li>
+        <li><code>src/lib/aligo.ts</code>에 <code>sendAlimtalk()</code> 함수 추가</li>
+        <li>/api/notify/welcome, /api/notify/extend, /api/cron/alarm, /api/cron/expire-notify 에서<br>
+            <code>sendSMS()</code> → <code>sendAlimtalk()</code> 교체 (파일 4개, 각 1줄 수정)</li>
+        <li>실패 시 <code>sendSMS()</code> fallback 자동 처리</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────── -->
+  <!-- 7. 테스트 방법 -->
+  <!-- ─────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">테스트 방법</div>
+    <ul class="step-list">
+      <li>
+        <strong>1번 테스트 (가입 환영)</strong><br>
+        관리자 페이지 → 이용권 발급 → 전화번호 입력 후 발급<br>
+        → 즉시 SMS 수신 확인
+      </li>
+      <li>
+        <strong>2·3번 테스트 (오늘 일정 브리핑)</strong><br>
+        설정에서 전화번호 + 알림 시각 저장<br>
+        → Vercel 대시보드에서 Cron 수동 실행: <code>GET /api/cron/alarm?hour=6</code><br>
+        → 또는 해당 시각까지 대기
+      </li>
+      <li>
+        <strong>4번 테스트 (만료 알림)</strong><br>
+        Vercel 대시보드에서 수동 실행: <code>GET /api/cron/expire-notify</code><br>
+        → <code>expires_at</code>이 7일 이내인 이용권 + phone 등록된 계정 필요
+      </li>
+      <li>
+        <strong>5번 테스트 (연장 완료)</strong><br>
+        딜러 대시보드 → 기존 이용권 연장 처리<br>
+        → 즉시 SMS 수신 확인 (해당 이용권에 phone 저장 필수)
+      </li>
+    </ul>
+  </div>
+
+</div>
+
+<div class="footer">
+  Caddy Manager Pro · 알리고 SMS · 커밋 7598802 · 2026-04-08
+</div>
+
+</body>
+</html>
