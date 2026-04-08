@@ -112,6 +112,19 @@ export function buildPersonalEventMsg(params: {
 }
 
 /**
+ * 개인일정 1시간 전 알림 메시지 생성
+ */
+export function buildPersonalEvent1hMsg(params: {
+  title: string;
+  time: string; // 'HH:MM'
+  date: string;
+  remindLabel?: string; // e.g. '30분', '1시간', '2시간'
+}): string {
+  const label = params.remindLabel ?? '1시간';
+  return `[캐디 매니저] 개인일정 ${label} 전 알림\n\n${params.date} ${params.time} 일정이 ${label} 후 시작됩니다.\n일정: ${params.title}\n\n미리 준비해 주세요.`;
+}
+
+/**
  * 이용권 연장 완료 메시지 생성 (템플릿 5)
  */
 export function buildExtendMsg(params: {

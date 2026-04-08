@@ -251,6 +251,10 @@ export default function AdminPage() {
     };
 
     const handleIssue = async () => {
+        if (!userPhone.trim()) {
+            alert('연락처를 입력해야 가입 완료 문자가 발송됩니다.');
+            return;
+        }
         setIsIssuing(true);
         setGeneratedKey('');
         const result = await issueVoucher({ channel, plan, days, memo, userName, userPhone, issuedBy: 'admin', tier: issueTier });
@@ -770,7 +774,7 @@ export default function AdminPage() {
                                         className="w-full p-3 bg-stone-800 border border-stone-700 rounded-xl text-white placeholder-stone-600 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
                                 </div>
                                 <div>
-                                    <label className="text-stone-400 text-[10px] font-bold mb-1.5 block">연락처 (선택)</label>
+                                    <label className="text-stone-400 text-[10px] font-bold mb-1.5 block">연락처 (필수: 문자 발송)</label>
                                     <input value={userPhone} onChange={e => {
                                         const raw = e.target.value.replace(/[^0-9]/g, '');
                                         let formatted = raw;

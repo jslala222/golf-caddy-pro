@@ -44,8 +44,10 @@ export default function SettingsPage() {
     const [alarmUnit, setAlarmUnit] = useState<'분' | '시간'>('분');
     const [smsPhone, setSmsPhone] = useState('');
     const [smsHour, setSmsHour] = useState(6);
+    const [remindBeforeMin, setRemindBeforeMin] = useState(60);
     const [smsSaving, setSmsSaving] = useState(false);
     const [smsSaved, setSmsSaved] = useState(false);
+    const [smsPhoneEditMode, setSmsPhoneEditMode] = useState(false);
 
     useEffect(() => {
         const storedCode = localStorage.getItem('caddy_license_key');
@@ -53,10 +55,12 @@ export default function SettingsPage() {
         fetch(`/api/notify/settings?licenseCode=${encodeURIComponent(storedCode)}`)
             .then(r => r.json())
             .then(d => {
-                if (d.phone) setSmsPhone(d.phone);
+                if (d.phone) { setSmsPhone(d.phone); setSmsPhoneEditMode(false); }
+                else { setSmsPhoneEditMode(true); }
                 if (d.notification_hour) setSmsHour(d.notification_hour);
+                if (d.remind_before_min !== undefined) setRemindBeforeMin(d.remind_before_min);
             })
-            .catch(() => {});
+            .catch(() => { setSmsPhoneEditMode(true); });
     }, []);
 
     const formatPhoneNumber = (value: string) => {
@@ -73,7 +77,7 @@ export default function SettingsPage() {
         await fetch('/api/notify/settings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ licenseCode: storedCode, phone: smsPhone, notificationHour: smsHour }),
+            body: JSON.stringify({ licenseCode: storedCode, phone: smsPhone, notificationHour: smsHour, remindBeforeMin }),
         });
         setSmsSaving(false);
         setSmsSaved(true);
@@ -334,21 +338,41 @@ export default function SettingsPage() {
                         <p className="text-xs text-stone-500">전화번호를 등록하면 매일 아침 설정한 시각에 오늘 일정을 문자로 보내드립니다.</p>
                         <p className="text-xs text-stone-400">오늘 일정이 없으면 알림이 발송되지 않습니다.</p>
                     </div>
-                    {/* 전화번호 입력 */}
+                    {/* 전화번호 */}
                     <div className="space-y-2">
-                        <p className="text-xs font-bold text-stone-500">알림 받을 전화번호</p>
-                        <input
-                            type="tel"
-                            value={smsPhone}
-                            onChange={e => setSmsPhone(formatPhoneNumber(e.target.value))}
-                            placeholder="010-0000-0000"
-                            maxLength={13}
-                            className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-bold text-stone-800 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none transition"
-                        />
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-stone-500">알림 받을 전화번호</p>
+                            {smsPhone && !smsPhoneEditMode && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSmsPhoneEditMode(true)}
+                                    className="text-xs text-orange-500 font-bold underline"
+                                >
+                                    수정
+                                </button>
+                            )}
+                        </div>
+                        {smsPhone && !smsPhoneEditMode ? (
+                            <div className="w-full p-3 bg-stone-100 border border-stone-200 rounded-xl font-bold text-stone-700 text-sm flex items-center gap-2">
+                                <span className="text-stone-400 text-xs">📱</span>
+                                {smsPhone}
+                                <span className="ml-auto text-xs text-emerald-600 font-bold">등록됨</span>
+                            </div>
+                        ) : (
+                            <input
+                                type="tel"
+                                value={smsPhone}
+                                onChange={e => setSmsPhone(formatPhoneNumber(e.target.value))}
+                                placeholder="010-0000-0000"
+                                maxLength={13}
+                                autoFocus={smsPhoneEditMode}
+                                className="w-full p-3 bg-stone-50 border border-orange-300 rounded-xl font-bold text-stone-800 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none transition"
+                            />
+                        )}
                     </div>
-                    {/* 알림 시각 선택 */}
+                    {/* 1. 오전 브리핑 시각 선택 */}
                     <div className="space-y-2">
-                        <p className="text-xs font-bold text-stone-500">매일 문자 발송 시각</p>
+                        <p className="text-xs font-bold text-stone-500">1. 매일 오전 브리핑 시각</p>
                         <div className="grid grid-cols-5 gap-1.5">
                             {[5, 6, 7, 8, 9].map(h => (
                                 <button
@@ -361,6 +385,39 @@ export default function SettingsPage() {
                             ))}
                         </div>
                         <p className="text-xs text-stone-400">매일 오전 <strong className="text-orange-500">{smsHour}시</strong>에 오늘 일정을 문자로 보내드립니다</p>
+                    </div>
+                    {/* 구분선 */}
+                    <div className="border-t border-stone-100" />
+                    {/* 2. 개인일정 사전 알림 시간 선택 */}
+                    <div className="space-y-2">
+                        <p className="text-xs font-bold text-stone-500">2. 개인일정 사전 알림</p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                            {[
+                                { label: '30분 전', value: 30 },
+                                { label: '1시간 전', value: 60 },
+                                { label: '2시간 전', value: 120 },
+                                { label: '안받기', value: 0 },
+                            ].map(opt => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => setRemindBeforeMin(opt.value)}
+                                    className={`py-2.5 rounded-xl text-xs font-bold border transition active:scale-[.96] ${
+                                        remindBeforeMin === opt.value
+                                            ? opt.value === 0
+                                                ? 'bg-stone-400 border-stone-400 text-white shadow-sm'
+                                                : 'bg-orange-500 border-orange-500 text-white shadow-sm'
+                                            : 'bg-stone-50 border-stone-200 text-stone-600'
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-stone-400">
+                            {remindBeforeMin === 0
+                                ? '개인일정 사전 알림을 받지 않습니다'
+                                : `개인일정 시작 ${remindBeforeMin < 60 ? `${remindBeforeMin}분` : `${remindBeforeMin / 60}시간`} 전에 문자를 보내드립니다`}
+                        </p>
                     </div>
                     {/* 저장 버튼 */}
                     <button

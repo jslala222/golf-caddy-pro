@@ -48,7 +48,7 @@ export const CHANNEL_PREFIX: Record<ChannelType, string> = {
     smartstore: 'SM',
     kmong:      'CM',
     event:      'EV',
-    direct:     'DC',
+    direct:     'AD',
     dealer:     'DL',
 };
 
@@ -173,6 +173,7 @@ export const issueVoucher = async ({
         memo: memo || null,
         golf_course: golfCourse || null,
         pay_method: payMethod,
+        phone: userPhone || null,
         user_name: userName || null,
         user_phone: userPhone || null,
         issued_by: issuedBy,
