@@ -5,7 +5,6 @@
  * 코드 형식: xx-AAA-BBB (prefix 2자리 + 시드 3자리 + 체크섬 3자리, 총 10자)
  */
 import { supabase } from './supabaseClient';
-import { sendSMS, buildWelcomeMsg, buildExtendMsg } from './aligo';
 
 // ── 요금제 정의 ────────────────────────────────────────────────
 export const PLANS = {
@@ -181,15 +180,22 @@ export const issueVoucher = async ({
     });
     if (error) return { success: false, error: error.message };
 
-    // 전화번호가 있으면 환영 SMS 직접 발송
+    // 전화번호가 있으면 환영 SMS 발송 (API 라우트 통해 서버에서 처리)
     if (userPhone) {
-        const msg = buildWelcomeMsg({ licenseCode: code, tier, expiresAt: expiresAt.toISOString() });
-        const sms = await sendSMS({ receiver: userPhone, msg, msg_type: 'LMS', title: '캐디 매니저 Pro 가입 완료' });
-        if (!sms.ok) {
-            console.error('[issueVoucher] 가입 문자 발송 실패:', sms.message);
-            return { success: true, code, smsOk: false, smsMessage: sms.message };
+        try {
+            const res = await fetch('/api/notify/welcome', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: userPhone, licenseCode: code, tier, expiresAt: expiresAt.toISOString() }),
+            });
+            const data = await res.json().catch(() => ({ ok: false, message: 'JSON parse 실패' }));
+            if (!data.ok) {
+                return { success: true, code, smsOk: false, smsMessage: data.message ?? '발송 실패' };
+            }
+            return { success: true, code, smsOk: true };
+        } catch (e) {
+            return { success: true, code, smsOk: false, smsMessage: String(e) };
         }
-        return { success: true, code, smsOk: true };
     }
 
     return { success: true, code };
@@ -353,20 +359,23 @@ export const extendLicense = async ({
 
     if (error) return { success: false, error: error.message };
 
-    // 연장 완료 SMS 직접 발송
+    // 연장 완료 SMS 발송 (API 라우트 통해 서버에서 처리)
     if (current.phone) {
         const finalTier = tier || current.tier || 'standard';
-        const msg = buildExtendMsg({
-            licenseCode: current.code,
-            tier: finalTier,
-            newExpiresAt: newExpiresAt.toISOString(),
-        });
-        const sms = await sendSMS({ receiver: current.phone, msg, msg_type: 'LMS', title: '이용권 연장 완료' });
-        if (!sms.ok) {
-            console.error('[extendLicense] 연장 문자 발송 실패:', sms.message);
-            return { success: true, newExpiresAt: newExpiresAt.toISOString(), smsOk: false, smsMessage: sms.message };
+        try {
+            const res = await fetch('/api/notify/extend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: current.phone, licenseCode: current.code, tier: finalTier, newExpiresAt: newExpiresAt.toISOString() }),
+            });
+            const data = await res.json().catch(() => ({ ok: false, message: 'JSON parse 실패' }));
+            if (!data.ok) {
+                return { success: true, newExpiresAt: newExpiresAt.toISOString(), smsOk: false, smsMessage: data.message ?? '발송 실패' };
+            }
+            return { success: true, newExpiresAt: newExpiresAt.toISOString(), smsOk: true };
+        } catch (e) {
+            return { success: true, newExpiresAt: newExpiresAt.toISOString(), smsOk: false, smsMessage: String(e) };
         }
-        return { success: true, newExpiresAt: newExpiresAt.toISOString(), smsOk: true };
     }
 
     return { success: true, newExpiresAt: newExpiresAt.toISOString() };
