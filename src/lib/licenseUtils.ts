@@ -183,7 +183,7 @@ export const issueVoucher = async ({
     // 전화번호가 있으면 환영 SMS 발송 (API 라우트 통해 서버에서 처리)
     if (userPhone) {
         try {
-            const res = await fetch('/api/notify/welcome', {
+            const res = await fetch('/api/notify/welcome/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone: userPhone, licenseCode: code, tier, expiresAt: expiresAt.toISOString() }),
@@ -363,7 +363,7 @@ export const extendLicense = async ({
     if (current.phone) {
         const finalTier = tier || current.tier || 'standard';
         try {
-            const res = await fetch('/api/notify/extend', {
+            const res = await fetch('/api/notify/extend/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone: current.phone, licenseCode: current.code, tier: finalTier, newExpiresAt: newExpiresAt.toISOString() }),
