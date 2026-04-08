@@ -1,62 +1,43 @@
 /**
- * 알리고 SMS 발송 유틸
- * https://smartsms.aligo.in/main.html
+ * SMS 발송 유틸 (솔라피 기반)
+ * https://solapi.com
  */
-
-const ALIGO_API_URL = 'https://apis.aligo.in/send/';
+import SolapiMessageService from 'solapi';
 
 export interface AligoSendParams {
-  receiver: string;   // 수신번호 (하이픈 제거, 예: 01027377229)
-  msg: string;        // 메시지 내용
-  msg_type?: 'SMS' | 'LMS'; // SMS: 90바이트 이하, LMS: 2000바이트 이하
-  title?: string;     // LMS 제목 (선택)
+  receiver: string;
+  msg: string;
+  msg_type?: 'SMS' | 'LMS';
+  title?: string;
 }
 
-/**
- * 알리고 SMS/LMS 발송
- * @returns { result_code: '1' } 성공, { result_code: '-1', message: '...' } 실패
- */
 export async function sendSMS(params: AligoSendParams): Promise<{ ok: boolean; message?: string }> {
-  const apiKey = process.env.ALIGO_API_KEY;
-  const userId = process.env.ALIGO_USER_ID;
-  const sender = process.env.ALIGO_SENDER;
+  const apiKey = process.env.SOLAPI_API_KEY;
+  const apiSecret = process.env.SOLAPI_API_SECRET;
+  const sender = process.env.SOLAPI_SENDER ?? process.env.ALIGO_SENDER;
 
-  if (!apiKey || !userId || !sender) {
-    console.error('[aligo] 환경변수 미설정');
-    return { ok: false, message: '알리고 환경변수 미설정' };
+  if (!apiKey || !apiSecret || !sender) {
+    console.error('[solapi] 환경변수 미설정');
+    return { ok: false, message: '솔라피 환경변수 미설정' };
   }
 
-  // 수신번호 숫자만 남김 (하이픈/공백/기타 문자 제거)
   const receiver = params.receiver.replace(/\D/g, '');
-
-  // 메시지 길이로 자동 타입 결정
   const msgType = params.msg_type ?? (Buffer.byteLength(params.msg, 'utf8') > 90 ? 'LMS' : 'SMS');
 
-  const body = new URLSearchParams({
-    key: apiKey,
-    user_id: userId,
-    sender,
-    receiver,
-    msg: params.msg,
-    msg_type: msgType,
-    ...(msgType === 'LMS' && params.title ? { title: params.title } : {}),
-  });
-
   try {
-    const res = await fetch(ALIGO_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
+    const service = new SolapiMessageService(apiKey, apiSecret);
+    await service.sendOne({
+      to: receiver,
+      from: sender,
+      text: params.msg,
+      type: msgType,
+      ...(msgType === 'LMS' && params.title ? { subject: params.title } : {}),
     });
-    const data = await res.json();
-    if (data.result_code === '1' || data.result_code === 1) {
-      return { ok: true };
-    }
-    console.error('[aligo] 발송 실패:', JSON.stringify(data));
-    return { ok: false, message: data.message ?? '발송 실패' };
-  } catch (e) {
-    console.error('[aligo] 예외:', e);
-    return { ok: false, message: String(e) };
+    return { ok: true };
+  } catch (e: unknown) {
+    const err = e as { message?: string };
+    console.error('[solapi] 발송 실패:', err);
+    return { ok: false, message: err?.message ?? '발송 실패' };
   }
 }
 
