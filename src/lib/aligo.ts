@@ -2,7 +2,7 @@
  * SMS 발송 유틸 (솔라피 기반)
  * https://solapi.com
  */
-import SolapiMessageService from 'solapi';
+import { SolapiMessageService } from 'solapi';
 
 export interface AligoSendParams {
   receiver: string;
