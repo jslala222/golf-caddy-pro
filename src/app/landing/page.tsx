@@ -548,7 +548,13 @@ export default function LandingPage() {
                                                     <div key={r.id} className={`rounded-2xl p-4 border space-y-3 ${r.isExpired ? 'bg-red-900/15 border-red-800' : 'bg-stone-800 border-stone-700'}`}>
                                                         <div className="flex items-start justify-between">
                                                             <div>
-                                                                <p className="text-white font-black text-base">{r.userName || '(이름 없음)'}</p>
+                                                                <div className="flex items-center gap-2 mb-0.5">
+                                                                    <p className="text-white font-black text-base">{r.userName || '(이름 없음)'}</p>
+                                                                    {/* 등급 뱃지 */}
+                                                                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${r.tier === 'premium' ? 'bg-amber-500/20 text-amber-400 border border-amber-400' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-400'}`}>
+                                                                        {r.tier === 'premium' ? '프리미엄' : '스탠다드'}
+                                                                    </span>
+                                                                </div>
                                                                 <p className="text-stone-400 text-xs mt-0.5">
                                                                     {r.userPhone ? `${r.userPhone.slice(0,3)}-****-${r.userPhone.slice(-4)}` : '번호 없음'}
                                                                 </p>
