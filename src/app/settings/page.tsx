@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X, Bell, MessageCircle, Crown, Share2, Smartphone } from 'lucide-react';
+import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X, Bell, MessageCircle, Crown, Smartphone } from 'lucide-react';
 import { migrateLocalDataToSupabase } from '@/lib/supabaseDB';
 import { formatNumber, todayKST } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
@@ -19,7 +19,6 @@ export default function SettingsPage() {
     const [licenseTier, setLicenseTier] = useState<'standard' | 'premium'>('standard');
     const [codeCopied, setCodeCopied] = useState(false);
     const [calendarCopied, setCalendarCopied] = useState(false);
-    const [calendarShared, setCalendarShared] = useState(false);
     const [showCalendarGuide, setShowCalendarGuide] = useState(false);
     const [siteOrigin, setSiteOrigin] = useState('');
     const [policyModal, setPolicyModal] = useState<null | 'tos' | 'privacy' | 'refund'>(null);
@@ -111,21 +110,6 @@ export default function SettingsPage() {
             setTimeout(() => setCalendarCopied(false), 2000);
         } catch {
             window.prompt('아래 URL을 복사해 캘린더 앱에 붙여넣어 주세요.', calendarSubscribeUrl);
-        }
-    };
-
-    const handleShareCalendarUrl = async () => {
-        if (!calendarSubscribeUrl || !isPremiumCalendar || typeof navigator === 'undefined' || !navigator.share) return;
-        try {
-            await navigator.share({
-                title: '캐디 매니저 Pro 캘린더 동기화',
-                text: '이 링크를 열면 내 일정 캘린더 등록을 이어갈 수 있습니다.',
-                url: calendarSubscribeUrl,
-            });
-            setCalendarShared(true);
-            setTimeout(() => setCalendarShared(false), 2000);
-        } catch {
-            // 사용자가 공유를 취소한 경우는 무시
         }
     };
 
@@ -439,23 +423,12 @@ export default function SettingsPage() {
                                 {calendarCopied ? <Check size={16} /> : <Copy size={16} />}
                                 {isPremiumCalendar ? (calendarCopied ? '복사 완료' : 'URL 복사') : 'URL 복사 (잠김)'}
                             </button>
-                            {typeof navigator !== 'undefined' && navigator.share ? (
-                                <button
-                                    onClick={handleShareCalendarUrl}
-                                    disabled={!isPremiumCalendar}
-                                    className="h-11 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm flex items-center justify-center gap-1.5"
-                                >
-                                    {calendarShared ? <Check size={16} /> : <Share2 size={16} />}
-                                    {isPremiumCalendar ? (calendarShared ? '공유 완료' : '링크 공유') : '링크 공유 (잠김)'}
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => setShowCalendarGuide(true)}
-                                    className="h-11 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-sm"
-                                >
-                                    등록 방법 보기
-                                </button>
-                            )}
+                            <button
+                                onClick={() => setShowCalendarGuide(true)}
+                                className="h-11 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-sm"
+                            >
+                                등록 방법 보기
+                            </button>
                         </div>
 
                         <div className={`${isPremiumCalendar ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'} border rounded-xl p-3 text-xs space-y-1`}>
@@ -790,6 +763,7 @@ export default function SettingsPage() {
                         <div className="bg-stone-50 rounded-xl p-3">
                             <p className="font-bold mb-1">Android (Google 캘린더 권장)</p>
                             <p className="text-xs text-stone-600">웹 Google 캘린더 접속 → 다른 캘린더 + → URL로 추가 → URL 붙여넣기</p>
+                            <p className="text-[11px] text-stone-500 mt-1">'캘린더 공개하기' 체크는 필수 아님(권장: 체크 해제). URL 붙여넣기 후 '캘린더 추가'만 누르면 됩니다.</p>
                         </div>
                         <div className="bg-stone-50 rounded-xl p-3">
                             <p className="font-bold mb-1">삼성 갤럭시 기본 캘린더</p>

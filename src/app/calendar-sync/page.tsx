@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Check, Copy, ExternalLink, Share2, Smartphone, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Copy, ExternalLink, Smartphone, Sparkles } from 'lucide-react';
 
 type DeviceType = 'ios' | 'android' | 'desktop';
 
@@ -18,7 +18,6 @@ export default function CalendarSyncPage() {
   const [siteOrigin, setSiteOrigin] = useState('');
   const [device, setDevice] = useState<DeviceType>('desktop');
   const [copied, setCopied] = useState(false);
-  const [shared, setShared] = useState(false);
   const [launched, setLaunched] = useState(false);
 
   useEffect(() => {
@@ -42,21 +41,6 @@ export default function CalendarSyncPage() {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       window.prompt('아래 주소를 복사해 주세요.', subscribeUrl);
-    }
-  };
-
-  const handleShare = async () => {
-    if (!subscribeUrl || !navigator.share) return;
-    try {
-      await navigator.share({
-        title: '캐디 매니저 Pro 캘린더 등록',
-        text: '이 링크를 열어 캘린더 자동 동기화를 등록하세요.',
-        url: subscribeUrl,
-      });
-      setShared(true);
-      setTimeout(() => setShared(false), 2000);
-    } catch {
-      // 취소는 무시
     }
   };
 
@@ -173,24 +157,14 @@ export default function CalendarSyncPage() {
                 {copied ? <Check size={16} /> : <Copy size={16} />}
                 {copied ? '복사 완료' : 'URL 복사'}
               </button>
-              {typeof navigator !== 'undefined' && navigator.share ? (
-                <button
-                  onClick={handleShare}
-                  className="h-12 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-black flex items-center justify-center gap-2"
-                >
-                  {shared ? <Check size={16} /> : <Share2 size={16} />}
-                  {shared ? '공유 완료' : '링크 공유'}
-                </button>
-              ) : (
-                <a
-                  href={googleAddUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-12 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-black flex items-center justify-center gap-2"
-                >
-                  <ExternalLink size={16} /> Google Calendar 열기
-                </a>
-              )}
+              <a
+                href={googleAddUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-12 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-black flex items-center justify-center gap-2"
+              >
+                <ExternalLink size={16} /> Google Calendar 열기
+              </a>
             </div>
             <div className="bg-stone-50 border border-stone-200 rounded-2xl p-3">
               <p className="text-[11px] text-stone-400 mb-1">구독 URL</p>
@@ -203,6 +177,7 @@ export default function CalendarSyncPage() {
             <div className="space-y-2 text-sm text-amber-900">
               <p><b>아이폰:</b> Safari에서 바로 열기 버튼을 누르면 구독 캘린더 추가로 이어질 가능성이 가장 높습니다.</p>
               <p><b>갤럭시:</b> 일부 삼성 캘린더는 직접 URL 구독 메뉴가 없어 Google 캘린더 경유가 가장 안정적입니다.</p>
+              <p><b>Google 캘린더 팁:</b> URL로 추가 화면의 '캘린더 공개하기' 체크는 필수 아님(권장: 체크 해제). URL 입력 후 '캘린더 추가'만 진행하세요.</p>
               <p><b>요금제:</b> 캘린더 자동 동기화는 프리미엄에서만 사용할 수 있습니다.</p>
             </div>
           </section>

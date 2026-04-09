@@ -113,10 +113,76 @@ function buildCalendarIcs(params: {
   return `${lines.join('\r\n')}\r\n`;
 }
 
-export async function GET(_: NextRequest, { params }: { params: { code: string } }) {
+function shouldReturnHtml(req: NextRequest): boolean {
+  const accept = req.headers.get('accept') ?? '';
+  const fetchDest = req.headers.get('sec-fetch-dest') ?? '';
+  return accept.includes('text/html') || fetchDest === 'document';
+}
+
+function escHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function browserErrorPage(req: NextRequest, status: number, title: string, message: string) {
+  const settingsUrl = `${req.nextUrl.origin}/settings#calendar-sync`;
+  const safeTitle = escHtml(title);
+  const safeMessage = escHtml(message);
+  const html = `<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>${safeTitle}</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fb; color: #111827; }
+    .wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .card { width: 100%; max-width: 520px; background: #fff; border-radius: 20px; box-shadow: 0 10px 30px rgba(17,24,39,0.08); border: 1px solid #e5e7eb; padding: 24px; }
+    .badge { display: inline-block; font-size: 12px; font-weight: 700; color: #92400e; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 999px; padding: 4px 10px; margin-bottom: 12px; }
+    h1 { margin: 0 0 10px; font-size: 20px; line-height: 1.3; }
+    p { margin: 0 0 8px; line-height: 1.55; color: #374151; }
+    .btn { margin-top: 14px; display: inline-block; text-decoration: none; font-weight: 800; font-size: 14px; color: #fff; background: #059669; padding: 11px 14px; border-radius: 12px; }
+    .note { margin-top: 12px; font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card">
+      <div class="badge">캘린더 동기화 안내</div>
+      <h1>${safeTitle}</h1>
+      <p>${safeMessage}</p>
+      <p>같은 휴대폰에서 설정할 때는 링크를 따로 공유하지 말고, 앱의 '등록 시작' 버튼으로 진행해 주세요.</p>
+      <a class="btn" href="${settingsUrl}">설정으로 이동</a>
+      <p class="note">상태 코드: ${status}</p>
+    </section>
+  </div>
+</body>
+</html>`;
+
+  return new NextResponse(html, {
+    status,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+    },
+  });
+}
+
+function errorResponse(req: NextRequest, status: number, message: string, title: string) {
+  if (shouldReturnHtml(req)) {
+    return browserErrorPage(req, status, title, message);
+  }
+  return NextResponse.json({ error: message }, { status });
+}
+
+export async function GET(req: NextRequest, { params }: { params: { code: string } }) {
   const code = normalizeCode(params.code);
   if (!code) {
-    return NextResponse.json({ error: '유효하지 않은 코드' }, { status: 400 });
+    return errorResponse(req, 400, '유효하지 않은 코드입니다.', '잘못된 캘린더 주소입니다.');
   }
 
   const db = createServerClient();
@@ -127,17 +193,17 @@ export async function GET(_: NextRequest, { params }: { params: { code: string }
     .maybeSingle();
 
   if (licErr || !license) {
-    return NextResponse.json({ error: '이용권을 찾을 수 없습니다.' }, { status: 404 });
+    return errorResponse(req, 404, '이용권을 찾을 수 없습니다.', '등록 정보를 찾지 못했습니다.');
   }
 
   const expired = !!license.expires_at && new Date(license.expires_at).getTime() < Date.now();
   if (!license.is_active || expired) {
-    return NextResponse.json({ error: '만료 또는 비활성 이용권입니다.' }, { status: 403 });
+    return errorResponse(req, 403, '만료 또는 비활성 이용권입니다.', '이용권 상태를 확인해 주세요.');
   }
 
   const tier: 'standard' | 'premium' = license.tier === 'premium' ? 'premium' : 'standard';
   if (tier !== 'premium') {
-    return NextResponse.json({ error: '캘린더 동기화는 프리미엄 전용 기능입니다.' }, { status: 403 });
+    return errorResponse(req, 403, '캘린더 동기화는 프리미엄 전용 기능입니다.', '프리미엄 전환 후 사용할 수 있습니다.');
   }
 
   let query = db
@@ -149,7 +215,7 @@ export async function GET(_: NextRequest, { params }: { params: { code: string }
 
   const { data: rows, error: schErr } = await query;
   if (schErr) {
-    return NextResponse.json({ error: schErr.message }, { status: 500 });
+    return errorResponse(req, 500, '일정 데이터를 불러오는 중 문제가 발생했습니다.', '잠시 후 다시 시도해 주세요.');
   }
 
   const ics = buildCalendarIcs({ tier, rows: (rows ?? []) as ScheduleRow[] });
