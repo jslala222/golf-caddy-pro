@@ -136,16 +136,16 @@ export async function GET(_: NextRequest, { params }: { params: { code: string }
   }
 
   const tier: 'standard' | 'premium' = license.tier === 'premium' ? 'premium' : 'standard';
+  if (tier !== 'premium') {
+    return NextResponse.json({ error: '캘린더 동기화는 프리미엄 전용 기능입니다.' }, { status: 403 });
+  }
+
   let query = db
     .from('aone_pro_caddypro_schedules')
     .select('id, date, time, type, shift, title, memo')
     .eq('license_code', code)
     .order('date', { ascending: true })
     .order('time', { ascending: true });
-
-  if (tier !== 'premium') {
-    query = query.eq('type', 'work');
-  }
 
   const { data: rows, error: schErr } = await query;
   if (schErr) {

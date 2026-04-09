@@ -187,13 +187,72 @@
     <h1>Caddy Manager Pro</h1>
     <p>실행보고서 — 개발 진행 현황 정리</p>
     <div class="meta-grid">
-      <div class="meta-item"><div class="label">작성일</div><div class="value">2026년 4월 5일</div></div>
+      <div class="meta-item"><div class="label">작성일</div><div class="value">2026년 4월 9일</div></div>
+      <div class="meta-item"><div class="label">최신 회차</div><div class="value">60회차</div></div>
       <div class="meta-item"><div class="label">프레임워크</div><div class="value">Next.js 14 + TypeScript</div></div>
       <div class="meta-item"><div class="label">로컬 서버</div><div class="value">http://localhost:4455</div></div>
       <div class="meta-item"><div class="label">데이터베이스</div><div class="value">Supabase</div></div>
       <div class="meta-item"><div class="label">스토리지</div><div class="value">Cloudflare R2</div></div>
       <div class="meta-item"><div class="label">결제</div><div class="value">PortOne V2</div></div>
     </div>
+  </div>
+
+  <!-- 60회차: C안 실제 구현 완료 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">60</div>
+      C안 실제 구현 완료 (캘린더 등록 시작 페이지 + 기기별 원클릭 동선)
+      <span class="badge-done">✓ 완료</span>
+    </div>
+    <p style="font-size:.82rem; color:var(--text); margin-bottom:.8rem;">
+      단순 URL 복사에서 끝나지 않도록, 실제 등록 완료까지 이어지는 전용 캘린더 동기화 페이지를 구현했습니다.
+      iPhone은 바로 열기, Android는 Google Calendar URL 추가, 데스크톱은 QR 스캔 중심으로 동선을 나눴습니다.
+    </p>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>신규 라우트</td><td><code>/calendar-sync</code> 전용 시작 페이지 추가</td></tr>
+      <tr><td>빠른 실행</td><td>iPhone <code>webcal://</code>, Android Google Calendar add-by-url, Desktop QR 안내</td></tr>
+      <tr><td>보조 수단</td><td>URL 복사, 링크 공유, QR 코드 동시 제공</td></tr>
+      <tr><td>검증</td><td>빌드 성공 + <code>/home</code>, <code>/settings</code>, <code>/calendar-sync</code> 모두 200 확인</td></tr>
+    </table>
+    <p style="font-size:.78rem; color:var(--muted); margin:.75rem 0 .4rem;">생성/수정 파일</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> <code>src/app/calendar-sync/page.tsx</code></li>
+      <li><span class="check-icon">✓</span> <code>src/app/settings/page.tsx</code></li>
+      <li><span class="check-icon">✓</span> <code>package.json</code> / <code>package-lock.json</code> — QR 의존성 추가</li>
+    </ul>
+  </div>
+
+  <!-- 58회차: C안 구현계획 문서 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">58</div>
+      C안 캘린더 자동동기화 구현계획 문서 + 미리보기 이미지 제작
+      <span class="badge-done">✓ 완료</span>
+    </div>
+    <p style="font-size:.82rem; color:var(--text); margin-bottom:.8rem;">
+      사용자 거의 무조작 UX를 목표로 한 C안 실행계획을 단독 HTML 문서로 구성하고,
+      진행 흐름을 한눈에 보는 미리보기 이미지를 함께 제작했습니다.
+    </p>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>문서 목적</td><td>C안 실행 방향(범위/주차별 일정/KPI)을 즉시 공유 가능한 형태로 정리</td></tr>
+      <tr><td>미리보기</td><td>사용자 플로우(설정 → URL 등록 → 자동 동기화) + 4주 개발 로드맵 시각화</td></tr>
+      <tr><td>반응형</td><td>모바일/데스크톱 모두 가독성 유지</td></tr>
+      <tr><td>환경변수/스키마</td><td>변경 없음</td></tr>
+    </table>
+    <p style="font-size:.78rem; color:var(--muted); margin:.75rem 0 .4rem;">생성 파일</p>
+    <ul class="checklist">
+      <li><span class="check-icon">✓</span> <code>html/C안_캘린더자동동기화_구현계획.html</code></li>
+      <li><span class="check-icon">✓</span> <code>html/C안_캘린더자동동기화_구현계획_미리보기.svg</code></li>
+    </ul>
+    <p style="font-size:.78rem; color:var(--muted); margin:.8rem 0 .4rem;">바로가기</p>
+    <div class="flow">
+      <a class="flow-step" href="./C안_캘린더자동동기화_구현계획.html" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">구현계획 문서 열기</a>
+      <span class="flow-arrow">→</span>
+      <a class="flow-step" href="./C안_캘린더자동동기화_구현계획_미리보기.svg" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">미리보기 이미지 열기</a>
+    </div>
+    <img src="./C안_캘린더자동동기화_구현계획_미리보기.svg" alt="C안 캘린더 자동동기화 구현 미리보기" style="width:100%; border:1px solid var(--border); border-radius:12px; margin-top:.8rem;" />
   </div>
 
   <!-- 1회차: PortOne 결제 -->

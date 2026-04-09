@@ -8,7 +8,7 @@ import {
     ShieldCheck, Key, RefreshCcw, Copy, Check, ChevronLeft,
     CalendarX, Users2, GripVertical, UserPlus, Link2, Plus, Minus,
     Search, Receipt, BadgeCheck, Clock, AlertCircle, ChevronDown, ChevronUp,
-    HardDriveDownload, FileJson, CloudOff, Coins, X
+    HardDriveDownload, FileJson, CloudOff, Coins, X, Crown
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -30,7 +30,7 @@ const CREDIT_PRICE: Record<'standard' | 'premium', Record<PlanType, number>> = {
     premium:  { month: 10_000, '6month': 50_000, year: 100_000 },
 };
 
-type AdminTab = 'issue' | 'licenses' | 'dealers' | 'settlements' | 'caddy' | 'restore' | 'receipt';
+type AdminTab = 'issue' | 'licenses' | 'tiers' | 'dealers' | 'settlements' | 'caddy' | 'restore' | 'receipt';
 
 interface Dealer {
     id: string;
@@ -61,6 +61,7 @@ interface License {
     memo: string | null;
     user_name: string | null;
     user_phone: string | null;
+    tier: 'standard' | 'premium' | string | null;
     issued_by: string;
     created_at: string;
 }
@@ -134,6 +135,7 @@ export default function AdminPage() {
     const [expandedLicense, setExpandedLicense] = useState<string | null>(null);
     const [bonusDays, setBonusDays] = useState<Record<string, number>>({});
     const [bonusLoading, setBonusLoading] = useState<string | null>(null);
+    const [tierUpdatingId, setTierUpdatingId] = useState<string | null>(null);
 
     // 정산 관리 상태
     const [settlements, setSettlements] = useState<Settlement[]>([]);
@@ -219,7 +221,7 @@ export default function AdminPage() {
     }, [isAuthorized, loadDealers, searchLicenses, loadSettlements]);
 
     useEffect(() => {
-        if (activeTab === 'licenses') searchLicenses(licenseSearch);
+        if (activeTab === 'licenses' || activeTab === 'tiers') searchLicenses(licenseSearch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
 
@@ -340,6 +342,31 @@ export default function AdminPage() {
             .update({ settled: true, settled_at: new Date().toISOString() })
             .in('id', ids);
         loadSettlements();
+    };
+
+    const getTierLabel = (tier?: string | null) => (tier === 'premium' ? '프리미엄' : '스탠다드');
+
+    const handleChangeTier = async (license: License, nextTier: 'standard' | 'premium') => {
+        const currentTier = license.tier === 'premium' ? 'premium' : 'standard';
+        if (currentTier === nextTier) return;
+        const customerLabel = `${license.user_name || '(이름 없음)'} / ${license.code}`;
+        const msg = `${customerLabel}\n\n등급을 ${getTierLabel(currentTier)} → ${getTierLabel(nextTier)} 로 변경할까요?`;
+        if (!confirm(msg)) return;
+
+        setTierUpdatingId(license.id);
+        const { error } = await supabase
+            .from('aone_pro_caddypro_licenses')
+            .update({ tier: nextTier })
+            .eq('id', license.id);
+        setTierUpdatingId(null);
+
+        if (error) {
+            alert(`등급 변경 실패: ${error.message}`);
+            return;
+        }
+
+        alert(`✅ ${license.code} 등급이 ${getTierLabel(nextTier)} 로 변경되었습니다.`);
+        searchLicenses(licenseSearch);
     };
 
     // ── 크레딧 충전 ──
@@ -593,6 +620,7 @@ export default function AdminPage() {
     const TABS: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
         { key: 'issue',       label: '코드발급',  icon: <Key size={14} /> },
         { key: 'licenses',    label: '이용내역',  icon: <Search size={14} /> },
+        { key: 'tiers',       label: '등급관리',  icon: <Crown size={14} /> },
         { key: 'dealers',     label: '딜러관리',  icon: <Link2 size={14} /> },
         { key: 'settlements', label: '정산관리',  icon: <Receipt size={14} /> },
         { key: 'caddy',       label: '캐디관리',  icon: <Users2 size={14} /> },
@@ -986,6 +1014,88 @@ export default function AdminPage() {
                                             </div>
                                         </div>
                                     )}
+                                </div>
+                            );
+                        })}
+
+                        <p className="text-center text-stone-700 text-[10px]">최근 50건 표시 · 검색으로 더 찾기</p>
+                    </div>
+                )}
+
+                {/* ══ 탭: 등급 관리 ══ */}
+                {activeTab === 'tiers' && (
+                    <div className="space-y-4">
+                        <section className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
+                            <div className="flex items-center gap-2 text-purple-700 font-bold text-sm">
+                                <Crown size={16} /> 이용권 등급 업그레이드/다운그레이드
+                            </div>
+                            <p className="text-[11px] text-stone-600 leading-relaxed">
+                                코드/이름/전화번호로 검색 후 등급을 즉시 변경할 수 있습니다.
+                                변경 즉시 다음 세션부터 기능 권한(예: 캘린더 동기화)이 반영됩니다.
+                            </p>
+
+                            <div className="relative">
+                                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-700" />
+                                <input
+                                    value={licenseSearch}
+                                    onChange={e => setLicenseSearch(e.target.value)}
+                                    onKeyDown={handleLicenseSearchKey}
+                                    placeholder="고객 이름, 전화번호, 코드로 검색 (Enter)"
+                                    className="w-full pl-10 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                />
+                                <button
+                                    onClick={() => searchLicenses(licenseSearch)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-stone-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl"
+                                >
+                                    검색
+                                </button>
+                            </div>
+                        </section>
+
+                        {licenseLoading && (
+                            <div className="flex justify-center py-8">
+                                <RefreshCcw size={24} className="animate-spin text-stone-700" />
+                            </div>
+                        )}
+
+                        {!licenseLoading && licenses.length === 0 && (
+                            <p className="text-center text-stone-700 text-sm py-8">검색 결과가 없습니다.</p>
+                        )}
+
+                        {!licenseLoading && licenses.map(lic => {
+                            const currentTier = lic.tier === 'premium' ? 'premium' : 'standard';
+                            const isUpdating = tierUpdatingId === lic.id;
+                            return (
+                                <div key={lic.id} className="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="font-bold text-stone-900 text-sm">{lic.user_name || '(이름 없음)'}</p>
+                                            <p className="font-mono text-xs text-stone-700 tracking-wider">{lic.code}</p>
+                                            {lic.user_phone && <p className="text-[11px] text-stone-500 mt-0.5">{lic.user_phone}</p>}
+                                        </div>
+                                        <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold ${currentTier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                            현재: {getTierLabel(currentTier)}
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => handleChangeTier(lic, 'premium')}
+                                            disabled={isUpdating || currentTier === 'premium'}
+                                            className="h-11 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-sm font-black disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            업그레이드
+                                        </button>
+                                        <button
+                                            onClick={() => handleChangeTier(lic, 'standard')}
+                                            disabled={isUpdating || currentTier === 'standard'}
+                                            className="h-11 rounded-xl bg-blue-600 text-white text-sm font-black disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            다운그레이드
+                                        </button>
+                                    </div>
+
+                                    {isUpdating && <p className="text-[11px] text-purple-600 font-bold">등급 변경 처리 중...</p>}
                                 </div>
                             );
                         })}

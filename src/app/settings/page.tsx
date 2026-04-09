@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X, Bell, MessageCircle, Crown } from 'lucide-react';
+import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X, Bell, MessageCircle, Crown, Share2, Smartphone } from 'lucide-react';
 import { migrateLocalDataToSupabase } from '@/lib/supabaseDB';
 import { formatNumber, todayKST } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
@@ -19,6 +19,7 @@ export default function SettingsPage() {
     const [licenseTier, setLicenseTier] = useState<'standard' | 'premium'>('standard');
     const [codeCopied, setCodeCopied] = useState(false);
     const [calendarCopied, setCalendarCopied] = useState(false);
+    const [calendarShared, setCalendarShared] = useState(false);
     const [showCalendarGuide, setShowCalendarGuide] = useState(false);
     const [siteOrigin, setSiteOrigin] = useState('');
     const [policyModal, setPolicyModal] = useState<null | 'tos' | 'privacy' | 'refund'>(null);
@@ -101,14 +102,30 @@ export default function SettingsPage() {
     }, []);
 
     const calendarSubscribeUrl = licenseCode && siteOrigin ? `${siteOrigin}/api/calendar/${licenseCode}.ics` : '';
+    const isPremiumCalendar = licenseTier === 'premium';
     const handleCopyCalendarUrl = async () => {
-        if (!calendarSubscribeUrl) return;
+        if (!calendarSubscribeUrl || !isPremiumCalendar) return;
         try {
             await navigator.clipboard.writeText(calendarSubscribeUrl);
             setCalendarCopied(true);
             setTimeout(() => setCalendarCopied(false), 2000);
         } catch {
             window.prompt('아래 URL을 복사해 캘린더 앱에 붙여넣어 주세요.', calendarSubscribeUrl);
+        }
+    };
+
+    const handleShareCalendarUrl = async () => {
+        if (!calendarSubscribeUrl || !isPremiumCalendar || typeof navigator === 'undefined' || !navigator.share) return;
+        try {
+            await navigator.share({
+                title: '캐디 매니저 Pro 캘린더 동기화',
+                text: '이 링크를 열면 내 일정 캘린더 등록을 이어갈 수 있습니다.',
+                url: calendarSubscribeUrl,
+            });
+            setCalendarShared(true);
+            setTimeout(() => setCalendarShared(false), 2000);
+        } catch {
+            // 사용자가 공유를 취소한 경우는 무시
         }
     };
 
@@ -377,31 +394,77 @@ export default function SettingsPage() {
                     </h2>
                     <div className="bg-white rounded-2xl border-2 border-emerald-300 p-5 shadow-md shadow-emerald-100 space-y-3">
                         <div className="flex items-center justify-between">
-                            <p className="text-sm text-stone-700 font-semibold">폰 캘린더에 구독 URL을 1회 등록하면 일정이 자동 반영됩니다.</p>
+                            <p className="text-sm text-stone-700 font-semibold">
+                                {isPremiumCalendar
+                                    ? '폰 캘린더에 구독 URL을 1회 등록하면 일정이 자동 반영됩니다.'
+                                    : '캘린더 자동 동기화는 프리미엄 전용 기능입니다.'}
+                            </p>
                             <span className={`text-[11px] px-2 py-1 rounded-full font-bold ${licenseTier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
                                 {licenseTier === 'premium' ? '프리미엄' : '스탠다드'}
                             </span>
                         </div>
 
-                        <div className="bg-stone-50 border border-stone-200 rounded-xl p-3">
-                            <p className="text-[11px] text-stone-400 mb-1">구독 URL</p>
-                            <p className="font-mono text-[11px] break-all text-stone-700">{calendarSubscribeUrl}</p>
-                        </div>
+                        {isPremiumCalendar ? (
+                            <div className="bg-stone-50 border border-stone-200 rounded-xl p-3">
+                                <p className="text-[11px] text-stone-400 mb-1">구독 URL</p>
+                                <p className="font-mono text-[11px] break-all text-stone-700">{calendarSubscribeUrl}</p>
+                            </div>
+                        ) : (
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                                스탠다드 요금제에서는 캘린더 자동 동기화를 사용할 수 없습니다.
+                            </div>
+                        )}
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {isPremiumCalendar ? (
+                                <Link
+                                    href="/calendar-sync"
+                                    className="h-11 rounded-xl bg-stone-900 hover:bg-black text-white font-bold text-sm flex items-center justify-center gap-1.5"
+                                >
+                                    <Smartphone size={16} /> 등록 시작
+                                </Link>
+                            ) : (
+                                <button
+                                    disabled
+                                    className="h-11 rounded-xl bg-stone-200 text-stone-400 font-bold text-sm flex items-center justify-center gap-1.5 cursor-not-allowed"
+                                >
+                                    <Smartphone size={16} /> 등록 시작 (프리미엄)
+                                </button>
+                            )}
                             <button
                                 onClick={handleCopyCalendarUrl}
+                                disabled={!isPremiumCalendar}
                                 className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-1.5"
                             >
                                 {calendarCopied ? <Check size={16} /> : <Copy size={16} />}
-                                {calendarCopied ? '복사 완료' : 'URL 복사'}
+                                {isPremiumCalendar ? (calendarCopied ? '복사 완료' : 'URL 복사') : 'URL 복사 (잠김)'}
                             </button>
-                            <button
-                                onClick={() => setShowCalendarGuide(true)}
-                                className="h-11 rounded-xl bg-stone-900 hover:bg-black text-white font-bold text-sm"
-                            >
-                                등록 방법 보기
-                            </button>
+                            {typeof navigator !== 'undefined' && navigator.share ? (
+                                <button
+                                    onClick={handleShareCalendarUrl}
+                                    disabled={!isPremiumCalendar}
+                                    className="h-11 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm flex items-center justify-center gap-1.5"
+                                >
+                                    {calendarShared ? <Check size={16} /> : <Share2 size={16} />}
+                                    {isPremiumCalendar ? (calendarShared ? '공유 완료' : '링크 공유') : '링크 공유 (잠김)'}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setShowCalendarGuide(true)}
+                                    className="h-11 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-sm"
+                                >
+                                    등록 방법 보기
+                                </button>
+                            )}
+                        </div>
+
+                        <div className={`${isPremiumCalendar ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'} border rounded-xl p-3 text-xs space-y-1`}>
+                            <p className="font-bold">가장 쉬운 방법</p>
+                            <p>
+                                {isPremiumCalendar
+                                    ? '아이폰은 등록 시작에서 바로 열기, 갤럭시는 Google 캘린더 추가 화면으로 바로 이동할 수 있습니다.'
+                                    : '프리미엄 전환 후 캘린더 동기화 버튼이 활성화됩니다.'}
+                            </p>
                         </div>
 
                         {licenseTier !== 'premium' && (
