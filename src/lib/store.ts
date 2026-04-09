@@ -349,15 +349,18 @@ export const useAppStore = create<AppState>()((set, get) => ({
         const code = getCode();
         if (!code) return;
         const entry: Diary = { ...diary, license_code: code };
-        set(s => {
-            const others = s.diaries.filter(d => d.date !== diary.date);
-            return { diaries: [...others, entry] };
-        });
+        // 1. 서버에 저장
         await fetch('/api/db/diary', {
             method: 'POST',
             headers: apiHeaders(),
             body: JSON.stringify(entry),
         });
+        // 2. 서버에서 최신 diary 목록 fetch 후 상태 동기화
+        const res = await fetch('/api/db/diary', { headers: apiHeaders() });
+        if (res.ok) {
+            const data = await res.json();
+            set(() => ({ diaries: data.diaries ?? [] }));
+        }
     },
 
     getDiaryByDate: (date) => {
