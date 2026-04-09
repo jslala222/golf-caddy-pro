@@ -135,6 +135,7 @@ export default function AdminPage() {
     const [expandedLicense, setExpandedLicense] = useState<string | null>(null);
     const [bonusDays, setBonusDays] = useState<Record<string, number>>({});
     const [bonusLoading, setBonusLoading] = useState<string | null>(null);
+    const [activeToggleId, setActiveToggleId] = useState<string | null>(null);
     const [tierUpdatingId, setTierUpdatingId] = useState<string | null>(null);
 
     // 정산 관리 상태
@@ -959,6 +960,22 @@ export default function AdminPage() {
                                             <button onClick={() => { navigator.clipboard.writeText(lic.code); }}
                                                 className="flex items-center gap-1 text-[10px] bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl font-bold text-stone-600 transition">
                                                 <Copy size={11} /> 코드 복사 (기기변경 복원용)
+                                            </button>
+
+                                            {/* 이용권 활성/비활성 토글 */}
+                                            <button
+                                                onClick={async () => {
+                                                    const newActive = !lic.is_active;
+                                                    if (!confirm(`이 이용권을 ${newActive ? '활성화' : '비활성화'}하시겠습니까?\n코드: ${lic.code}`)) return;
+                                                    setActiveToggleId(lic.id);
+                                                    await supabase.from('aone_pro_caddypro_licenses').update({ is_active: newActive }).eq('id', lic.id);
+                                                    setActiveToggleId(null);
+                                                    alert(`✅ ${newActive ? '활성화' : '비활성화'} 완료!`);
+                                                    searchLicenses(licenseSearch);
+                                                }}
+                                                disabled={activeToggleId === lic.id}
+                                                className={`flex items-center gap-1 text-[10px] px-3 py-1.5 rounded-xl font-bold transition disabled:opacity-40 ${lic.is_active ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700' : 'bg-stone-200 hover:bg-stone-300 text-stone-600'}`}>
+                                                {activeToggleId === lic.id ? '처리 중...' : lic.is_active ? '✅ 활성 (클릭 시 비활성)' : '⛔ 비활성 (클릭 시 활성화)'}
                                             </button>
 
                                             {/* 보너스 일수 부여 */}
