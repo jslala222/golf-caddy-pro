@@ -220,9 +220,21 @@ export default function MoneyPage() {
     const filteredDiaries = useMemo(() => {
         const y = currentDate.getFullYear();
         const m = String(currentDate.getMonth() + 1).padStart(2, '0');
-        return (diaries || [])
+        // 날짜별로 최신 diary만 남기기
+        const diaryMap = new Map<string, typeof diaries[0]>();
+        (diaries || [])
             .filter(d => d.date.startsWith(`${y}-${m}`))
-            .sort((a, b) => b.date.localeCompare(a.date));
+            .sort((a, b) => {
+                // 최신 updated_at/createdAt 우선
+                const aTime = new Date(a.updated_at || a.createdAt || a.date).getTime();
+                const bTime = new Date(b.updated_at || b.createdAt || b.date).getTime();
+                return bTime - aTime;
+            })
+            .forEach(d => {
+                if (!diaryMap.has(d.date)) diaryMap.set(d.date, d);
+            });
+        // 날짜 내림차순 정렬
+        return Array.from(diaryMap.values()).sort((a, b) => b.date.localeCompare(a.date));
     }, [diaries, currentDate]);
 
     // ... (keep modal form state)
