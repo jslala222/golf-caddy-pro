@@ -725,8 +725,13 @@ export default function SettingsPage() {
                             <p className="text-xs text-stone-600">설정 → 캘린더 → 계정 → 계정 추가 → 기타 → 구독 캘린더 추가 → URL 붙여넣기</p>
                         </div>
                         <div className="bg-stone-50 rounded-xl p-3">
-                            <p className="font-bold mb-1">Android (Google 캘린더)</p>
+                            <p className="font-bold mb-1">Android (Google 캘린더 권장)</p>
                             <p className="text-xs text-stone-600">웹 Google 캘린더 접속 → 다른 캘린더 + → URL로 추가 → URL 붙여넣기</p>
+                        </div>
+                        <div className="bg-stone-50 rounded-xl p-3">
+                            <p className="font-bold mb-1">삼성 갤럭시 기본 캘린더</p>
+                            <p className="text-xs text-stone-600">설정 → 계정 및 백업 → 계정 관리 → Google 계정 선택 → 캘린더 동기화 ON → 삼성 캘린더 앱에서 해당 Google 캘린더 표시 체크</p>
+                            <p className="text-[11px] text-stone-500 mt-1">일부 기종은 삼성 캘린더의 직접 URL 구독 메뉴가 없으므로 Google 캘린더 경유 방식이 가장 안정적입니다.</p>
                         </div>
                     </div>
                 </div>
