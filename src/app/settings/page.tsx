@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X, Bell, MessageCircle } from 'lucide-react';
+import { Settings, Download, Upload, Trash2, AlertTriangle, FileJson, Save, Cloud, Key, Copy, Check, Database, RefreshCw, X, Bell, MessageCircle, Crown } from 'lucide-react';
 import { migrateLocalDataToSupabase } from '@/lib/supabaseDB';
 import { formatNumber, todayKST } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
@@ -16,7 +16,11 @@ export default function SettingsPage() {
     // 이용권 정보
     const [licenseCode, setLicenseCode] = useState<string | null>(null);
     const [licenseExpiresAt, setLicenseExpiresAt] = useState<string | null>(null);
+    const [licenseTier, setLicenseTier] = useState<'standard' | 'premium'>('standard');
     const [codeCopied, setCodeCopied] = useState(false);
+    const [calendarCopied, setCalendarCopied] = useState(false);
+    const [showCalendarGuide, setShowCalendarGuide] = useState(false);
+    const [siteOrigin, setSiteOrigin] = useState('');
     const [policyModal, setPolicyModal] = useState<null | 'tos' | 'privacy' | 'refund'>(null);
 
     // 알람 설정
@@ -92,7 +96,21 @@ export default function SettingsPage() {
     useEffect(() => {
         setLicenseCode(localStorage.getItem('caddy_license_key'));
         setLicenseExpiresAt(localStorage.getItem('caddy_expires_at'));
+        setLicenseTier(localStorage.getItem('caddy_tier') === 'premium' ? 'premium' : 'standard');
+        setSiteOrigin(window.location.origin);
     }, []);
+
+    const calendarSubscribeUrl = licenseCode && siteOrigin ? `${siteOrigin}/api/calendar/${licenseCode}.ics` : '';
+    const handleCopyCalendarUrl = async () => {
+        if (!calendarSubscribeUrl) return;
+        try {
+            await navigator.clipboard.writeText(calendarSubscribeUrl);
+            setCalendarCopied(true);
+            setTimeout(() => setCalendarCopied(false), 2000);
+        } catch {
+            window.prompt('아래 URL을 복사해 캘린더 앱에 붙여넣어 주세요.', calendarSubscribeUrl);
+        }
+    };
 
     // 클라우드 백업 상태
     const [cloudStatus, setCloudStatus] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
@@ -277,6 +295,25 @@ export default function SettingsPage() {
                 <Settings className="mr-2 text-stone-600" /> 설정
             </h1>
 
+            {/* 상단 강조: 캘린더 동기화 */}
+            {licenseCode && (
+                <section className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white rounded-2xl p-5 shadow-lg shadow-emerald-200">
+                    <div className="flex items-center justify-between gap-3">
+                        <div>
+                            <p className="text-xs font-black tracking-wide text-emerald-100">신규 핵심 기능</p>
+                            <h2 className="text-lg font-black">스마트폰 캘린더 자동 동기화</h2>
+                            <p className="text-xs text-emerald-50 mt-1">설정에서 구독 URL을 복사해 iPhone/Android 캘린더에 1회 등록하세요.</p>
+                        </div>
+                        <a
+                            href="#calendar-sync"
+                            className="shrink-0 h-10 px-4 rounded-xl bg-white text-emerald-700 text-sm font-black flex items-center"
+                        >
+                            바로 열기
+                        </a>
+                    </div>
+                </section>
+            )}
+
             {/* PWA Install Section */}
             <InstallPWA />
 
@@ -308,6 +345,12 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                             <div className="flex items-center justify-between border-t border-emerald-100 pt-3">
+                                <span className="text-sm text-stone-500 font-bold">티어</span>
+                                <span className={`text-sm font-black ${licenseTier === 'premium' ? 'text-purple-700' : 'text-blue-700'}`}>
+                                    {licenseTier === 'premium' ? '⭐ 프리미엄' : '스탠다드'}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between border-t border-emerald-100 pt-3">
                                 <span className="text-sm text-stone-500 font-bold">만료일</span>
                                 <span className={`font-bold text-sm ${isExpired ? 'text-red-500' : 'text-emerald-700'}`}>{expStr}</span>
                             </div>
@@ -325,6 +368,53 @@ export default function SettingsPage() {
                     </section>
                 );
             })()}
+
+            {/* 스마트폰 캘린더 동기화 */}
+            {licenseCode && (
+                <section id="calendar-sync" className="space-y-3 scroll-mt-20">
+                    <h2 className="text-lg font-bold text-stone-800 flex items-center">
+                        <Key size={18} className="mr-2 text-emerald-600" /> 스마트폰 캘린더 동기화
+                    </h2>
+                    <div className="bg-white rounded-2xl border-2 border-emerald-300 p-5 shadow-md shadow-emerald-100 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <p className="text-sm text-stone-700 font-semibold">폰 캘린더에 구독 URL을 1회 등록하면 일정이 자동 반영됩니다.</p>
+                            <span className={`text-[11px] px-2 py-1 rounded-full font-bold ${licenseTier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                {licenseTier === 'premium' ? '프리미엄' : '스탠다드'}
+                            </span>
+                        </div>
+
+                        <div className="bg-stone-50 border border-stone-200 rounded-xl p-3">
+                            <p className="text-[11px] text-stone-400 mb-1">구독 URL</p>
+                            <p className="font-mono text-[11px] break-all text-stone-700">{calendarSubscribeUrl}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                onClick={handleCopyCalendarUrl}
+                                className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-1.5"
+                            >
+                                {calendarCopied ? <Check size={16} /> : <Copy size={16} />}
+                                {calendarCopied ? '복사 완료' : 'URL 복사'}
+                            </button>
+                            <button
+                                onClick={() => setShowCalendarGuide(true)}
+                                className="h-11 rounded-xl bg-stone-900 hover:bg-black text-white font-bold text-sm"
+                            >
+                                등록 방법 보기
+                            </button>
+                        </div>
+
+                        {licenseTier !== 'premium' && (
+                            <Link
+                                href="/subscribe?plan=month&tier=premium"
+                                className="w-full h-11 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-extrabold text-sm flex items-center justify-center gap-1.5"
+                            >
+                                <Crown size={16} /> 프리미엄 전환 (개인/휴무 동기화 열기)
+                            </Link>
+                        )}
+                    </div>
+                </section>
+            )}
 
             {/* 알림 설정 섹션 */}
             <section className="space-y-4">
@@ -612,6 +702,37 @@ export default function SettingsPage() {
 
 
         {/* PolicyModal */}
+        {showCalendarGuide && (
+            <div className="fixed inset-0 z-50 bg-black/50 px-4 py-8" onClick={() => setShowCalendarGuide(false)}>
+                <div
+                    className="mx-auto w-full max-w-[480px] bg-white rounded-3xl p-6 shadow-2xl space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-extrabold text-stone-900">캘린더 등록 방법</h3>
+                        <button onClick={() => setShowCalendarGuide(false)} className="p-1 text-stone-400 hover:text-stone-600">
+                            <X size={22} />
+                        </button>
+                    </div>
+
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800">
+                        먼저 설정 화면에서 <b>URL 복사</b> 버튼을 눌러 구독 URL을 복사하세요.
+                    </div>
+
+                    <div className="space-y-3 text-sm text-stone-700">
+                        <div className="bg-stone-50 rounded-xl p-3">
+                            <p className="font-bold mb-1">iPhone (기본 캘린더)</p>
+                            <p className="text-xs text-stone-600">설정 → 캘린더 → 계정 → 계정 추가 → 기타 → 구독 캘린더 추가 → URL 붙여넣기</p>
+                        </div>
+                        <div className="bg-stone-50 rounded-xl p-3">
+                            <p className="font-bold mb-1">Android (Google 캘린더)</p>
+                            <p className="text-xs text-stone-600">웹 Google 캘린더 접속 → 다른 캘린더 + → URL로 추가 → URL 붙여넣기</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
         {policyModal && (() => {
             const titles: Record<string, string> = { tos: '이용약관', privacy: '개인정보처리방침', refund: '환불 정책' };
             const contents: Record<string, string> = {

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📅 스마트폰 캘린더 구독 기능 기획 — 캐디 매니저 Pro</title>
+<style>
+  :root {
+    --green: #16a34a;
+    --green-light: #dcfce7;
+    --green-mid: #86efac;
+    --premium: #7c3aed;
+    --premium-light: #ede9fe;
+    --premium-mid: #c4b5fd;
+    --standard: #0284c7;
+    --standard-light: #e0f2fe;
+    --gray: #64748b;
+    --gray-light: #f1f5f9;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --red: #dc2626;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: #f8fafc; color: var(--text); line-height: 1.7; }
+
+  .page { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  /* 헤더 */
+  .hero { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #164e30 100%); color: white; border-radius: 20px; padding: 40px; margin-bottom: 40px; position: relative; overflow: hidden; }
+  .hero::before { content: '📅'; font-size: 120px; position: absolute; right: 30px; top: 50%; transform: translateY(-50%); opacity: 0.08; }
+  .hero .badge { display: inline-block; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; padding: 4px 14px; font-size: 12px; margin-bottom: 12px; }
+  .hero h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .hero p { font-size: 15px; opacity: 0.75; }
+
+  /* 섹션 타이틀 */
+  .section { margin-bottom: 40px; }
+  .section-title { font-size: 19px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .section-title .num { background: var(--green); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+
+  /* 카드 */
+  .card { background: white; border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 16px; }
+  .card.highlight { border-color: var(--green); border-width: 2px; }
+
+  /* 플로우 다이어그램 */
+  .flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; margin: 20px 0; }
+  .flow-box { background: var(--gray-light); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; text-align: center; min-width: 120px; }
+  .flow-box.server { background: var(--green-light); border-color: var(--green-mid); }
+  .flow-box.phone { background: #fef9c3; border-color: #fde047; }
+  .flow-arrow { font-size: 20px; color: var(--gray); padding: 0 8px; }
+
+  /* 코드 블록 */
+  .code { background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 20px 22px; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; line-height: 1.8; overflow-x: auto; margin: 16px 0; }
+  .code .comment { color: #64748b; }
+  .code .key { color: #93c5fd; }
+  .code .val { color: #86efac; }
+  .code .str { color: #fca5a5; }
+  .code .fn { color: #fde68a; }
+
+  /* 테이블 */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: var(--gray-light); padding: 10px 14px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .check { color: var(--green); font-weight: 700; }
+  .cross { color: var(--red); }
+  .star { color: #f59e0b; }
+
+  /* 플랜 비교 */
+  .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .plan-card { border-radius: 14px; padding: 24px; }
+  .plan-card.standard { background: var(--standard-light); border: 2px solid var(--standard); }
+  .plan-card.premium { background: var(--premium-light); border: 2px solid var(--premium); position: relative; }
+  .plan-card .plan-badge { display: inline-block; color: white; border-radius: 20px; padding: 3px 12px; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+  .plan-card.standard .plan-badge { background: var(--standard); }
+  .plan-card.premium .plan-badge { background: var(--premium); }
+  .plan-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+  .plan-card ul { list-style: none; font-size: 13px; }
+  .plan-card ul li { padding: 4px 0; }
+  .plan-card ul li::before { margin-right: 6px; }
+  .plan-card.standard ul li::before { content: '○'; color: var(--standard); }
+  .plan-card.premium ul li::before { content: '✦'; color: var(--premium); }
+  .plan-card .locked { color: #94a3b8; text-decoration: line-through; }
+  .plan-card .premium-only { color: var(--premium); font-weight: 600; }
+  .rec-badge { position: absolute; top: -12px; right: 16px; background: var(--premium); color: white; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+
+  /* 업셀 섹션 */
+  .upsell-box { background: linear-gradient(135deg, var(--premium-light), #f5f3ff); border: 2px solid var(--premium-mid); border-radius: 16px; padding: 28px; }
+  .upsell-box h3 { color: var(--premium); font-size: 18px; margin-bottom: 16px; }
+  .upsell-step { display: flex; gap: 14px; margin-bottom: 16px; align-items: flex-start; }
+  .upsell-step .step-num { background: var(--premium); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+  .upsell-step .step-body strong { display: block; font-size: 14px; margin-bottom: 4px; }
+  .upsell-step .step-body p { font-size: 13px; color: var(--gray); }
+
+  /* 구현 타임라인 */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before { content: ''; position: absolute; left: 9px; top: 0; bottom: 0; width: 2px; background: var(--green-mid); }
+  .timeline-item { position: relative; margin-bottom: 24px; }
+  .timeline-item::before { content: ''; position: absolute; left: -23px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--green); }
+  .timeline-item .day { font-size: 11px; color: var(--green); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+  .timeline-item h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .timeline-item ul { font-size: 13px; color: var(--gray); list-style: disc; padding-left: 16px; }
+  .timeline-item ul li { margin-bottom: 2px; }
+
+  /* 알람 박스 */
+  .alert { border-radius: 10px; padding: 14px 18px; font-size: 13px; margin: 12px 0; display: flex; gap: 10px; align-items: flex-start; }
+  .alert.info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .alert.warn { background: var(--amber-light); border-left: 4px solid var(--amber); }
+  .alert.success { background: var(--green-light); border-left: 4px solid var(--green); }
+  .alert .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* 모바일 */
+  @media (max-width: 600px) {
+    .plan-grid { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .hero h1 { font-size: 22px; }
+  }
+
+  /* 목차 */
+  .toc { background: white; border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 32px; }
+  .toc h3 { font-size: 14px; font-weight: 700; color: var(--gray); margin-bottom: 12px; }
+  .toc ol { padding-left: 18px; font-size: 14px; }
+  .toc ol li { margin-bottom: 6px; }
+  .toc a { color: var(--green); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .tag { display: inline-block; border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-right: 4px; }
+  .tag.green { background: var(--green-light); color: var(--green); }
+  .tag.purple { background: var(--premium-light); color: var(--premium); }
+  .tag.blue { background: var(--standard-light); color: var(--standard); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 헤더 -->
+  <div class="hero">
+    <div class="badge">기획 보고서 · 2026-04-09</div>
+    <h1>📅 스마트폰 캘린더 구독 기능</h1>
+    <p>캐디 매니저 Pro 일정을 스마트폰 캘린더와 자동 동기화 — 구현 계획 및 프리미엄 업셀 전략</p>
+  </div>
+
+  <!-- 목차 -->
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#overview">기능 개요 & 동작 원리</a></li>
+      <li><a href="#flow">데이터 흐름도</a></li>
+      <li><a href="#impl">구현 계획 (파일별 작업)</a></li>
+      <li><a href="#ics">ICS 생성 코드 예시</a></li>
+      <li><a href="#plan">플랜 차등 설계 (업셀 전략)</a></li>
+      <li><a href="#upsell">스탠다드 → 프리미엄 충동 구매 시나리오</a></li>
+      <li><a href="#timeline">구현 타임라인</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 기능 개요 -->
+  <div class="section" id="overview">
+    <div class="section-title"><span class="num">1</span> 기능 개요 & 동작 원리</div>
+    <div class="card highlight">
+      <p style="font-size:15px; margin-bottom:16px;">캐디 매니저 Pro가 <strong>구독 URL 1개</strong>를 생성해주면,<br>
+      사용자가 스마트폰 캘린더 앱에 URL을 한 번 등록하는 것만으로<br>
+      이후 일정 변경이 <strong>자동으로 폰 캘린더에 반영</strong>됩니다.</p>
+
+      <div class="alert info">
+        <span class="icon">💡</span>
+        <div>외부 유료 API 없음 — Google OAuth 심사 없음 — iOS/Android/삼성 모두 지원<br>
+        <strong>완전 무료</strong>로 기존 Vercel + Supabase 위에서 동작합니다.</div>
+      </div>
+
+      <table>
+        <tr>
+          <th>구분</th>
+          <th>설명</th>
+        </tr>
+        <tr>
+          <td><strong>구독 URL 형태</strong></td>
+          <td><code>https://caddy-pink.vercel.app/api/calendar/{이용권코드}.ics</code></td>
+        </tr>
+        <tr>
+          <td><strong>파일 포맷</strong></td>
+          <td>ICS (iCalendar) — iOS·Google·삼성 캘린더 공통 표준</td>
+        </tr>
+        <tr>
+          <td><strong>동기화 주기</strong></td>
+          <td>폰 설정에 따라 자동 갱신 (iOS: 기본 1시간, Google: 12시간~24시간)</td>
+        </tr>
+        <tr>
+          <td><strong>보안</strong></td>
+          <td>이용권 코드(`SM-XXX-XXX`)가 URL에 포함 → 코드 없으면 접근 불가</td>
+        </tr>
+        <tr>
+          <td><strong>방향</strong></td>
+          <td>단방향: 캐디Pro → 폰 (폰에서 캐디Pro로 역방향 반영은 불필요)</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2. 데이터 흐름 -->
+  <div class="section" id="flow">
+    <div class="section-title"><span class="num">2</span> 데이터 흐름도</div>
+    <div class="card">
+      <p style="font-size:13px; color:var(--gray); margin-bottom:16px;">① 사용자가 캐디Pro 앱에서 일정 등록/수정 → ② 폰이 주기적으로 URL 요청 → ③ 서버가 ICS 반환 → ④ 폰 캘린더에 자동 표시</p>
+      <div class="flow">
+        <div class="flow-box phone">📱<br>캐디Pro 앱<br><small>일정 등록/수정</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box server">🗄️<br>Supabase DB<br><small>aone_pro_caddypro_schedules</small></div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-box server">⚡ Vercel API<br><code>/api/calendar/{코드}.ics</code><br><small>ICS 동적 생성</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box phone">📅<br>스마트폰 캘린더<br><small>자동 동기화</small></div>
+      </div>
+
+      <div class="alert success" style="margin-top:20px;">
+        <span class="icon">✅</span>
+        <div>캐디Pro 앱에서 일정을 바꾸면 → 최대 1시간 이내(iOS) 폰 캘린더에 자동 반영<br>
+        사용자는 <strong>아무것도 안 해도</strong> 됩니다 (최초 URL 1회 등록 이후)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 구현 계획 -->
+  <div class="section" id="impl">
+    <div class="section-title"><span class="num">3</span> 구현 계획 (파일별 작업)</div>
+    <div class="card">
+      <table>
+        <tr>
+          <th>파일</th>
+          <th>작업 내용</th>
+          <th>공수</th>
+        </tr>
+        <tr>
+          <td><code>src/app/api/calendar/[code]/route.ts</code></td>
+          <td>신규 생성 — ICS 동적 생성 API 라우트<br>
+            <small style="color:var(--gray)">• URL의 code 파라미터로 Supabase 조회<br>
+            • tier 확인 (standard/premium 차등)<br>
+            • ICS 문자열 생성 후 반환 (Content-Type: text/calendar)</small></td>
+          <td><span class="tag green">0.5일</span></td>
+        </tr>
+        <tr>
+          <td><code>src/app/api/calendar/[code]/token/route.ts</code></td>
+          <td>신규 생성 — 구독 URL 토큰 발급<br>
+            <small style="color:var(--gray)">• 이용권 코드 직접 노출 방지용 (선택 구현)<br>
+            • 짧은 UUID 토큰 → 이용권 코드 매핑 저장</small></td>
+          <td><span class="tag blue">선택 0.5일</span></td>
+        </tr>
+        <tr>
+          <td><code>src/components/CalendarSubscribeButton.tsx</code></td>
+          <td>신규 생성 — 구독 URL 복사/안내 UI<br>
+            <small style="color:var(--gray)">• "캘린더에 추가" 버튼<br>
+            • 클릭시 URL 클립보드 복사 + 등록 안내 모달</small></td>
+          <td><span class="tag green">0.5일</span></td>
+        </tr>
+        <tr>
+          <td><code>src/app/home/page.tsx</code> (또는 설정 페이지)</td>
+          <td>기존 파일 수정 — CalendarSubscribeButton 삽입<br>
+            <small style="color:var(--gray)">• 프리미엄 전용 표시 (스탠다드는 잠금 아이콘)</small></td>
+          <td><span class="tag green">0.5일</span></td>
+        </tr>
+        <tr>
+          <td><code>src/lib/icsBuilder.ts</code></td>
+          <td>신규 생성 — ICS 포맷 생성 유틸<br>
+            <small style="color:var(--gray)">• Schedule[] → ICS 문자열 변환<br>
+            • 근무/개인/휴무 타입별 색상 태그</small></td>
+          <td><span class="tag green">0.5일</span></td>
+        </tr>
+      </table>
+
+      <div class="alert warn" style="margin-top:16px;">
+        <span class="icon">⚠️</span>
+        <div><strong>총 구현 공수: 약 2일</strong> — 외부 라이브러리 설치 불필요 (ICS는 순수 문자열 포맷)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. ICS 코드 예시 -->
+  <div class="section" id="ics">
+    <div class="section-title"><span class="num">4</span> ICS 생성 코드 예시</div>
+    <div class="card">
+      <p style="font-size:13px; color:var(--gray); margin-bottom:12px;"><code>src/app/api/calendar/[code]/route.ts</code> 핵심 로직</p>
+
+      <div class="code">
+<span class="comment">// GET /api/calendar/SM-YK3-PZC.ics</span>
+<span class="key">export async function</span> <span class="fn">GET</span>(req: Request, { params }) {
+  <span class="key">const</span> code = params.code.replace(<span class="str">'.ics'</span>, <span class="str">''</span>).toUpperCase();
+
+  <span class="comment">// 1. 이용권 확인 + tier 조회</span>
+  <span class="key">const</span> { data: lic } = <span class="key">await</span> db
+    .from(<span class="str">'aone_pro_caddypro_licenses'</span>)
+    .select(<span class="str">'tier, is_active, expires_at'</span>)
+    .eq(<span class="str">'code'</span>, code)
+    .maybeSingle();
+
+  <span class="key">if</span> (!lic?.is_active) <span class="key">return new</span> Response(<span class="str">'Unauthorized'</span>, { status: <span class="val">401</span> });
+
+  <span class="comment">// 2. 일정 조회</span>
+  <span class="key">let</span> query = db.from(<span class="str">'aone_pro_caddypro_schedules'</span>)
+    .select(<span class="str">'*'</span>).eq(<span class="str">'license_code'</span>, code);
+
+  <span class="comment">// ★ 프리미엄: 전체 / 스탠다드: 근무 일정만</span>
+  <span class="key">if</span> (lic.tier !== <span class="str">'premium'</span>) {
+    query = query.eq(<span class="str">'type'</span>, <span class="str">'work'</span>);
+  }
+
+  <span class="key">const</span> { data: schedules } = <span class="key">await</span> query;
+
+  <span class="comment">// 3. ICS 생성</span>
+  <span class="key">const</span> ics = buildICS(schedules, code);
+
+  <span class="key">return new</span> Response(ics, {
+    headers: {
+      <span class="str">'Content-Type'</span>: <span class="str">'text/calendar; charset=utf-8'</span>,
+      <span class="str">'Content-Disposition'</span>: <span class="str">`attachment; filename="caddy-${code}.ics"`</span>,
+      <span class="str">'Cache-Control'</span>: <span class="str">'no-cache'</span>,
+    }
+  });
+}
+      </div>
+
+      <p style="font-size:13px; color:var(--gray); margin-top:16px; margin-bottom:12px;"><code>src/lib/icsBuilder.ts</code> — ICS 문자열 생성</p>
+
+      <div class="code">
+<span class="key">function</span> <span class="fn">buildICS</span>(schedules: Schedule[], code: string): string {
+  <span class="key">const</span> lines = [
+    <span class="str">'BEGIN:VCALENDAR'</span>,
+    <span class="str">'VERSION:2.0'</span>,
+    <span class="str">`PRODID:-//캐디 매니저 Pro//KR`</span>,
+    <span class="str">'X-WR-CALNAME:캐디 매니저 Pro'</span>,
+    <span class="str">'X-WR-TIMEZONE:Asia/Seoul'</span>,
+    <span class="str">'CALSCALE:GREGORIAN'</span>,
+  ];
+
+  <span class="key">for</span> (<span class="key">const</span> s <span class="key">of</span> schedules) {
+    <span class="key">const</span> dateStr = s.date.replace(/-/g, <span class="str">''</span>); <span class="comment">// 20260410</span>
+    <span class="key">const</span> summary = s.type === <span class="str">'work'</span>
+      ? <span class="str">`🏌 ${s.shift}부 근무`</span>
+      : s.type === <span class="str">'personal'</span>
+      ? <span class="str">`📌 ${s.title}`</span>
+      : <span class="str">'🌿 휴무'</span>;
+
+    lines.push(
+      <span class="str">'BEGIN:VEVENT'</span>,
+      <span class="str">`UID:${s.id}@caddy-pink.vercel.app`</span>,
+      <span class="str">`DTSTART;VALUE=DATE:${dateStr}`</span>,
+      <span class="str">`SUMMARY:${summary}`</span>,
+      s.memo ? <span class="str">`DESCRIPTION:${s.memo}`</span> : <span class="str">''</span>,
+      <span class="str">'END:VEVENT'</span>
+    );
+  }
+
+  lines.push(<span class="str">'END:VCALENDAR'</span>);
+  <span class="key">return</span> lines.filter(Boolean).join(<span class="str">'\r\n'</span>);
+}
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 플랜 차등 -->
+  <div class="section" id="plan">
+    <div class="section-title"><span class="num">5</span> 플랜 차등 설계 — 프리미엄 업셀 포인트</div>
+    <div class="plan-grid">
+      <div class="plan-card standard">
+        <div class="plan-badge">스탠다드</div>
+        <h3>캘린더 구독 — 제한</h3>
+        <ul>
+          <li><span class="check">○</span> 근무 일정만 동기화</li>
+          <li><span class="check">○</span> 구독 URL 제공</li>
+          <li class="locked">개인 일정 동기화 ❌</li>
+          <li class="locked">휴무일 동기화 ❌</li>
+          <li class="locked">일정 색상 구분 ❌</li>
+          <li class="locked">메모/상세 내용 포함 ❌</li>
+        </ul>
+      </div>
+      <div class="plan-card premium">
+        <div class="rec-badge">⭐ 추천</div>
+        <div class="plan-badge">프리미엄</div>
+        <h3>캘린더 구독 — 전체</h3>
+        <ul>
+          <li class="premium-only">✦ 근무 + 개인 + 휴무 전체 동기화</li>
+          <li class="premium-only">✦ 일정 타입별 이모지 색상 구분</li>
+          <li class="premium-only">✦ 메모 / 캐디피 정보 포함</li>
+          <li class="premium-only">✦ 캘린더 이름 커스텀</li>
+          <li class="premium-only">✦ 향후: 알림 시간 커스텀</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="alert info">
+      <span class="icon">🔒</span>
+      <div>스탠다드 사용자에게는 기능 버튼을 <strong>잠금 상태로 보여주되 클릭 가능</strong>하게 설계합니다.<br>
+      클릭 시 → "프리미엄 전환 시 개인 일정까지 모두 동기화됩니다" 팝업 노출</div>
+    </div>
+  </div>
+
+  <!-- 6. 업셀 시나리오 -->
+  <div class="section" id="upsell">
+    <div class="section-title"><span class="num">6</span> 스탠다드 → 프리미엄 충동 구매 시나리오</div>
+    <div class="upsell-box">
+      <h3>🎯 충동 구매를 일으키는 4단계 UX 흐름</h3>
+
+      <div class="upsell-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>스탠다드 사용자: 앱 홈에서 "📅 캘린더 구독" 버튼 노출 (잠금)</strong>
+          <p>자물쇠 아이콘 + 회색 처리. <em>"근무 일정을 폰 캘린더와 연동"</em> 문구로 호기심 자극<br>
+          → 존재는 알지만 못 쓰는 상태 = <strong>심리적 박탈감</strong> 유발</p>
+        </div>
+      </div>
+
+      <div class="upsell-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>클릭 시 → 비교 팝업 등장</strong>
+          <p>스탠다드(근무만) vs 프리미엄(전체) 차이를 시각적으로 보여줌<br>
+          예: <em>"개인 일정 12개가 아직 폰과 동기화되지 않았습니다."</em><br>
+          → 실제 데이터를 꺼내 <strong>개인화된 숫자</strong>로 찌름</p>
+        </div>
+      </div>
+
+      <div class="upsell-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>프리미엄 전환 버튼 + 금액 명시</strong>
+          <p><em>"월 ○○원 추가로 모든 일정을 폰 캘린더와 자동 동기화"</em><br>
+          금액을 커피 1잔 수준으로 표현 → <strong>결제 진입 장벽 최소화</strong></p>
+        </div>
+      </div>
+
+      <div class="upsell-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>전환 직후 → 바로 캘린더 구독 완료 화면</strong>
+          <p>결제 완료 → 즉시 구독 URL 발급 → <em>"지금 바로 폰 캘린더에 추가하세요"</em><br>
+          → <strong>가치를 즉시 체감</strong>시켜 후회 없는 구매 경험 제공</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <p style="font-weight:700; margin-bottom:12px;">추가 업셀 트리거 포인트</p>
+      <table>
+        <tr>
+          <th>상황</th>
+          <th>노출 문구 (예시)</th>
+          <th>위치</th>
+        </tr>
+        <tr>
+          <td>개인 일정 등록 직후</td>
+          <td>"📅 이 일정, 폰 캘린더에도 자동으로 뜨게 하려면?" → 프리미엄 배너</td>
+          <td>일정 저장 완료 토스트 하단</td>
+        </tr>
+        <tr>
+          <td>오전 알림 수신 후</td>
+          <td>"폰 기본 캘린더에서도 확인하고 싶다면 프리미엄으로" (카카오톡 알림 하단)</td>
+          <td>카카오 알림톡 버튼 추가</td>
+        </tr>
+        <tr>
+          <td>이용권 갱신 시점</td>
+          <td>연장 페이지에서 "이번엔 프리미엄으로 바꿔보세요 +캘린더 동기화 포함"</td>
+          <td>/subscribe 페이지</td>
+        </tr>
+        <tr>
+          <td>스탠다드 구독 URL 사용 중</td>
+          <td>ICS 내 Description에 "⭐ 개인 일정도 동기화: 프리미엄 업그레이드" 한 줄 삽입</td>
+          <td>폰 캘린더 일정 상세</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 7. 타임라인 -->
+  <div class="section" id="timeline">
+    <div class="section-title"><span class="num">7</span> 구현 타임라인 (총 2일)</div>
+    <div class="card">
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="day">Day 1 — 오전 (3시간)</div>
+          <h4>ICS API 라우트 구현</h4>
+          <ul>
+            <li><code>src/lib/icsBuilder.ts</code> 작성 (Schedule[] → ICS 문자열)</li>
+            <li><code>src/app/api/calendar/[code]/route.ts</code> 작성</li>
+            <li>tier 분기 로직 (standard: work만 / premium: 전체)</li>
+            <li>로컬 테스트: URL 접속 → .ics 파일 다운로드 확인</li>
+          </ul>
+        </div>
+        <div class="timeline-item">
+          <div class="day">Day 1 — 오후 (3시간)</div>
+          <h4>UI 컴포넌트 구현</h4>
+          <ul>
+            <li><code>CalendarSubscribeButton.tsx</code> 작성</li>
+            <li>스탠다드: 잠금 상태 버튼 + 클릭 시 업셀 팝업</li>
+            <li>프리미엄: URL 복사 버튼 + iOS/Android 등록 안내 모달</li>
+          </ul>
+        </div>
+        <div class="timeline-item">
+          <div class="day">Day 2 — 오전 (2시간)</div>
+          <h4>홈/설정 페이지에 버튼 삽입</h4>
+          <ul>
+            <li><code>home/page.tsx</code> 또는 설정 탭에 컴포넌트 추가</li>
+            <li>업셀 팝업 → /subscribe 페이지 연결</li>
+          </ul>
+        </div>
+        <div class="timeline-item">
+          <div class="day">Day 2 — 오후 (2시간)</div>
+          <h4>실기기 동기화 테스트 + 배포</h4>
+          <ul>
+            <li>iOS Safari → 캘린더 앱 구독 URL 등록 테스트</li>
+            <li>Android Google 캘린더 구독 URL 테스트</li>
+            <li>npm run build 확인 → git push new_origin master</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="alert success" style="margin-top:8px;">
+        <span class="icon">🚀</span>
+        <div><strong>배포 후 즉시 사용 가능</strong> — 별도 승인/심사 없이 바로 서비스 적용<br>
+        기존 코드 구조 변경 없이 신규 파일 추가만으로 완성</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center; font-size:12px; color:var(--gray); margin-top:40px;">
+    캐디 매니저 Pro — 캘린더 구독 기능 기획 보고서 · 2026-04-09
+  </div>
+
+</div>
+</body>
+</html>

@@ -13,6 +13,11 @@
 ### Git 규칙
 - 사용자가 명시적으로 커밋/푸시를 요청하기 전에는 커밋하지 않는다.
 
+### 내부서버 반영 규칙
+- 라우트/페이지/컴포넌트 구조, 설정 흐름, 주요 UI 배치가 바뀌는 수정 후에는 **반드시 내부서버를 재시작**한다.
+- 재시작 후 `http://localhost:4455/home/`, `http://localhost:4455/settings/` 응답(200)을 확인하고 사용자에게 반영 완료를 알린다.
+- 반영 누락이 의심되면 강제 새로고침(`Ctrl+F5`) 경로까지 함께 안내한다.
+
 ### 배포 규칙
 - **배포는 항상 `https://caddy-pink.vercel.app/` 에만 한다** (특별히 지정하지 않는 한)
 - 배포 레포: `new_origin` = `caddy_pro_enterprise.git` → `git push new_origin master`

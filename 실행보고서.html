@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caddy Manager Pro — 실행보고서</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #1a4a3f;
+            border-bottom: 3px solid #2d7a6e;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .metadata {
+            background: #f0f8f6;
+            border-left: 4px solid #2d7a6e;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .metadata p {
+            margin: 5px 0;
+        }
+        
+        h2 {
+            color: #2d7a6e;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            font-size: 22px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        h3 {
+            color: #4a9f95;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f0f8f6;
+            color: #1a4a3f;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            border-left: 3px solid #2d7a6e;
+            padding: 15px;
+            overflow-x: auto;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            margin: 15px 0;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin: 10px 0;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #2d7a6e;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .badge.success {
+            background: #27ae60;
+        }
+        
+        .badge.warning {
+            background: #e67e22;
+        }
+        
+        .badge.info {
+            background: #3498db;
+        }
+        
+        .toc {
+            background: #f0f8f6;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 30px 0;
+        }
+        
+        .toc h3 {
+            margin-top: 0;
+        }
+        
+        .toc ul {
+            margin-left: 20px;
+        }
+        
+        .toc a {
+            color: #2d7a6e;
+            text-decoration: none;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        
+        blockquote {
+            border-left: 4px solid #2d7a6e;
+            padding-left: 15px;
+            margin-left: 0;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        
+        .card h4 {
+            color: #2d7a6e;
+            margin-bottom: 10px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 22px;
+            }
+            
+            h2 {
+                font-size: 18px;
+            }
+            
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                font-size: 13px;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏌️ Caddy Manager Pro — 실행보고서</h1>
+        
+        <div class="metadata">
+            <p><strong>최종 업데이트:</strong> 2026년 4월 8일 (56회차)</p>
+            <p><strong>프레임워크:</strong> Next.js 14 + TypeScript + Tailwind CSS</p>
+            <p><strong>서버:</strong> http://localhost:4455</p>
+            <p><strong>DB:</strong> Supabase (lajjbrrysvkaxzrchanp)</p>
+            <p><strong>스토리지:</strong> Cloudflare R2 (aonepro-db 버킷)</p>
+            <p><strong>결제:</strong> PortOne V2</p>
+            <p><strong>SMS:</strong> 솔라피 (Solapi) — 알리고 → 솔라피로 교체 (IP 제한 없음)</p>
+        </div>
+
+        <h2>📋 핵심 요약</h2>
+        
+        <h3>주요 기능 (56회차)</h3>
+        <div class="grid-2">
+            <div class="card">
+                <h4>✅ 이용권 관리</h4>
+                <ul>
+                    <li>코드 자동 발급 (SM-XXX-XXX)</li>
+                    <li>기간 연장 (기존 코드 유지)</li>
+                    <li>프리미엄 티어 (자동 복구)</li>
+                    <li>R2 클라우드 백업</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>✅ SMS 발송</h4>
+                <ul>
+                    <li>솔라피 API 연동</li>
+                    <li>가입/연장/만료 알림</li>
+                    <li>모달 팝업 알림</li>
+                    <li>IP 제한 없음</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>✅ 관리자 도구</h4>
+                <ul>
+                    <li>코드 발급 (6탭 대시보드)</li>
+                    <li>딜러 관리 (PIN 보안)</li>
+                    <li>정산 관리</li>
+                    <li>데이터 복구</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>✅ 딜러 대시보드</h4>
+                <ul>
+                    <li>코드 신규/기간 연장</li>
+                    <li>수익 통계</li>
+                    <li>고객 조회</li>
+                    <li>정산 요청</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>🔧 56회차 — SMS 연동: 알리고 → 솔라피로 교체</h2>
+        
+        <h3>문제점</h3>
+        <blockquote>
+            알리고 API는 고정 IP 등록 필수 정책인데, Vercel 서버리스는 유동 IP → "인증오류-IP" 에러 → 문자 미발송
+        </blockquote>
+        
+        <h3>솔루션</h3>
+        <div class="badge success">완료</div>
+        <div class="badge">솔라피(Solapi) 도입</div>
+        
+        <p><strong>핵심 변경:</strong></p>
+        <ol>
+            <li><code>npm install solapi</code></li>
+            <li><code>src/lib/aligo.ts</code> → SolapiMessageService 사용</li>
+            <li>Vercel 환경변수 등록:
+                <ul>
+                    <li><code>SOLAPI_API_KEY=NCSIYJUZJOSIQQ94</code></li>
+                    <li><code>SOLAPI_API_SECRET=PQYWGKXJFLJSDPIXSSCK8FTK12H8WTO0</code></li>
+                    <li><code>SOLAPI_SENDER=01027377229</code></li>
+                </ul>
+            </li>
+            <li>fetch URL trailing slash 추가 (308 리다이렉트 방지)</li>
+            <li>SMS 결과 모달 팝업 추가</li>
+        </ol>
+
+        <h3>테스트 결과</h3>
+        <table>
+            <tr>
+                <th>수신번호</th>
+                <th>시간</th>
+                <th>타입</th>
+                <th>상태</th>
+            </tr>
+            <tr>
+                <td>010-3083-2585</td>
+                <td>14:05</td>
+                <td>LMS</td>
+                <td>✅ 발송(이통사 수신)</td>
+            </tr>
+            <tr>
+                <td>010-2737-7229 (본인)</td>
+                <td>14:07 x2</td>
+                <td>SMS</td>
+                <td>✅ 수신 확인</td>
+            </tr>
+            <tr>
+                <td>010-8468-9186</td>
+                <td>14:22</td>
+                <td>LMS</td>
+                <td>✅ 발송(이통사 수신)</td>
+            </tr>
+        </table>
+
+        <h3>커밋 히스토리</h3>
+        <table>
+            <tr>
+                <th>커밋</th>
+                <th>내용</th>
+            </tr>
+            <tr>
+                <td><code>6347e02</code></td>
+                <td>fix: 알리고 → 솔라피 SMS 교체</td>
+            </tr>
+            <tr>
+                <td><code>71dac03</code></td>
+                <td>fix: 솔라피 named import로 수정</td>
+            </tr>
+            <tr>
+                <td><code>7395bad</code></td>
+                <td>fix: fetch URL trailing slash 추가</td>
+            </tr>
+            <tr>
+                <td><code>5e3ea45</code></td>
+                <td>feat: SMS 토스트 메시지 추가</td>
+            </tr>
+            <tr>
+                <td><code>b3ae390</code></td>
+                <td>feat: SMS 모달 팝업 완성</td>
+            </tr>
+        </table>
+
+        <h2>📌 배포 정보</h2>
+        <table>
+            <tr>
+                <th>항목</th>
+                <th>값</th>
+            </tr>
+            <tr>
+                <td>배포 URL</td>
+                <td>https://caddy-pink.vercel.app</td>
+            </tr>
+            <tr>
+                <td>Repository</td>
+                <td>https://github.com/jslala222/caddy_pro_enterprise</td>
+            </tr>
+            <tr>
+                <td>Remote</td>
+                <td><code>new_origin</code> = caddy_pro_enterprise.git</td>
+            </tr>
+            <tr>
+                <td>빌드 상태</td>
+                <td>✅ 성공 (오류 0개)</td>
+            </tr>
+        </table>
+
+        <h2>🔐 인증 정보</h2>
+        <table>
+            <tr>
+                <th>항목</th>
+                <th>값</th>
+            </tr>
+            <tr>
+                <td>관리자 비밀번호</td>
+                <td><code>0827</code></td>
+            </tr>
+            <tr>
+                <td>마스터코드</td>
+                <td><code>0827</code></td>
+            </tr>
+            <tr>
+                <td>이용권 코드 형식</td>
+                <td><code>SM-XXX-XXX</code></td>
+            </tr>
+        </table>
+
+        <h2>📋 다음 작업</h2>
+        <div class="card" style="border-left: 4px solid #e67e22;">
+            <h4>카카오톡 템플릿 등록 (56회차 이후)</h4>
+            <p><code>SOLAPI_KAKAOTALK_TEMPLATE_GUIDE.md</code> 참고</p>
+            <ol>
+                <li>CaddyManagerPro_Welcome — 가입 환영</li>
+                <li>CaddyManagerPro_Extend — 이용권 연장</li>
+                <li>CaddyManagerPro_ExpireSoon — 만료 예정</li>
+                <li>CaddyManagerPro_Schedule — 라운드 알림</li>
+                <li>CaddyManagerPro_PersonalEvent — 개인 프로모션</li>
+            </ol>
+        </div>
+
+        <h2>📚 문서</h2>
+        <ul>
+            <li><strong>실행보고서.md</strong> — 마크다운 상세 버전 (깃허브)</li>
+            <li><strong>SOLAPI_KAKAOTALK_TEMPLATE_GUIDE.md</strong> — 솔라피 카카오톡 템플릿 완벽 가이드</li>
+            <li><strong>이 파일</strong> — HTML 요약 버전</li>
+        </ul>
+
+        <hr style="margin: 40px 0; border: none; border-top: 2px solid #ddd;">
+        
+        <p style="text-align: center; color: #999; font-size: 12px;">
+            Caddy Manager Pro v2.0 | 최종 업데이트: 2026년 4월 8일<br>
+            만든이: Copilot | 저장소: github.com/jslala222/caddy_pro_enterprise
+        </p>
+    </div>
+</body>
+</html>

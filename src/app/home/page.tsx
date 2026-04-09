@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAppStore } from '@/lib/store';
 import type { Diary } from '@/lib/store';
 import { formatCurrency, todayKST } from '@/lib/utils';
-import { Calendar as CalendarIcon, Wallet, ChevronRight, TrendingUp, TrendingDown, LogOut, Plus, X, DollarSign, BookOpen } from 'lucide-react';
+import { Calendar as CalendarIcon, Wallet, ChevronRight, TrendingUp, TrendingDown, LogOut, Plus, X, BookOpen } from 'lucide-react';
 import { Calendar } from '@/components/Calendar';
 
 export default function HomePage() {
@@ -388,6 +388,15 @@ export default function HomePage() {
         </Link>
       </section>
 
+      <section>
+        <Link
+          href="/settings/#calendar-sync"
+          className="w-full h-12 rounded-2xl bg-stone-900 text-white text-sm font-bold flex items-center justify-center"
+        >
+          캘린더 동기화는 설정에서 관리
+        </Link>
+      </section>
+
       {/* 연간 수입 현황 카드 */}
       {(() => {
         const yearStr = String(year);
@@ -615,6 +624,7 @@ export default function HomePage() {
         </div>
       </div>
     )}
+
     </>
   );
 }
