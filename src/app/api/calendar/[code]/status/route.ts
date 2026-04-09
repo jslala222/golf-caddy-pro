@@ -30,7 +30,7 @@ export async function GET(_: NextRequest, { params }: { params: { code: string }
   const db = createServerClient();
   const { data: license, error } = await db
     .from('aone_pro_caddypro_licenses')
-    .select('code, tier, is_active, expires_at')
+    .select('code, tier, expires_at')
     .ilike('code', code)
     .maybeSingle();
 
@@ -53,20 +53,19 @@ export async function GET(_: NextRequest, { params }: { params: { code: string }
   }
 
   const tier: 'standard' | 'premium' = license.tier === 'premium' ? 'premium' : 'standard';
-  const isActive = !!license.is_active;
   const isExpired = !!license.expires_at && new Date(license.expires_at).getTime() < Date.now();
 
-  if (!isActive || isExpired) {
+  if (isExpired) {
     return NextResponse.json(
       {
         code,
         exists: true,
-        isActive,
-        isExpired,
+        isActive: true,
+        isExpired: true,
         tier,
         canSync: false,
         expectedApiStatus: 403,
-        reason: '만료 또는 비활성 이용권입니다.',
+        reason: '만료된 이용권입니다.',
         expiresAt: license.expires_at ?? null,
         checkedAt: new Date().toISOString(),
       },
@@ -79,8 +78,8 @@ export async function GET(_: NextRequest, { params }: { params: { code: string }
       {
         code,
         exists: true,
-        isActive,
-        isExpired,
+        isActive: true,
+        isExpired: false,
         tier,
         canSync: false,
         expectedApiStatus: 403,
@@ -101,8 +100,8 @@ export async function GET(_: NextRequest, { params }: { params: { code: string }
     {
       code,
       exists: true,
-      isActive,
-      isExpired,
+      isActive: true,
+      isExpired: false,
       tier,
       canSync: true,
       expectedApiStatus: 200,

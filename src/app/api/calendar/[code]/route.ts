@@ -188,7 +188,7 @@ export async function GET(req: NextRequest, { params }: { params: { code: string
   const db = createServerClient();
   const { data: license, error: licErr } = await db
     .from('aone_pro_caddypro_licenses')
-    .select('code, tier, is_active, expires_at')
+    .select('code, tier, expires_at')
     .ilike('code', code)
     .maybeSingle();
 
@@ -197,8 +197,8 @@ export async function GET(req: NextRequest, { params }: { params: { code: string
   }
 
   const expired = !!license.expires_at && new Date(license.expires_at).getTime() < Date.now();
-  if (!license.is_active || expired) {
-    return errorResponse(req, 403, '만료 또는 비활성 이용권입니다.', '이용권 상태를 확인해 주세요.');
+  if (expired) {
+    return errorResponse(req, 403, '만료된 이용권입니다.', '이용권이 만료되었습니다. 연장 후 다시 시도해 주세요.');
   }
 
   const tier: 'standard' | 'premium' = license.tier === 'premium' ? 'premium' : 'standard';
