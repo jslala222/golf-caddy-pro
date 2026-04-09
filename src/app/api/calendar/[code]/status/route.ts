@@ -110,6 +110,13 @@ export async function GET(_: NextRequest, { params }: { params: { code: string }
       scheduleCount: count ?? 0,
       checkedAt: new Date().toISOString(),
     },
-    { status: 200 }
+    {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    }
   );
 }

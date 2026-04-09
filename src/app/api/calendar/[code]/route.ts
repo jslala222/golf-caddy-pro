@@ -224,6 +224,8 @@ export async function GET(req: NextRequest, { params }: { params: { code: string
       'Content-Type': 'text/calendar; charset=utf-8',
       'Content-Disposition': `inline; filename="caddy-${code}.ics"`,
       'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
     },
   });
 }
