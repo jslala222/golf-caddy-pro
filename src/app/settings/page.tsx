@@ -9,6 +9,20 @@ import { migrateLocalDataToSupabase } from '@/lib/supabaseDB';
 import { formatNumber, todayKST } from '@/lib/utils';
 import { InstallPWA } from '@/components/InstallPWA';
 
+type CalendarSyncHealth = {
+    code: string;
+    exists: boolean;
+    isActive: boolean;
+    isExpired: boolean;
+    tier: 'standard' | 'premium';
+    canSync: boolean;
+    expectedApiStatus: number;
+    reason: string;
+    expiresAt: string | null;
+    scheduleCount?: number;
+    checkedAt: string;
+};
+
 export default function SettingsPage() {
     const { exportData, importData, resetData, feeSettings, updateFeeSettings } = useAppStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -19,6 +33,8 @@ export default function SettingsPage() {
     const [licenseTier, setLicenseTier] = useState<'standard' | 'premium'>('standard');
     const [codeCopied, setCodeCopied] = useState(false);
     const [calendarCopied, setCalendarCopied] = useState(false);
+    const [calendarHealth, setCalendarHealth] = useState<CalendarSyncHealth | null>(null);
+    const [calendarHealthLoading, setCalendarHealthLoading] = useState(false);
     const [showCalendarGuide, setShowCalendarGuide] = useState(false);
     const [siteOrigin, setSiteOrigin] = useState('');
     const [policyModal, setPolicyModal] = useState<null | 'tos' | 'privacy' | 'refund'>(null);
@@ -110,6 +126,38 @@ export default function SettingsPage() {
             setTimeout(() => setCalendarCopied(false), 2000);
         } catch {
             window.prompt('아래 URL을 복사해 캘린더 앱에 붙여넣어 주세요.', calendarSubscribeUrl);
+        }
+    };
+
+    const handleCheckCalendarHealth = async () => {
+        if (!licenseCode) {
+            alert('이용권 코드가 없습니다.');
+            return;
+        }
+
+        setCalendarHealthLoading(true);
+        try {
+            const res = await fetch(`/api/calendar/${encodeURIComponent(licenseCode)}/status`, {
+                method: 'GET',
+                cache: 'no-store',
+            });
+            const data = await res.json();
+            setCalendarHealth(data as CalendarSyncHealth);
+        } catch {
+            setCalendarHealth({
+                code: licenseCode,
+                exists: false,
+                isActive: false,
+                isExpired: false,
+                tier: 'standard',
+                canSync: false,
+                expectedApiStatus: 500,
+                reason: '진단 요청 중 네트워크 오류가 발생했습니다.',
+                expiresAt: null,
+                checkedAt: new Date().toISOString(),
+            });
+        } finally {
+            setCalendarHealthLoading(false);
         }
     };
 
@@ -399,7 +447,7 @@ export default function SettingsPage() {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                             {isPremiumCalendar ? (
                                 <Link
                                     href="/calendar-sync"
@@ -424,12 +472,31 @@ export default function SettingsPage() {
                                 {isPremiumCalendar ? (calendarCopied ? '복사 완료' : 'URL 복사') : 'URL 복사 (잠김)'}
                             </button>
                             <button
+                                onClick={handleCheckCalendarHealth}
+                                className="h-11 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm flex items-center justify-center gap-1.5"
+                            >
+                                <RefreshCw size={16} className={calendarHealthLoading ? 'animate-spin' : ''} />
+                                {calendarHealthLoading ? '확인 중...' : '상태 확인'}
+                            </button>
+                            <button
                                 onClick={() => setShowCalendarGuide(true)}
                                 className="h-11 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-sm"
                             >
                                 등록 방법 보기
                             </button>
                         </div>
+
+                        {calendarHealth && (
+                            <div className={`${calendarHealth.canSync ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'} border rounded-xl p-3 text-xs space-y-1`}>
+                                <p className="font-bold">연결 상태 진단 결과</p>
+                                <p>판정: {calendarHealth.canSync ? '정상 (동기화 가능)' : '차단됨 (동기화 불가)'}</p>
+                                <p>예상 API 응답: {calendarHealth.expectedApiStatus}</p>
+                                <p>원인: {calendarHealth.reason}</p>
+                                <p>티어: {calendarHealth.tier === 'premium' ? '프리미엄' : '스탠다드'} / 활성: {calendarHealth.isActive ? '예' : '아니오'} / 만료: {calendarHealth.isExpired ? '예' : '아니오'}</p>
+                                <p>일정 건수: {typeof calendarHealth.scheduleCount === 'number' ? `${calendarHealth.scheduleCount}건` : '확인 불가'}</p>
+                                <p>확인 시각: {new Date(calendarHealth.checkedAt).toLocaleString('ko-KR')}</p>
+                            </div>
+                        )}
 
                         <div className={`${isPremiumCalendar ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'} border rounded-xl p-3 text-xs space-y-1`}>
                             <p className="font-bold">가장 쉬운 방법</p>
