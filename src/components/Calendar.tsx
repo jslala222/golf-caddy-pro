@@ -13,9 +13,10 @@ interface CalendarProps {
     selectedDate?: string;
     viewDate?: Date;
     onMonthChange?: (date: Date) => void;
+    onDateClick?: (dateStr: string) => void;
 }
 
-export function Calendar({ schedules, selectedDate, viewDate, onMonthChange }: CalendarProps) {
+export function Calendar({ schedules, selectedDate, viewDate, onMonthChange, onDateClick }: CalendarProps) {
     const [internalDate, setInternalDate] = useState(new Date());
 
     // Use controlled viewDate if provided, otherwise internal state
@@ -124,18 +125,17 @@ export function Calendar({ schedules, selectedDate, viewDate, onMonthChange }: C
                     else if (isSunday || isHoliday) textColorClass = "text-red-500";
                     else if (isSaturday) textColorClass = "text-blue-500";
 
-                    return (
-                        <Link
-                            href={`/schedule?date=${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`}
-                            key={day}
-                            className={clsx(
-                                "h-16 rounded-lg flex flex-col items-center pt-1 relative hover:bg-emerald-50 transition border-2 border-transparent",
-                                isToday && "bg-emerald-600 border-emerald-600 shadow-md",
-                                !isToday && hasPersonal && "bg-orange-50 border-stone-100", // Personal appointment background
-                                !isToday && !hasPersonal && isHoliday && "bg-red-50/30", // Light background for holidays
-                                dateSchedules.some(s => s.type === 'holiday') && "!border-4 !border-red-500 z-10" // Holiday thick red border forced
-                            )}
-                        >
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const cellClass = clsx(
+                        "h-16 rounded-lg flex flex-col items-center pt-1 relative hover:bg-emerald-50 transition border-2 border-transparent",
+                        isToday && "bg-emerald-600 border-emerald-600 shadow-md",
+                        !isToday && hasPersonal && "bg-orange-50 border-stone-100",
+                        !isToday && !hasPersonal && isHoliday && "bg-red-50/30",
+                        dateSchedules.some(s => s.type === 'holiday') && "!border-4 !border-red-500 z-10"
+                    );
+
+                    const cellContent = (
+                        <>
                             <span className={clsx(
                                 "text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full mb-0.5",
                                 isToday ? "text-white" :
@@ -169,6 +169,29 @@ export function Calendar({ schedules, selectedDate, viewDate, onMonthChange }: C
                                     <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-sm" />
                                 )}
                             </div>
+                        </>
+                    );
+
+                    if (onDateClick) {
+                        return (
+                            <button
+                                key={day}
+                                type="button"
+                                onClick={() => onDateClick(dateStr)}
+                                className={cellClass}
+                            >
+                                {cellContent}
+                            </button>
+                        );
+                    }
+
+                    return (
+                        <Link
+                            href={`/schedule?date=${dateStr}`}
+                            key={day}
+                            className={cellClass}
+                        >
+                            {cellContent}
                         </Link>
                     );
                 })}

@@ -13,6 +13,7 @@ export default function HomePage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [userName, setUserName] = useState<string | null>(null);
+  const [selectedModalDate, setSelectedModalDate] = useState<string | null>(null);
 
   // 빠른 수입 입력 모달
   const [quickOpen, setQuickOpen] = useState(false);
@@ -369,6 +370,7 @@ export default function HomePage() {
           selectedDate={currentDate.toISOString().split('T')[0]}
           viewDate={currentDate}
           onMonthChange={setCurrentDate}
+          onDateClick={setSelectedModalDate}
         />
       </section>
 
@@ -513,6 +515,115 @@ export default function HomePage() {
         </div>
       </section>
     </div>
+
+    {/* 날짜 일정 요약 모달 */}
+    {selectedModalDate && (() => {
+      const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+      const [year, month, day] = selectedModalDate.split('-');
+      const monthNum = parseInt(month);
+      const dayNum = parseInt(day);
+      const dateObj = new Date(parseInt(year), monthNum - 1, dayNum);
+      const weekday = weekdays[dateObj.getDay()];
+      const dateDisplay = `${monthNum}-${String(dayNum).padStart(2, '0')} (${weekday})`;
+
+      const dateSchedules = schedules.filter(s => s.date === selectedModalDate);
+      const holidays = dateSchedules.filter(s => s.type === 'holiday');
+      const works = dateSchedules.filter(s => s.type === 'work').sort((a, b) => (a.shift ?? '1').localeCompare(b.shift ?? '1'));
+      const personals = dateSchedules.filter(s => s.type === 'personal');
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setSelectedModalDate(null)}>
+          <div
+            className="w-full max-w-[480px] bg-white rounded-3xl shadow-2xl overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 헤더 */}
+            <div className="bg-emerald-50 px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-stone-900">{dateDisplay}</h3>
+              <button onClick={() => setSelectedModalDate(null)} className="p-1 text-stone-400 hover:text-stone-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* 일정 목록 */}
+            <div className="px-6 py-4 space-y-4 max-h-[60dvh] overflow-y-auto">
+              {holidays.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-stone-500 mb-2">휴무</p>
+                  <div className="space-y-2">
+                    {holidays.map(s => (
+                      <div key={s.id} className="bg-red-50 p-3 rounded-xl border border-red-200">
+                        <p className="font-semibold text-red-600">{s.title}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {works.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-stone-500 mb-2">근무</p>
+                  <div className="space-y-2">
+                    {works.map(s => (
+                      <div key={s.id} className={`p-3 rounded-xl border ${
+                        s.shift === '1' ? 'bg-red-50 border-red-200' :
+                        s.shift === '2' ? 'bg-blue-50 border-blue-200' :
+                        'bg-emerald-50 border-emerald-200'
+                      }`}>
+                        <div className={`font-semibold ${
+                          s.shift === '1' ? 'text-red-600' :
+                          s.shift === '2' ? 'text-blue-600' :
+                          'text-emerald-600'
+                        }`}>
+                          {s.shift}부 · {s.time}
+                        </div>
+                        {s.title && <p className="text-xs text-stone-600 mt-1">{s.title}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {personals.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-stone-500 mb-2">개인일정</p>
+                  <div className="space-y-2">
+                    {personals.map(s => (
+                      <div key={s.id} className="bg-orange-50 p-3 rounded-xl border border-orange-200">
+                        <div className="font-semibold text-orange-600">{s.time}</div>
+                        {s.title && <p className="text-xs text-stone-600 mt-1">{s.title}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {dateSchedules.length === 0 && (
+                <div className="text-center py-6 text-stone-400">
+                  <p>약속이 없습니다</p>
+                </div>
+              )}
+            </div>
+
+            {/* 버튼 */}
+            <div className="border-t border-stone-100 px-6 py-4 flex gap-3">
+              <Link
+                href={`/schedule?date=${selectedModalDate}`}
+                className="flex-[2.33] bg-emerald-600 text-white font-bold py-3 rounded-2xl text-base hover:bg-emerald-700 active:scale-[.98] transition text-center"
+              >
+                일정 추가
+              </Link>
+              <button
+                onClick={() => setSelectedModalDate(null)}
+                className="flex-1 bg-stone-100 text-stone-700 font-bold py-3 rounded-2xl text-base hover:bg-stone-200 active:scale-[.98] transition"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
 
     {/* 빠른 수입 입력 모달 */}
     {quickOpen && (
