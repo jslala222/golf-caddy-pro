@@ -246,12 +246,20 @@ export default function HomePage() {
       </header>
 
       {/* Net Income Card */}
-      <section className="bg-emerald-600 rounded-2xl p-4 text-white shadow-lg shadow-emerald-200 transition-all relative overflow-hidden">
+      <section
+        className="rounded-2xl p-4 text-white shadow-lg shadow-emerald-200 transition-all relative overflow-hidden"
+        style={{
+          backgroundImage: 'url(/golf-bg.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        <div className="absolute inset-0 bg-black/40"></div>
         <div className="absolute right-[-20px] top-[-20px] opacity-10">
           <Wallet size={120} />
         </div>
 
-        <div className="flex justify-between items-start mb-2 relative z-10">
+        <div className="flex justify-between items-start mb-2 relative z-20">
           <p className="text-emerald-100 text-sm">
             <span className="font-bold text-emerald-50">{month + 1}월</span> 현재 순수익
           </p>
@@ -262,11 +270,11 @@ export default function HomePage() {
           )}
         </div>
 
-        <div className="text-3xl font-bold mb-4 relative z-10 break-all">
+        <div className="text-3xl font-bold mb-4 relative z-20 break-all">
           {formatCurrency(netIncomeRealized).replace('₩', '')}<span className="text-lg font-normal ml-1">원</span>
         </div>
 
-        <div className="flex gap-2 text-xs font-medium relative z-10">
+        <div className="flex gap-2 text-xs font-medium relative z-20">
           <div className="flex items-center flex-1 min-w-0 bg-red-500/80 px-2 py-1.5 rounded-full backdrop-blur-md text-white shadow-sm overflow-hidden">
             <TrendingUp size={13} className="mr-1 flex-shrink-0 text-red-100" />
             <span className="truncate">수입 {formatCurrency(totalIncomeRealized).replace('₩', '')}</span>
@@ -277,7 +285,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center relative z-10">
+        <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center relative z-20">
           <div className="flex gap-4">
             <div className="text-center">
               <span className="text-[10px] text-emerald-200 block">18홀</span>

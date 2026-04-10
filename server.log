@@ -1,3 +1,102 @@
+
+> golf-caddy@0.1.5.130 dev
+> next build && next start -p 4455 -H 0.0.0.0
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Custom worker found: C:\Users\User\Desktop\제미나이 3\연습\Antigravity\golf-caddy\worker\index.ts
+> [PWA] Build custom worker: C:\Users\User\Desktop\제미나이 3\연습\Antigravity\golf-caddy\public\worker-Big7QXanUp6-COxQ3JNhl.js
+> [PWA] Auto register service worker with: C:\Users\User\Desktop\제미나이 3\연습\Antigravity\golf-caddy\node_modules\next-pwa\register.js
+> [PWA] Service worker: C:\Users\User\Desktop\제미나이 3\연습\Antigravity\golf-caddy\public\sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/44) ...
+   Generating static pages (11/44) 
+   Generating static pages (22/44) 
+   Generating static pages (33/44) 
+ ✓ Generating static pages (44/44)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    142 B          87.6 kB
+├ ○ /_not-found                          873 B          88.4 kB
+├ ○ /admin                               19.3 kB         174 kB
+├ ○ /admin/holidays                      1.71 kB        91.3 kB
+├ ○ /admin/members                       3.6 kB         91.1 kB
+├ ○ /admin/reserves                      1.75 kB        91.3 kB
+├ ƒ /api/admin/cash-receipt              0 B                0 B
+├ ƒ /api/auth/kakao/callback             0 B                0 B
+├ ƒ /api/auth/kakao/notification-hour    0 B                0 B
+├ ƒ /api/backup/download                 0 B                0 B
+├ ƒ /api/backup/upload                   0 B                0 B
+├ ƒ /api/calendar/[code]                 0 B                0 B
+├ ƒ /api/calendar/[code]/status          0 B                0 B
+├ ƒ /api/cron/alarm                      0 B                0 B
+├ ƒ /api/cron/expire-notify              0 B                0 B
+├ ƒ /api/cron/personal-remind-1h         0 B                0 B
+├ ƒ /api/db/caddies                      0 B                0 B
+├ ƒ /api/db/caddies/[id]                 0 B                0 B
+├ ƒ /api/db/clients                      0 B                0 B
+├ ƒ /api/db/clients/[id]                 0 B                0 B
+├ ƒ /api/db/diary                        0 B                0 B
+├ ƒ /api/db/fee-settings                 0 B                0 B
+├ ƒ /api/db/migrate                      0 B                0 B
+├ ƒ /api/db/ocr-usage                    0 B                0 B
+├ ƒ /api/db/schedules                    0 B                0 B
+├ ƒ /api/db/schedules/[id]               0 B                0 B
+├ ƒ /api/db/transactions                 0 B                0 B
+├ ƒ /api/db/transactions/[id]            0 B                0 B
+├ ƒ /api/dealer/cash-receipt             0 B                0 B
+├ ƒ /api/dealer/credit/charge            0 B                0 B
+├ ƒ /api/dealer/credit/charge/test       0 B                0 B
+├ ƒ /api/notify/extend                   0 B                0 B
+├ ƒ /api/notify/settings                 0 B                0 B
+├ ƒ /api/notify/welcome                  0 B                0 B
+├ ƒ /api/payment/complete                0 B                0 B
+├ ƒ /api/push/subscribe                  0 B                0 B
+├ ƒ /api/push/test                       0 B                0 B
+├ ƒ /api/push/unsubscribe                0 B                0 B
+├ ƒ /api/receipt/ocr                     0 B                0 B
+├ ƒ /api/receipt/upload                  0 B                0 B
+├ ƒ /api/test/issue                      0 B                0 B
+├ ƒ /api/test/issue-cart                 0 B                0 B
+├ ○ /calendar-sync                       3.58 kB         100 kB
+├ ○ /change                              6.04 kB         105 kB
+├ ○ /clients                             6.34 kB        96.5 kB
+├ ○ /dealer-login                        2.97 kB         148 kB
+├ ƒ /dealer/[token]                      8.32 kB         154 kB
+├ ƒ /dealer/[token]/dashboard            22.3 kB         168 kB
+├ ○ /home                                8.9 kB          108 kB
+├ ○ /landing                             9.84 kB         164 kB
+├ ○ /money                               9.11 kB         109 kB
+├ ○ /push-debug                          2.06 kB        89.5 kB
+├ ○ /schedule                            11.1 kB         111 kB
+├ ○ /settings                            14.2 kB         171 kB
+├ ○ /subscribe                           5.95 kB        93.4 kB
+├ ○ /tax                                 5.41 kB         105 kB
+├ ○ /test-ocr                            1.83 kB        89.3 kB
+└ ○ /test-pay                            5.34 kB        92.8 kB
++ First Load JS shared by all            87.5 kB
+  ├ chunks/117-6d7b1769841b0005.js       31.8 kB
+  ├ chunks/fd9d1056-aa62df64503c51e6.js  53.6 kB
+  └ other shared chunks (total)          2.08 kB
+
+
+ƒ Middleware                             26.5 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
  ⨯ Failed to start server
 Error: listen EADDRINUSE: address already in use 0.0.0.0:4455
     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
