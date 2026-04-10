@@ -60,7 +60,7 @@ export function Calendar({ schedules, selectedDate, viewDate, onMonthChange, onD
     };
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4">
+        <div className="bg-white rounded-2xl shadow-sm border-2 border-black p-4">
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-stone-800">

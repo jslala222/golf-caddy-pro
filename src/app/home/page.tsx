@@ -376,13 +376,13 @@ export default function HomePage() {
 
       {/* Quick Actions */}
       <section className="grid grid-cols-2 gap-4">
-        <Link href="/schedule" className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm hover:shadow-md transition flex flex-col items-center justify-center h-32">
+        <Link href="/schedule" className="bg-white p-4 rounded-xl border-2 border-black shadow-sm hover:shadow-md transition flex flex-col items-center justify-center h-32">
           <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-3">
             <CalendarIcon size={24} />
           </div>
           <span className="font-bold text-stone-700">일정 추가</span>
         </Link>
-        <Link href="/money" className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm hover:shadow-md transition flex flex-col items-center justify-center h-32">
+        <Link href="/money" className="bg-white p-4 rounded-xl border-2 border-black shadow-sm hover:shadow-md transition flex flex-col items-center justify-center h-32">
           <div className="w-12 h-12 bg-yellow-50 text-yellow-600 rounded-full flex items-center justify-center mb-3">
             <Wallet size={24} />
           </div>
