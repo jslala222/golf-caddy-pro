@@ -247,7 +247,7 @@ export default function HomePage() {
 
       {/* Net Income Card */}
       <section
-        className="rounded-2xl p-4 text-white shadow-lg shadow-emerald-200 transition-all relative overflow-hidden"
+        className="rounded-3xl p-6 text-white shadow-lg shadow-emerald-200 transition-all relative overflow-hidden"
         style={{
           backgroundImage: 'url(/golf-bg.png)',
           backgroundSize: 'cover',

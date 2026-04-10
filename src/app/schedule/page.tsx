@@ -23,6 +23,11 @@ function ScheduleContent() {
     const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
     const [editingId, setEditingId] = useState<string | null>(null);
 
+    // 페이지 로드 시 스크롤을 맨 위로 (캘린더가 보이도록)
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     // Form State
     const [date, setDate] = useState(dateParam || todayKST());
     const [hour, setHour] = useState('00');
